@@ -1,0 +1,346 @@
+<!-- landing.component.html -->
+<div class="pharmacy-landing">
+  <!-- Navigation -->
+  <header class="navbar-wrapper">
+    <div class="container">
+      <nav class="navbar">
+        <div class="navbar-brand">
+          <img src="assets/images/logo-dark.png" width="200"  alt="cmPharma" />
+          <!-- <h1>cmPharma</h1> -->
+        </div>
+        <div class="navbar-menu">
+          <ul class="navbar-nav">
+            <li><a href="#features">Fonctionnalités</a></li>
+            <li><a href="#how-it-works">Comment ça marche</a></li>
+            <li><a href="#testimonials">Témoignages</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+          <button class="btn-login" (click)="onLoginClick()">
+            {{ userDetails ? 'Accéder à mon compte' : 'Connexion' }}
+          </button>
+        </div>
+        <div class="navbar-toggle">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section" style="margin-top: 200px;">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-text">
+          <h1>{{ heroData.title }}</h1>
+          <p>{{ heroData.subtitle }}</p>
+          <div class="hero-cta">
+            <!-- <a [routerLink]="heroData.ctaLink" class="btn-primary">{{ heroData.ctaText }}</a> -->
+            <a href="#features" class="btn-secondary">En savoir plus</a>
+          </div>
+        </div>
+        <div class="hero-image">
+          <img src="assets/images/hero-image.png" alt="cmPharma App" />
+        </div>
+      </div>
+    </div>
+    <div class="shape-divider">
+      <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+        <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Partners Section -->
+  <section class="partners-section">
+    <div class="container">
+      <h2>Ils nous font confiance</h2>
+      <div class="partners-grid">
+        <div class="partner">
+          <img src="assets/images/partners/partner1.png" alt="Partner 1" />
+        </div>
+        <div class="partner">
+          <img src="assets/images/partners/partner2.png" alt="Partner 2" />
+        </div>
+        <div class="partner">
+          <img src="assets/images/partners/partner3.png" alt="Partner 3" />
+        </div>
+        <div class="partner">
+          <img src="assets/images/partners/partner4.png" alt="Partner 4" />
+        </div>
+        <div class="partner">
+          <img src="assets/images/partners/partner5.png" alt="Partner 5" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Nos fonctionnalités</h2>
+        <p>Découvrez comment notre plateforme simplifie la gestion et la livraison de médicaments</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card" *ngFor="let feature of features">
+          <div class="feature-icon">
+            <i class="{{ feature.icon }}"></i>
+          </div>
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.description }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- User Types Section -->
+  <section class="user-types-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Une solution pour chaque acteur</h2>
+        <p>Notre plateforme connecte pharmacies, livreurs et clients en toute simplicité</p>
+      </div>
+      <div class="user-types-tabs">
+        <div class="tabs-header">
+          <button class="tab-btn active" data-tab="clients">Pour les clients</button>
+          <button class="tab-btn" data-tab="pharmacies">Pour les pharmacies</button>
+          <button class="tab-btn" data-tab="deliverers">Pour les livreurs</button>
+        </div>
+        <div class="tabs-content">
+          <div class="tab-pane active" id="clients">
+            <div class="tab-grid">
+              <div class="tab-text">
+                <h3>Commandez vos médicaments en toute simplicité</h3>
+                <ul>
+                  <li><i class="ti ti-check"></i> Commande rapide et sécurisée en ligne</li>
+                  <li><i class="ti ti-check"></i> Livraison à domicile en quelques heures</li>
+                  <li><i class="ti ti-check"></i> Suivi en temps réel de votre commande</li>
+                  <li><i class="ti ti-check"></i> Paiement sécurisé</li>
+                  <li><i class="ti ti-check"></i> Historique de vos commandes</li>
+                </ul>
+                <a href="#" class="btn-secondary">Créer un compte client</a>
+              </div>
+              <div class="tab-image">
+                <img src="assets/images/client-app.png" alt="Application client" />
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane" id="pharmacies">
+            <div class="tab-grid">
+              <div class="tab-text">
+                <h3>Gérez vos ventes et élargissez votre clientèle</h3>
+                <ul>
+                  <li><i class="ti ti-check"></i> Tableau de bord personnalisé</li>
+                  <li><i class="ti ti-check"></i> Gestion des produits et du stock</li>
+                  <li><i class="ti ti-check"></i> Suivi des commandes en temps réel</li>
+                  <li><i class="ti ti-check"></i> Paiements automatisés</li>
+                  <li><i class="ti ti-check"></i> Statistiques de ventes</li>
+                </ul>
+                <a href="#" class="btn-secondary">Devenir pharmacie partenaire</a>
+              </div>
+              <div class="tab-image">
+                <img src="assets/images/pharmacy-dashboard.png" alt="Dashboard pharmacie" />
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane" id="deliverers">
+            <div class="tab-grid">
+              <div class="tab-text">
+                <h3>Rejoignez notre réseau de livreurs</h3>
+                <ul>
+                  <li><i class="ti ti-check"></i> Application mobile dédiée</li>
+                  <li><i class="ti ti-check"></i> Notifications de nouvelles commandes</li>
+                  <li><i class="ti ti-check"></i> Navigation GPS intégrée</li>
+                  <li><i class="ti ti-check"></i> Suivi des paiements</li>
+                  <li><i class="ti ti-check"></i> Flexibilité des horaires</li>
+                </ul>
+                <a href="#" class="btn-secondary">Devenir livreur partenaire</a>
+              </div>
+              <div class="tab-image">
+                <img src="assets/images/delivery-app.png" alt="Application livreur" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section id="how-it-works" class="how-it-works-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Comment ça marche ?</h2>
+        <p>Un processus simple en trois étapes</p>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-icon">
+            <i class="ti ti-device-mobile"></i>
+          </div>
+          <h3>Commandez</h3>
+          <p>Parcourez les médicaments disponibles et passez votre commande en quelques clics</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-icon">
+            <i class="ti ti-pharmacy"></i>
+          </div>
+          <h3>Préparation</h3>
+          <p>La pharmacie prépare votre commande et la met à disposition du livreur</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-icon">
+            <i class="ti ti-truck-delivery"></i>
+          </div>
+          <h3>Livraison</h3>
+          <p>Un livreur récupère votre commande et vous la livre directement à domicile</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- App Screenshots -->
+  <section class="screenshots-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Découvrez notre application</h2>
+        <p>Une interface intuitive pour une expérience utilisateur optimale</p>
+      </div>
+      <div class="screenshots-carousel">
+        <div class="screenshot" *ngFor="let screenshot of screenshots">
+          <img [src]="screenshot" alt="Capture d'écran de l'application" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section id="testimonials" class="testimonials-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Ce que disent nos utilisateurs</h2>
+        <p>Découvrez les témoignages de nos utilisateurs satisfaits</p>
+      </div>
+      <div class="testimonials-grid">
+        <div class="testimonial-card" *ngFor="let testimonial of testimonials">
+          <div class="testimonial-content">
+            <div class="quote-icon">
+              <i class="ti ti-quote"></i>
+            </div>
+            <p>{{ testimonial.message }}</p>
+          </div>
+          <div class="testimonial-author">
+            <div class="author-avatar">
+              <img src="assets/images/avatars/{{ testimonial.name.toLowerCase().replace(' ', '-') }}.jpg" alt="{{ testimonial.name }}" onerror="this.src='assets/images/avatars/default.jpg'" />
+            </div>
+            <div class="author-info">
+              <h4>{{ testimonial.name }}</h4>
+              <span>{{ testimonial.role }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section id="faq" class="faq-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Questions fréquentes</h2>
+        <p>Tout ce que vous devez savoir sur notre plateforme</p>
+      </div>
+      <div class="faq-grid">
+        <div class="faq-card" *ngFor="let faq of faqs; let i = index">
+          <div class="faq-question" [attr.data-expanded]="'true'">
+            <h3>{{ faq.question }}</h3>
+            <div class="faq-toggle">
+              <i class="ti ti-plus plus-icon"></i>
+              <i class="ti ti-minus minus-icon"></i>
+            </div>
+          </div>
+          <div class="faq-answer" [style.display]="'block'">
+            <p>{{ faq.answer }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-content">
+        <h2>Prêt à commencer ?</h2>
+        <p>Rejoignez notre plateforme dès aujourd'hui et profitez de tous ses avantages</p>
+        <div class="cta-buttons">
+            <button class="btn-secondary" (click)="onLoginClick()">
+            {{ userDetails ? 'Accéder à mon compte' : 'Connexion' }}
+            </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="assets/images/logo-dark.png" alt="cmPharma" />
+          <p>La solution innovante pour la livraison de médicaments à domicile</p>
+          <div class="social-links">
+            <a href="#" aria-label="Facebook"><i class="ti ti-brand-facebook"></i></a>
+            <a href="#" aria-label="Twitter"><i class="ti ti-brand-twitter"></i></a>
+            <a href="#" aria-label="LinkedIn"><i class="ti ti-brand-linkedin"></i></a>
+            <a href="#" aria-label="Instagram"><i class="ti ti-brand-instagram"></i></a>
+          </div>
+        </div>
+        <div class="footer-links">
+          <h3>Liens rapides</h3>
+          <ul>
+            <li><a href="#features">Fonctionnalités</a></li>
+            <li><a href="#how-it-works">Comment ça marche</a></li>
+            <li><a href="#testimonials">Témoignages</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h3>Pour les entreprises</h3>
+          <ul>
+            <li><a href="#">Devenir pharmacie partenaire</a></li>
+            <li><a href="#">Devenir livreur</a></li>
+            <li><a href="#">À propos de nous</a></li>
+            <li><a href="#">Carrières</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-contact">
+          <h3>Contactez-nous</h3>
+          <ul>
+            <!-- <li><i class="ti ti-mail"></i> contact@pharmacieconnectee.fr</li> -->
+            <li><i class="ti ti-phone"></i> +33 1 23 45 67 89</li>
+            <li><i class="ti ti-map-pin"></i> 123 Avenue de la Santé, 75001 Paris</li>
+          </ul>
+          <div class="app-downloads">
+            <a href="#"><img src="assets/images/app-store.png" alt="App Store" /></a>
+            <a href="#"><img src="assets/images/google-play.png" alt="Google Play" /></a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 cmPharma. Tous droits réservés.</p>
+        <div class="legal-links">
+          <a href="#">Mentions légales</a>
+          <a href="#">Politique de confidentialité</a>
+          <a href="#">CGU</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
