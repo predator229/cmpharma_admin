@@ -12,7 +12,7 @@
         </a>
         <div class="dropdown-menu dropdown-notification dropdown-menu-end pc-h-dropdown" ngbDropdownMenu>
           <div class="dropdown-header">
-            <a href="javascript:!" class="link-primary float-end text-decoration-underline">Marque comme lu</a>
+            <br>
             <h5>
               Toutes les Notification
               <span class="badge bg-warning rounded-pill ms-1">01</span>
@@ -109,7 +109,7 @@
           </ng-scrollbar>
           <div class="dropdown-divider"></div>
           <div class="text-center py-2">
-            <a href="javascript:" class="link-primary">Mark as all read</a>
+            <a href="javascript:" class="link-primary">Marque comme lu</a>
           </div>
         </div>
       </div>
@@ -151,13 +151,14 @@
                 </div>
               </div>
               <hr />
-              <a [routerLink]="['/guest/register']" class="dropdown-item">
+              <!-- <a [routerLink]="['/guest/register']" class="dropdown-item"> -->
+              <a  class="dropdown-item">
                 <i class="ti ti-settings"></i>
                 <span>Profile</span>
               </a>
-              <a href="javascript:" class="dropdown-item">
-                <i class="ti ti-user"></i>
-                <span>Social Profile</span>
+              <a href="javascript:" class="dropdown-item" style="background-color: rgb(173, 53, 53); color: aliceblue;" (click)="logout()">
+                <i class="ti ti-power"></i>
+                <span>Déconnexion</span>
               </a>
             </ng-scrollbar>
           </div>

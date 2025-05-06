@@ -4,7 +4,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User,
 import { app } from '../../firebase.config';
 import { ApiService } from './api.service';
 import { map, catchError } from 'rxjs/operators';
-import { of, firstValueFrom } from 'rxjs';
+import { of, firstValueFrom, BehaviorSubject } from 'rxjs';
 import { HttpHeaders } from '@angular/common/http';
 import { ApiUserDetails } from 'src/app/models/ApiUserDetails';
 import { UserDetails } from 'src/app/models/UserDatails';
@@ -17,6 +17,8 @@ export class AuthService {
   private currentUser: User | null = null;
   private userDetails: UserDetails | null = null;
   private userDetailsLoaded = false;
+  public userDetailsLoaded$ = new BehaviorSubject<boolean>(false);
+  public userDetails$ = new BehaviorSubject<UserDetails | null>(null);
 
   constructor(private apiService: ApiService, private router: Router) {
     this.listenToAuthChanges();
@@ -29,7 +31,8 @@ export class AuthService {
         try {
           await this.loadUserDetails();
           this.userDetailsLoaded = true;
-        } catch (error) {
+          this.userDetailsLoaded$.next(true); // 🔥 Notifie les guards
+          } catch (error) {
           console.error('Erreur lors de la récupération des détails utilisateur', error);
           this.userDetailsLoaded = false;
         }
@@ -48,7 +51,6 @@ export class AuthService {
     if (!uid) throw new Error('Pas d’UID utilisateur');
 
     const headers = new HttpHeaders({
-      'Origin': '*',
       'Authorization': `Bearer ${token}`,
       'Accept': 'application/json',
       'Content-Type': 'application/json'
@@ -79,12 +81,15 @@ export class AuthService {
 
       const userDetails = JSON.parse(JSON.stringify(apiResponse));
       this.userDetails = userDetails;
+      this.userDetails$.next(userDetails);
     }
   }
 
   private clearStorage() {
     localStorage.removeItem('user');
     localStorage.removeItem('userDetails');
+    this.userDetails = null;
+    this.userDetails$.next(null);
   }
 
   loginWithEmail(email: string, password: string): Promise<UserCredential> {

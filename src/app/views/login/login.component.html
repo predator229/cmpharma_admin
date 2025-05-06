@@ -43,7 +43,7 @@
           </div>
 
           <!-- Affichage du message d'erreur si besoin -->
-          <!-- <div *ngIf="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div> -->
+          <div class="{{ errorMessage ? 'alert alert-danger mt-3' : '' }}">{{ errorMessage }}</div>
 
           <div class="d-grid mt-4">
             <button type="button" class="btn text-white" style="background-color: #00a99d;" (click)="login()">Se connecter</button>
