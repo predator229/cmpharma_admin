@@ -31,15 +31,16 @@ export class AuthService {
         try {
           await this.loadUserDetails();
           this.userDetailsLoaded = true;
-          this.userDetailsLoaded$.next(true); // 🔥 Notifie les guards
+          this.userDetailsLoaded$.next(true);
           } catch (error) {
           console.error('Erreur lors de la récupération des détails utilisateur', error);
           this.userDetailsLoaded = false;
         }
       } else {
         this.clearStorage();
-        this.userDetailsLoaded = false;
-      }
+        this.userDetailsLoaded = true;
+        this.userDetailsLoaded$.next(true);
+    }
     });
   }
 

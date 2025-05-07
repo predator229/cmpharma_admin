@@ -3,6 +3,7 @@ import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { AuthService } from 'src/app/controllers/services/auth.service';
+import { filter, take, map } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -25,11 +26,18 @@ export default class LoginComponent {
     if (this.email && this.password) {
       this.authService.loginWithEmail(this.email, this.password)
         .then(() => {
-          this.router.navigate(['/dashboard']);
+          this.authService.userDetailsLoaded$.pipe(
+            filter(loaded => loaded),
+            take(1),
+            map(() => {
+              const user = this.authService.getCurrentUser();
+              if (!user) { this.errorMessage = 'Erreur d\'authentification avec google, veuillez reassayer !.'; }
+              return user ? this.router.createUrlTree(['/admin/dashboard/']) : false;
+            })
+          )
         })
-        .catch((error) => {
+        .catch(() => {
           this.errorMessage = 'Erreur d\'authentification, veuillez vérifier vos informations.';
-          console.error('Erreur de connexion', error);
         });
     } else {
       this.errorMessage = 'Veuillez remplir tous les champs.';
@@ -38,9 +46,19 @@ export default class LoginComponent {
 
   loginWithGoogle() {
     this.authService.loginWithGoogle()
-      .catch((error) => {
+    .then(() => {
+      this.authService.userDetailsLoaded$.pipe(
+        filter(loaded => loaded),
+        take(1),
+        map(() => {
+          const user = this.authService.getCurrentUser();
+          if (!user) { this.errorMessage = 'Erreur d\'authentification avec google, veuillez reassayer !.'; }
+          return user ? this.router.createUrlTree(['/admin/dashboard/']) : false;
+        })
+      )
+    })
+    .catch(() => {
         this.errorMessage = 'Erreur lors de la connexion avec Google.';
-        console.error('Erreur de connexion avec Google', error);
       });
   }
 }
