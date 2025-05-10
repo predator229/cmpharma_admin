@@ -1,8 +1,11 @@
+<div class="overload" [style.display]="imLoading ? 'flex' : 'none'">
+  <div class="spinner"></div>
+</div>
 <app-navigation
   class="coded-navbar pc-sidebar"
   [ngClass]="{
     'navbar-collapsed': navCollapsed,
-    horizontal: currentLayout === 'horizontal',
+    horizontal: currentLayout === 'vertical',
     compact: currentLayout === 'compact',
     'mob-open': navCollapsedMob
   }"
@@ -16,6 +19,33 @@
         <app-breadcrumb />
         <div class="main-body">
           <div class="page-wrapper">
+            <ng-template #userInfoModal let-modal>
+              <div class="modal-header">
+                <h5 class="modal-title">Information manquante</h5>
+              </div>
+              <div class="modal-body">
+                <hr>
+                <div *ngIf="modalError" class="alert alert-danger mt-2">
+                  {{ modalError }}
+                </div>
+                <div *ngIf="!modalError">
+                  <p>Veuillez compléter vos informations personnelles pour continuer.</p>
+                </div>
+                <form>
+                  <div class="mb-3" *ngIf="displayName">
+                    <label for="userName" class="form-label">Nom</label>
+                    <input type="text" class="form-control" id="userName" [(ngModel)]="userDetails.name" name="name">
+                  </div>
+                  <div class="mb-3" *ngIf="displaySurname">
+                    <label for="userName" class="form-label">Prenoms</label>
+                    <input type="text" class="form-control" id="surname" [(ngModel)]="userDetails.surname" name="surname">
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" (click)="editProfile()">Sauvegarder</button>
+              </div>
+            </ng-template>
             <router-outlet />
           </div>
         </div>
@@ -24,6 +54,7 @@
   </div>
   <div class="pc-menu-overlay" (click)="closeMenu()" (keydown)="handleKeyDown($event)" tabindex="0"></div>
 </div>
+
 <footer class="pc-footer">
   <div class="footer-wrapper container-fluid">
     <div class="row">
@@ -44,4 +75,3 @@
     </div>
   </div>
 </footer>
-<app-configuration />

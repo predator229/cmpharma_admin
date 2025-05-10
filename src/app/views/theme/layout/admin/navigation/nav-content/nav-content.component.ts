@@ -31,7 +31,7 @@ export class NavContentComponent implements OnInit {
   SubmenuCollapse = output();
 
   // version
-  title = 'Demo application for version numbering';
+  title = 'cmPharma - ma Pharmacie connecte';
   currentApplicationVersion = environment.appVersion;
 
   navigations!: NavigationItem[];

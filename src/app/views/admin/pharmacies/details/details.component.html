@@ -1,0 +1,386 @@
+<div class="pharmacy-details-container">
+  <div class="page-header">
+    <div class="header-content">
+      <button class="btn btn-outline-secondary" [routerLink]="['/admin/pharmacies/list']">
+        <i class="fas fa-arrow-left"></i> Retour à la liste
+      </button>
+      <h1 *ngIf="pharmacy">{{ pharmacy.name }}</h1>
+    </div>
+    <div class="header-actions">
+      <div class="btn-group" *ngIf="pharmacy">
+        <button class="btn" [ngClass]="{'btn-success': pharmacy.status === 'active', 'btn-outline-success': pharmacy.status !== 'active'}" (click)="changeStatus('active')" [disabled]="pharmacy.status === 'active'">
+          <i class="fas fa-check-circle"></i> Activer
+        </button>
+        <button class="btn" [ngClass]="{'btn-warning': pharmacy.status === 'suspended', 'btn-outline-warning': pharmacy.status !== 'suspended'}" (click)="changeStatus('suspended')" [disabled]="pharmacy.status === 'suspended'">
+          <i class="fas fa-pause-circle"></i> Suspendre
+        </button>
+        <button class="btn btn-outline-danger" (click)="openDeleteConfirmation()">
+          <i class="fas fa-trash-alt"></i> Supprimer
+        </button>
+        <button class="btn btn-outline-primary" (click)="openContactModal()">
+          <i class="fas fa-envelope"></i> Contacter
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-spinner" *ngIf="!pharmacy">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p>Chargement des informations...</p>
+  </div>
+
+  <div class="pharmacy-content" *ngIf="pharmacy">
+    <div class="row">
+      <!-- Colonne principale -->
+      <div class="col-md-8">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-info-circle"></i> Informations générales</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3">
+                <div class="pharmacy-logo">
+                  <img [src]="pharmacy.logoUrl || 'assets/images/pharmacy-placeholder.png'" alt="Logo pharmacie">
+                </div>
+              </div>
+              <div class="col-md-9">
+                <div class="detail-section">
+                  <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-map-marker-alt"></i> Adresse:</span>
+                    <span class="detail-value">{{ pharmacy.address }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-phone"></i> Téléphone:</span>
+                    <span class="detail-value">{{ pharmacy.phoneNumber }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-envelope"></i> Email:</span>
+                    <span class="detail-value">{{ pharmacy.email }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-map-pin"></i> Coordonnées:</span>
+                    <span class="detail-value">
+                      <a [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude" target="_blank">
+                        {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}
+                      </a>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-file-contract"></i> Informations légales</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="detail-item">
+                  <span class="detail-label">SIRET:</span>
+                  <span class="detail-value">{{ pharmacy.siret }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Numéro de licence:</span>
+                  <span class="detail-value">{{ pharmacy.licenseNumber }}</span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="detail-item">
+                  <span class="detail-label">Date d'inscription:</span>
+                  <span class="detail-value">{{ pharmacy.registerDate | date: 'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Statut:</span>
+                  <span class="detail-value">
+                    <span class="status-badge" [ngClass]="pharmacy.status">
+                      {{ getStatusLabel(pharmacy.status) }}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-chart-line"></i> Performance</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4">
+                <div class="performance-stat">
+                  <div class="stat-value">{{ pharmacy.orders30days || 0 }}</div>
+                  <div class="stat-label">Commandes <small>(30 derniers jours)</small></div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="performance-stat">
+                  <div class="stat-value">{{ (pharmacy.revenue30days || 0) | currency:'EUR' }}</div>
+                  <div class="stat-label">Revenus <small>(30 derniers jours)</small></div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="performance-stat">
+                  <div class="stat-value">
+                    <i class="fas fa-star"></i> {{ pharmacy.rating?.toFixed(1) || 'N/A' }}
+                  </div>
+                  <div class="stat-label">Note moyenne</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-container mt-4">
+              <canvas id="revenueChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5><i class="fas fa-shopping-cart"></i> Commandes récentes</h5>
+            <button class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/orders']" [queryParams]="{pharmacy: pharmacy.id}">
+              Voir toutes les commandes
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Client</th>
+                  <th>Date</th>
+                  <th>Montant</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr *ngFor="let order of recentOrders">
+                  <td>{{ order.id }}</td>
+                  <td>{{ order.clientName }}</td>
+                  <td>{{ order.date | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td>{{ order.amount | currency:'EUR' }}</td>
+                  <td>
+                      <span class="status-badge" [ngClass]="getOrderStatusClass(order.status)">
+                        {{ order.status }}
+                      </span>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/orders', order.id]">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+              <div class="text-center py-3" *ngIf="recentOrders.length === 0">
+                <p class="text-muted">Aucune commande récente</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne latérale -->
+      <div class="col-md-4">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-clock"></i> Horaires d'ouverture</h5>
+          </div>
+          <div class="card-body">
+            <div class="opening-hours">
+              <div class="day-hours" *ngFor="let day of days">
+                <span class="day">{{ day }}:</span>
+                <span class="hours" *ngIf="pharmacy.openingHours && pharmacy.openingHours[day]">
+                  {{ pharmacy.openingHours[day].morning }} - {{ pharmacy.openingHours[day].afternoon }}
+                </span>
+                <span class="hours closed" *ngIf="!pharmacy.openingHours || !pharmacy.openingHours[day]">
+                  Fermé
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-file-alt"></i> Documents</h5>
+          </div>
+          <div class="card-body">
+            <div class="document-list">
+              <div class="document-item">
+                <div class="document-icon">
+                  <i class="fas fa-file-pdf"></i>
+                </div>
+                <div class="document-info">
+                  <div class="document-name">Licence pharmaceutique</div>
+                  <div class="document-actions">
+                    <button class="btn btn-sm btn-outline-primary" (click)="viewDocument('license')">
+                      <i class="fas fa-eye"></i> Voir
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument('license')">
+                      <i class="fas fa-download"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="document-item">
+                <div class="document-icon">
+                  <i class="fas fa-id-card"></i>
+                </div>
+                <div class="document-info">
+                  <div class="document-name">Pièce d'identité</div>
+                  <div class="document-actions">
+                    <button class="btn btn-sm btn-outline-primary" (click)="viewDocument('id')">
+                      <i class="fas fa-eye"></i> Voir
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument('id')">
+                      <i class="fas fa-download"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="document-item">
+                <div class="document-icon">
+                  <i class="fas fa-file-contract"></i>
+                </div>
+                <div class="document-info">
+                  <div class="document-name">Attestation d'assurance</div>
+                  <div class="document-actions">
+                    <button class="btn btn-sm btn-outline-primary" (click)="viewDocument('insurance')">
+                      <i class="fas fa-eye"></i> Voir
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument('insurance')">
+                      <i class="fas fa-download"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-map-marked-alt"></i> Localisation</h5>
+          </div>
+          <div class="card-body">
+            <div class="map-container">
+              <!-- Cette div sera utilisée pour afficher la carte Google Maps -->
+              <div id="pharmacyMap" style="height: 250px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-history"></i> Historique des actions</h5>
+          </div>
+          <div class="card-body">
+            <div class="activity-timeline">
+              <div class="timeline-item" *ngFor="let activity of pharmacyActivities">
+                <div class="timeline-icon" [ngClass]="activity.type">
+                  <i [class]="getActivityIcon(activity.type)"></i>
+                </div>
+                <div class="timeline-content">
+                  <div class="timeline-title">{{ activity.title }}</div>
+                  <div class="timeline-description">{{ activity.description }}</div>
+                  <div class="timeline-time">{{ activity.time | date: 'dd/MM/yyyy HH:mm' }}</div>
+                </div>
+              </div>
+              <div class="text-center py-3" *ngIf="pharmacyActivities.length === 0">
+                <p class="text-muted">Aucune activité récente</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <!-- Modal de confirmation de suppression -->
+  <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmation de suppression</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Êtes-vous sûr de vouloir supprimer la pharmacie "{{ pharmacy?.name }}" ?</p>
+          <p class="text-danger"><strong>Cette action est irréversible.</strong></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-danger" (click)="deletePharmacy()">Supprimer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de contact -->
+  <div class="modal fade" id="contactModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Contacter la pharmacie</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form [formGroup]="contactForm">
+            <div class="mb-3">
+              <label for="subject" class="form-label">Sujet</label>
+              <input type="text" class="form-control" id="subject" formControlName="subject">
+              <div class="invalid-feedback" *ngIf="contactForm.get('subject')?.invalid && contactForm.get('subject')?.touched">
+                Le sujet est requis
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="message" class="form-label">Message</label>
+              <textarea class="form-control" id="message" rows="5" formControlName="message"></textarea>
+              <div class="invalid-feedback" *ngIf="contactForm.get('message')?.invalid && contactForm.get('message')?.touched">
+                Le message est requis et doit contenir au moins 10 caractères
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" [disabled]="contactForm.invalid" (click)="sendMessage()">Envoyer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de visualisation de document -->
+  <div class="modal fade" id="documentViewerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ currentDocument.title }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="document-viewer">
+            <iframe [src]="currentDocument.url" width="100%" height="500px"></iframe>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+          <button type="button" class="btn btn-primary" (click)="downloadDocument(currentDocument.type)">
+            <i class="fas fa-download"></i> Télécharger
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

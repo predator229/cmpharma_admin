@@ -17,7 +17,7 @@ export class LoginGuard implements CanActivate {
       take(1),
       map(() => {
         const user = this.authService.getCurrentUser();
-        return user ? this.router.createUrlTree(['/dashboard']) : true;
+        return user ? this.router.createUrlTree(['admin/dashboard/overview']) : true;
       })
     );
   }

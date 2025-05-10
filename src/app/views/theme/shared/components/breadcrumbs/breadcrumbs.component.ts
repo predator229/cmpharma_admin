@@ -47,8 +47,8 @@ export class BreadcrumbComponent {
         const activeLink = router.url;
         const breadcrumbList = this.filterNavigation(this.navigations, activeLink);
         this.navigationList = breadcrumbList.splice(-2);
-        const title = breadcrumbList[breadcrumbList.length - 1]?.title || 'Welcome';
-        this.titleService.setTitle(title + ' | Berry Angular Admin Template');
+        const title = breadcrumbList[breadcrumbList.length - 1]?.title || 'Bienvenue';
+        this.titleService.setTitle(title + ' | cmPharma Pharmacies connectees');
       }
     });
   }

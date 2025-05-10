@@ -8,6 +8,7 @@ import { Spinkit } from './spinkits';
 
 @Component({
   selector: 'app-spinner',
+  standalone: true,
   templateUrl: './spinner.component.html',
   styleUrls: ['./spinner.component.scss', './spinkit-css/sk-line-material.scss'],
   encapsulation: ViewEncapsulation.None

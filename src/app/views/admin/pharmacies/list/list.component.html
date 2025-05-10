@@ -1,0 +1,354 @@
+<div class="pharmacy-management-container">
+  <div class="page-header">
+    <span class="h1-badge danger"> </span> <!-- Lists des pharmacies :  {{pharmacies.length}} -->
+    <div class="header-actions">
+      <div class="search-box">
+        <input type="text" class="form-control" placeholder="Rechercher une pharmacie..." [(ngModel)]="searchText" (keyup)="filterPharmacies()">
+        <i class="fas fa-search"></i>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-outline-primary" style="background-color: #4caf50; color: white" (click)="exportPharmaciesList()">
+          <i class="fas fa-download" ></i> Exporter
+        </button>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div id="all">
+      <div class="pharmacy-list-container" >
+        <div class="pharmacy-filters">
+          <div class="filter-group">
+            <label>Filtrer par région:</label>
+            <select class="form-select" [(ngModel)]="regionFilter" (change)="filterPharmacies()">
+              <option value="">Toutes les régions</option>
+              <option *ngFor="let region of regions" [value]="region">{{region}}</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Filtrer par statut:</label>
+            <select class="form-select" [(ngModel)]="statusFilter" (change)="filterPharmacies()">
+              <option value="">Tous les statuts</option>
+              <option value="active">Actif</option>
+              <option value="pending">En attente</option>
+              <option value="suspended">Suspendu</option>
+              <option value="inactive">Inactif</option>
+              <option value="deleted">Supprimé</option>
+              <option value="rejected">Inscription Rejeté</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+            <tr>
+              <th>
+                <div class="th-content" (click)="sort('name')">
+                  Nom
+                  <i class="fas" [ngClass]="getSortIcon('name')"></i>
+                </div>
+              </th>
+              <th>Adresse</th>
+              <th>SIRET</th>
+              <th>Téléphone</th>
+              <th>Email</th>
+              <th>Coordonnées</th>
+              <th>
+                <div class="th-content" (click)="sort('registerDate')">
+                  Inscription
+                  <i class="fas" [ngClass]="getSortIcon('registerDate')"></i>
+                </div>
+              </th>
+              <th>
+                <div class="th-content" (click)="sort('status')">
+                  Statut
+                  <i class="fas" [ngClass]="getSortIcon('status')"></i>
+                </div>
+              </th>
+              <th>
+                <div class="th-content" (click)="sort('orders30days')">
+                  Cmds 30j
+                  <i class="fas" [ngClass]="getSortIcon('orders30days')"></i>
+                </div>
+              </th>
+              <th>
+                <div class="th-content" (click)="sort('revenue30days')">
+                  CA 30j (€)
+                  <i class="fas" [ngClass]="getSortIcon('revenue30days')"></i>
+                </div>
+              </th>
+              <th>
+                <div class="th-content" (click)="sort('rating')">
+                  Note
+                  <i class="fas" [ngClass]="getSortIcon('rating')"></i>
+                </div>
+              </th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let pharmacy of filteredPharmacies">
+              <td>
+                <a [routerLink]="['/admin/pharmacies', pharmacy.id]">{{ pharmacy.name }}</a>
+              </td>
+              <td>{{ pharmacy.address }}</td>
+              <td>{{ pharmacy.siret }}</td>
+              <td>{{ pharmacy.phoneNumber }}</td>
+              <td>{{ pharmacy.email }}</td>
+              <td>
+                <a
+                  [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"
+                  target="_blank"
+                  rel="noopener noreferrer">
+                  📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}
+                </a>
+              </td>
+              <td>{{ pharmacy.registerDate | date: 'dd/MM/yyyy' }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="pharmacy.status">
+                  {{ getStatusLabel(pharmacy.status) }}
+                </span>
+              </td>
+              <td>{{ pharmacy.orders30days ?? 0 }}</td>
+              <td>{{ pharmacy.revenue30days?.toFixed(2) ?? '0.00' }}</td>
+              <td>
+                <span *ngIf="pharmacy.rating !== null">{{ pharmacy.rating.toFixed(1) }}/5</span>
+                <span *ngIf="pharmacy.rating === null">—</span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn btn-sm btn-outline-primary" (click)="viewPharmacyDetails(pharmacy)">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-success" *ngIf="pharmacy.status === 'pending'" (click)="approvePharmacy(pharmacy)">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-warning" *ngIf="pharmacy.status === 'active'" (click)="suspendPharmacy(pharmacy)">
+                    <i class="fas fa-pause"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-success" *ngIf="pharmacy.status === 'suspended'" (click)="activatePharmacy(pharmacy)">
+                    <i class="fas fa-play"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="deletePharmacy(pharmacy)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-3" style="margin: 20px">
+          <div class="pagination-info">
+            Affichage de {{paginationStart + 1}} à {{paginationEnd}} sur {{filteredPharmacies.length}} pharmacies
+          </div>
+          <nav aria-label="Page navigation">
+            <ul class="pagination">
+              <li class="page-item" [ngClass]="{'disabled': currentPage === 1}">
+                <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage - 1)">Précédent</a>
+              </li>
+              <li class="page-item" *ngFor="let page of getPageNumbers()" [ngClass]="{'active': page === currentPage}">
+                <a class="page-link" href="javascript:void(0)" (click)="pageChanged(page)">{{page}}</a>
+              </li>
+              <li class="page-item" [ngClass]="{'disabled': currentPage === totalPages}">
+                <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage + 1)">Suivant</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="pharmacyDetailsModal" tabindex="-1" aria-labelledby="pharmacyDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="pharmacyDetailsModalLabel">Détails de la pharmacie</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" *ngIf="selectedPharmacy">
+          <div class="pharmacy-details">
+            <div class="row">
+              <div class="col-md-4">
+                <div class="pharmacy-logo">
+                  <img [src]="selectedPharmacy.logoUrl || 'assets/images/pharmacy-placeholder.png'" alt="Logo pharmacie">
+                </div>
+              </div>
+              <div class="col-md-8">
+                <h3>{{selectedPharmacy.name}}</h3>
+                <p class="pharmacy-address">
+                  <i class="fas fa-map-marker-alt"></i> {{selectedPharmacy.address}}
+                </p>
+                <p class="pharmacy-contact">
+                  <i class="fas fa-phone"></i> {{selectedPharmacy.phoneNumber}}
+                </p>
+                <p class="pharmacy-email">
+                  <i class="fas fa-envelope"></i> {{selectedPharmacy.email}}
+                </p>
+                <div class="pharmacy-status">
+                  <span class="status-badge" [ngClass]="selectedPharmacy.status">
+                    {{getStatusLabel(selectedPharmacy.status)}}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-4">
+              <div class="col-md-6">
+                <div class="detail-section">
+                  <h5>Informations légales</h5>
+                  <div class="detail-item">
+                    <span class="detail-label">Numéro de licence:</span>
+                    <span class="detail-value">{{selectedPharmacy.licenseNumber}}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">SIRET:</span>
+                    <span class="detail-value">{{selectedPharmacy.siret}}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Date d'inscription:</span>
+                    <span class="detail-value">{{selectedPharmacy.registerDate | date:'dd/MM/yyyy'}}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="detail-section">
+                  <h5>Performance</h5>
+                  <div class="detail-item">
+                    <span class="detail-label">Commandes (30j):</span>
+                    <span class="detail-value">{{selectedPharmacy.orders30days || 0}}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Revenus (30j):</span>
+                    <span class="detail-value">{{selectedPharmacy.revenue30days | currency:'EUR'}}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Note client:</span>
+                    <span class="detail-value">
+                      <i class="fas fa-star"></i> {{selectedPharmacy.rating || 'N/A'}}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-4">
+              <div class="col-md-12">
+                <div class="detail-section">
+                  <h5>Horaires d'ouverture</h5>
+                  <div class="opening-hours">
+                    <div class="day-hours" *ngFor="let day of days">
+                      <span class="day">{{day}}:</span>
+                      <span class="hours" *ngIf="selectedPharmacy.openingHours && selectedPharmacy.openingHours[day]">
+                        {{selectedPharmacy.openingHours[day].morning}} - {{selectedPharmacy.openingHours[day].afternoon}}
+                      </span>
+                      <span class="hours closed" *ngIf="!selectedPharmacy.openingHours || !selectedPharmacy.openingHours[day]">
+                        Fermé
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-4">
+              <div class="col-md-12">
+                <div class="detail-section">
+                  <h5>Emplacement</h5>
+                  <div class="pharmacy-map">
+                    <!-- Placeholder for Google Maps -->
+                    <div class="map-placeholder">
+                      <img src="assets/images/map-placeholder.png" alt="Carte">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Documents section -->
+            <div class="row mt-4">
+              <div class="col-md-12">
+                <div class="detail-section">
+                  <h5>Documents</h5>
+                  <div class="document-grid">
+                    <div class="document-item">
+                      <div class="document-icon">
+                        <i class="fas fa-file-pdf"></i>
+                      </div>
+                      <div class="document-info">
+                        <div class="document-name">Licence pharmaceutique</div>
+                        <div class="document-actions">
+                          <button class="btn btn-sm btn-outline-primary" (click)="viewDocument(selectedPharmacy.id, 'license')">
+                            <i class="fas fa-eye"></i> Voir
+                          </button>
+                          <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument(selectedPharmacy.id, 'license')">
+                            <i class="fas fa-download"></i> Télécharger
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="document-item">
+                      <div class="document-icon">
+                        <i class="fas fa-id-card"></i>
+                      </div>
+                      <div class="document-info">
+                        <div class="document-name">Pièce d'identité</div>
+                        <div class="document-actions">
+                          <button class="btn btn-sm btn-outline-primary" (click)="viewDocument(selectedPharmacy.id, 'id')">
+                            <i class="fas fa-eye"></i> Voir
+                          </button>
+                          <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument(selectedPharmacy.id, 'id')">
+                            <i class="fas fa-download"></i> Télécharger
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="document-item">
+                      <div class="document-icon">
+                        <i class="fas fa-file-contract"></i>
+                      </div>
+                      <div class="document-info">
+                        <div class="document-name">Attestation d'assurance</div>
+                        <div class="document-actions">
+                          <button class="btn btn-sm btn-outline-primary" (click)="viewDocument(selectedPharmacy.id, 'insurance')">
+                            <i class="fas fa-eye"></i> Voir
+                          </button>
+                          <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument(selectedPharmacy.id, 'insurance')">
+                            <i class="fas fa-download"></i> Télécharger
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+          <div class="action-buttons" *ngIf="selectedPharmacy">
+            <button class="btn btn-success" *ngIf="selectedPharmacy.status === 'pending'" (click)="approvePharmacy(selectedPharmacy)">
+              <i class="fas fa-check"></i> Approuver
+            </button>
+            <button class="btn btn-warning" *ngIf="selectedPharmacy.status === 'active'" (click)="suspendPharmacy(selectedPharmacy)">
+              <i class="fas fa-pause"></i> Suspendre
+            </button>
+            <button class="btn btn-success" *ngIf="selectedPharmacy.status === 'suspended'" (click)="activatePharmacy(selectedPharmacy)">
+              <i class="fas fa-play"></i> Réactiver
+            </button>
+            <button class="btn btn-danger" (click)="deletePharmacy(selectedPharmacy)">
+              <i class="fas fa-trash"></i> Supprimer
+            </button>
+            <button class="btn btn-info" (click)="contactPharmacy(selectedPharmacy)">
+              <i class="fas fa-envelope"></i> Contacter
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

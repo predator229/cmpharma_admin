@@ -1,38 +1,80 @@
-// Angular import
-import { AfterViewInit, Component, inject } from '@angular/core';
+// Angular imports
+import { AfterViewInit, Component, ElementRef, inject, ViewChild } from '@angular/core';
 import { CommonModule, Location, LocationStrategy } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import {Router, RouterModule} from '@angular/router';
 import { ChangeDetectorRef } from '@angular/core';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 
-// Project import
-import { BerryConfig } from 'src/app/app-config';
-
+// Project imports
+import { setupsConfig } from 'src/app/app-config';
 import { ConfigurationComponent } from './configuration/configuration.component';
 import { NavBarComponent } from './nav-bar/nav-bar.component';
 import { NavigationComponent } from './navigation/navigation.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumbs/breadcrumbs.component';
+import { FormsModule } from "@angular/forms";
+import { AuthService } from "../../../../controllers/services/auth.service";
+import { SharedModule } from "../../shared/shared.module";
+import {UserDetails} from "../../../../models/UserDatails";
+import {filter, map, take} from "rxjs/operators";
+import {LoadingService} from "../../../../controllers/services/loading.service";
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, NavigationComponent, NavBarComponent, ConfigurationComponent, RouterModule, BreadcrumbComponent],
+  imports: [
+    SharedModule,
+    CommonModule,
+    NavigationComponent,
+    NavBarComponent,
+    ConfigurationComponent,
+    RouterModule,
+    BreadcrumbComponent,
+    FormsModule
+  ],
   templateUrl: './admin.component.html',
-  styleUrl: './admin.component.scss'
+  styleUrls: ['./admin.component.scss']
 })
 export class AdminComponent implements AfterViewInit {
   private location = inject(Location);
   private locationStrategy = inject(LocationStrategy);
+  private modalService: NgbModal;
+  private authUser: AuthService;
+  public userDetails: UserDetails | null = null;
+  public modalError: string | null = null;
+  private router: Router;
+  public displayName: boolean;
+  public displaySurname: boolean;
+
+  public imLoading: boolean = false;
+
+  // @ViewChild to access the modal in the template
+  @ViewChild('userInfoModal') userInfoModal: ElementRef | undefined;
+
+  constructor(modalService: NgbModal, authUser: AuthService, private loadingService: LoadingService) {
+    this.loadingService.isLoading$.subscribe((loading) => {
+      this.imLoading = loading;
+    });
+
+    this.modalService = modalService;
+    this.authUser = authUser;
+
+    this.authUser.userDetailsLoaded$.pipe(
+      filter(loaded => loaded), // Wait for auth to be stabilized
+      take(1),
+      map(() => {
+        this.userDetails = this.authUser.getUserDetails();
+        if (!this.userDetails) {
+          this.router.navigate(['/login']);
+        }
+      })
+    ).subscribe();
+  }
   cdr = inject(ChangeDetectorRef);
 
-  // public props
   currentLayout!: string;
   navCollapsed = true;
   navCollapsedMob = false;
   windowWidth!: number;
-
-  // Constructor
-
-  // life cycle hook
 
   ngAfterViewInit() {
     let current_url = this.location.path();
@@ -42,20 +84,37 @@ export class AdminComponent implements AfterViewInit {
     }
 
     if (current_url === baseHref + '/layout/theme-compact' || current_url === baseHref + '/layout/box') {
-      BerryConfig.isCollapse_menu = true;
+      setupsConfig.isCollapse_menu = true;
     }
 
     this.windowWidth = window.innerWidth;
-    this.navCollapsed = this.windowWidth >= 1025 ? BerryConfig.isCollapse_menu : false;
-    this.cdr.detectChanges();
+    this.navCollapsed = this.windowWidth >= 1025 ? setupsConfig.isCollapse_menu : false;
+    this.cdr.detectChanges(); // Ensure change detection is triggered
+
+    if (!this.userDetails) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const { name, surname } = this.userDetails;
+    this.displayName = name?.trim() === '';
+    this.displaySurname = surname?.trim() === '';
+
+    if (name?.trim() === '' || surname?.trim() === '') {
+      setTimeout(() => {
+        this.modalService.open(this.userInfoModal, {
+          backdrop: 'static',
+          keyboard: false,
+          centered: true
+        });
+      }, 0);
+    }
   }
 
-  // private method
   private isThemeLayout(layout: string) {
     this.currentLayout = layout;
   }
 
-  // public method
   navMobClick() {
     if (this.navCollapsedMob && !document.querySelector('app-navigation.coded-navbar')?.classList.contains('mob-open')) {
       this.navCollapsedMob = !this.navCollapsedMob;
@@ -65,6 +124,7 @@ export class AdminComponent implements AfterViewInit {
     } else {
       this.navCollapsedMob = !this.navCollapsedMob;
     }
+
     if (document.querySelector('app-navigation.pc-sidebar')?.classList.contains('navbar-collapsed')) {
       document.querySelector('app-navigation.pc-sidebar')?.classList.remove('navbar-collapsed');
     }
@@ -76,9 +136,41 @@ export class AdminComponent implements AfterViewInit {
     }
   }
 
+  // Method to close the menu if it's open
   closeMenu() {
     if (document.querySelector('app-navigation.pc-sidebar')?.classList.contains('mob-open')) {
       document.querySelector('app-navigation.pc-sidebar')?.classList.remove('mob-open');
     }
   }
+
+  editProfile() {
+    if (!this.userDetails) {
+      console.warn('Aucune information utilisateur disponible.');
+      this.router.navigate(['/login']);
+      return;
+    }
+    // this.imLoading = true;
+    this.loadingService.setLoading(true);
+    const { name, surname } = this.userDetails;
+
+    if (name?.trim() && surname?.trim()) {
+      this.modalError = null;
+      this.authUser.editprofilInfos(name, surname).
+      then(
+        () => {
+          this.userDetails = this.authUser.getUserDetails();
+          this.loadingService.setLoading(false);
+          this.modalService.dismissAll('ok');
+        }
+      )
+      .catch(() => {
+        this.loadingService.setLoading(false);
+        this.modalError = 'Erreur lors de la modification des informations.';
+      });
+    } else {
+      this.loadingService.setLoading(false);
+      this.modalError = 'Veuillez remplir tous les champs.';
+    }
+  }
+
 }

@@ -1,4 +1,5 @@
 import { Country } from "./Country";
+import {SetupBase} from "./SetupBase";
 
 export interface ApiUserDetails{
   error:number,
@@ -21,6 +22,7 @@ export interface ApiUserDetails{
   lastLogin: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  setups?: SetupBase,
   },
   message:string,
 }

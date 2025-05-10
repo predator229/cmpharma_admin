@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from 'src/app/controllers/services/auth.service';
+import {filter, map, take} from "rxjs/operators";
 
 interface Feature {
   icon: string;
@@ -35,7 +36,14 @@ export default class LandingComponent implements OnInit {
 
   constructor(private authService: AuthService, private router: Router) {}
 
-  userDetails = this.authService.getUserDetails();
+  userDetails = this.authService.userDetailsLoaded$.pipe(
+    filter(loaded => loaded),
+    take(1),
+    map(() => {
+      const user = this.authService.getCurrentUser();
+      return user ? true : false;
+    })
+  ).subscribe();
 
   heroData: HeroData = {
     title: 'La livraison de médicaments simplifiée',
@@ -138,7 +146,7 @@ export default class LandingComponent implements OnInit {
   }
 
   onLoginClick(): void {
-    if (this.userDetails){  this.router.navigate(['/admin/dashboard']); }
+    if (this.userDetails){  this.router.navigate(['/admin/dashboard/overview/']); }
     else{ this.router.navigate(['/login']); }
   }
   onLogOutCall(): void {
@@ -153,7 +161,6 @@ export default class LandingComponent implements OnInit {
           const target = e.currentTarget as HTMLElement;
           const tabId = target.getAttribute('data-tab');
 
-          // Remove active class from all buttons and panes
           document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
           document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
 

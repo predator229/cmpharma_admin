@@ -1,5 +1,6 @@
 import { ApiUserDetails } from "./ApiUserDetails";
 import { Country } from "./Country";
+import {SetupBase} from "./SetupBase";
 
 
   export class UserDetails {
@@ -14,12 +15,10 @@ import { Country } from "./Country";
     address?: string;
     mobils?: string[];
     phone?: string;
-
-    pharmaciesManaged: string[];  // Liste des pharmacies gérées par l'administrateur
-
+    setups?: SetupBase;
+    pharmaciesManaged: string[];
     role: 'superadmin' | 'admin' | 'manager' | 'pharmacist-owner' | 'pharmacits-manager';
     permissions: ('read' | 'write' | 'delete' | 'update')[];
-
     isActivated: boolean;
     lastLogin: Date | null;
     createdAt: Date;
@@ -37,6 +36,7 @@ import { Country } from "./Country";
       address?: string;
       mobils?: string[];
       phone?: string;
+      setups?: SetupBase;
       pharmaciesManaged?: string[];
       role: 'superadmin' | 'admin' | 'manager' | 'pharmacist-owner' | 'pharmacits-manager';
       permissions?: ('read' | 'write' | 'delete' | 'update')[];
@@ -55,6 +55,7 @@ import { Country } from "./Country";
       this.city = data.city || '';
       this.address = data.address || '';
       this.mobils = data.mobils || [];
+      this.setups = data.setups ?? null;
       this.phone = data.phone || '';
       this.pharmaciesManaged = data.pharmaciesManaged || [];
       this.role = data.role || 'admin';
@@ -66,7 +67,6 @@ import { Country } from "./Country";
     }
 
     static fromApiResponse(data: ApiUserDetails): UserDetails {
-      // console.log(data)
       return new UserDetails({
         id: data.user._id,
         email: data.user.email,
@@ -79,13 +79,14 @@ import { Country } from "./Country";
         address: data.user.address,
         mobils: data.user.mobils,
         phone: data.user.phone,
+        setups: data.user.setups ?? null,
         pharmaciesManaged: data.user.pharmaciesManaged,
-        role: data.user.role,
+        role: data.user.role as UserDetails['role'],
         permissions: data.user.permissions,
         isActivated: data.user.isActivated,
         lastLogin: data.user.lastLogin,
-        createdAt: data.user.createdAt,
-        updatedAt: data.user.updatedAt
+        createdAt: new Date(data.user.createdAt),
+        updatedAt: new Date(data.user.updatedAt),
       });
     }
   }

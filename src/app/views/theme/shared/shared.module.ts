@@ -10,8 +10,10 @@ import { NgScrollbarModule } from 'ngx-scrollbar';
 
 // bootstrap import
 import { NgbDropdownModule, NgbNavModule, NgbModule, NgbCollapseModule } from '@ng-bootstrap/ng-bootstrap';
+import {SpinnerComponent} from "./components/spinner/spinner.component";
 
 @NgModule({
+
   imports: [
     CommonModule,
     FormsModule,
@@ -21,9 +23,11 @@ import { NgbDropdownModule, NgbNavModule, NgbModule, NgbCollapseModule } from '@
     NgbNavModule,
     NgbModule,
     NgbCollapseModule,
-    NgScrollbarModule
+    NgScrollbarModule,
+    SpinnerComponent
   ],
   exports: [
+    SpinnerComponent,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -34,6 +38,7 @@ import { NgbDropdownModule, NgbNavModule, NgbModule, NgbCollapseModule } from '@
     NgbCollapseModule,
     NgScrollbarModule
   ],
-  declarations: []
+  declarations: [
+  ]
 })
 export class SharedModule {}

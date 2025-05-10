@@ -131,13 +131,12 @@
           <div class="dropdown-header">
             <h4>{{ userDetails ? userDetails.name+' '+userDetails.surname : '' }}</h4>
             <p class="text-muted">{{ userDetails ? userDetails.role : '' }}</p>
-            <!-- <form class="header-search">
+            <form class="header-search">
               <div class="search-btn">
                 <i class="ti ti-search"></i>
               </div>
               <input type="search" class="form-control" placeholder="Search profile options" />
-            </form> -->
-            <hr />
+            </form>
             <ng-scrollbar style="height: calc(100vh - 280px)" visibility="hover">
               <hr />
               <div class="settings-block bg-light-primary rounded">
@@ -149,6 +148,54 @@
                   <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked />
                   <label class="form-check-label" for="flexSwitchCheckChecked">Activer les Notifications</label>
                 </div>
+              </div>
+              <hr>
+              <div class="row">
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item">
+                    <h5 class="mb-1 text-uppercase">Police de caractere</h5>
+                    <p class="text-muted text-sm">Choissez la police d'ecriture</p>
+                    <div class="theme-color theme-font-style">
+                      <div class="form-check">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="layout_font"
+                          id="layoutfontRoboto"
+                          checked
+                          [checked]="setFontFamily === 'Roboto'"
+                          (click)="fontFamily('Roboto', true)"
+                          ngbTooltip="Roboto"
+                        />
+                        <label class="form-check-label" for="layoutfontRoboto">Roboto</label>
+                      </div>
+                      <div class="form-check">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="layout_font"
+                          id="layoutfontPoppins"
+                          [checked]="setFontFamily === 'Poppins'"
+                          (click)="fontFamily('Poppins', true)"
+                          ngbTooltip="Poppins"
+                        />
+                        <label class="form-check-label" for="layoutfontPoppins">Poppins</label>
+                      </div>
+                      <div class="form-check">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="layout_font"
+                          id="layoutfontInter"
+                          [checked]="setFontFamily === 'Inter'"
+                          (click)="fontFamily('Inter', true)"
+                          ngbTooltip="Inter"
+                        />
+                        <label class="form-check-label" for="layoutfontInter">Inter</label>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
               </div>
               <hr />
               <!-- <a [routerLink]="['/guest/register']" class="dropdown-item"> -->

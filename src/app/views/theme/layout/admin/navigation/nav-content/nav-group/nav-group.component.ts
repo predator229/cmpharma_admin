@@ -35,7 +35,7 @@ export class NavGroupComponent implements OnInit {
     setTimeout(() => {
       const links = document.querySelectorAll('a.nav-link') as NodeListOf<HTMLAnchorElement>;
       links.forEach((link: HTMLAnchorElement) => {
-        if (link.getAttribute('href') === this.current_url) {
+        if (link.getAttribute('href') === this.current_url || link.getAttribute('href') == this.location.path()) {
           let parent = link.parentElement;
           while (parent && parent.classList) {
             if (parent.classList.contains('coded-hasmenu')) {

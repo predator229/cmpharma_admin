@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SpinnerComponent } from './views/theme/shared/components/spinner/spinner.component';
-import { HTTP_INTERCEPTORS } from '@angular/common/http'; // <-- PAS besoin de provideHttpClient ici !!
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './controllers/interceptors/auth.interceptor';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
+  // standalone: true,
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
   imports: [
@@ -18,5 +18,5 @@ import { AuthInterceptor } from './controllers/interceptors/auth.interceptor';
   ]
 })
 export class AppComponent {
-  title = 'Berry Angular Free Version';
+  title = 'cmPharma - ma Pharmacie connecte';
 }

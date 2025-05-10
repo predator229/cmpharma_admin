@@ -1,124 +1,159 @@
-<div class="row">
-  <div class="col-xl-4 col-md-6">
-    <div class="card earning-card bg-secondary-dark text-white overflow-hidden">
-      <span class="round secondary-round small"></span>
-      <span class="round secondary-round big"></span>
-      <div class="card-body">
-        <div class="row">
-          <div class="col">
-            <div class="avatar avatar-lg">
-              <i class="text-white ti ti-credit-card f-24"></i>
-            </div>
-          </div>
-          <div class="col-auto">
-            <div class="btn-group" ngbDropdown>
-              <a type="button" class="avatar avatar-xs bg-secondary dropdown-toggle arrow-none" ngbDropdownToggle>
-                <i class="ti ti-dots"></i>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-                <li><button class="dropdown-item" type="button">Import Card</button></li>
-                <li><button class="dropdown-item" type="button">Export</button></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <span class="text-white d-block f-34 f-w-500 my-2">
-          $500.00
-          <i class="ti ti-circle-arrow-up-right opacity-50"></i>
-        </span>
-        <p class="mb-0 opacity-50">Total Earning</p>
-      </div>
-    </div>
+<div class="dashboard-container">
+  <div class="welcome-section">
+    <h1>Tableau de bord administrateur</h1>
+    <p>Bienvenue, {{userDetails.name}}. Voici une vue d'ensemble de votre plateforme.</p>
   </div>
-  <div class="col-xl-4 col-md-6">
-    <div class="card earning-card bg-primary-dark text-white overflow-hidden">
-      <span class="round primary-round small"></span>
-      <span class="round primary-round big"></span>
-      <div class="card-body">
-        <app-chart-data-month />
-      </div>
-    </div>
-  </div>
-  <div class="col-xl-4 col-md-12">
-    <div class="card total-income-card overflow-hidden bg-primary-dark text-white">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="avatar avatar-lg icon m-r-5">
-            <i class="text-white ti ti-layout-board-split f-24"></i>
+
+  <div class="stats-overview">
+    <div class="row">
+      <div class="col-md-3" *ngFor="let stat of stats">
+      <div class="stats-card">
+          <div class="stats-icon {{stat.divicon}}">
+            <i class="{{stat.icon}}"></i>
           </div>
-          <div class="ms-2">
-            <h4 class="text-white f-w-600 mb-1">$203k</h4>
-            <p class="mb-0 opacity-50 text-sm">Total Income</p>
+          <div class="stats-info">
+            <div class="row">
+              <div class="col-12"><h3>{{ stat.total }}</h3></div>
+            </div>
+            <p>{{ stat.name }}</p>
           </div>
-        </div>
-      </div>
-    </div>
-    <div class="card total-income-card warning overflow-hidden">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="avatar avatar-lg icon-warning m-r-5">
-            <i class="text-warning ti ti-layout-board-split f-24"></i>
-          </div>
-          <div class="ms-2">
-            <h4 class="f-w-600 mb-1">$203k</h4>
-            <p class="mb-0 opacity-50 text-sm">Total Income</p>
+          <div class="stats-footer">
+            <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'">
+              <i [class]="stat.type == 1 ? 'fa fa-arrow-up' : 'fa fa-arrow-down'"></i>
+            </span>
+            <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'"> {{ stat.difference }}% </span>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="col-xl-8 col-md-12">
-    <app-bar-chart />
-  </div>
-  <div class="col-xl-4 col-md-12">
-    <div class="card">
-      <div class="card-body">
-        <div class="row mb-3 align-items-center">
-          <div class="col">
-            <h4>Popular Stocks</h4>
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5>Évolution des ventes</h5>
+          <div class="period-selector">
+            <button class="btn btn-sm" [ngClass]="{'btn-primary': selectedPeriod === 'week', 'btn-outline-primary': selectedPeriod !== 'week'}" (click)="changePeriod('week')">Semaine</button>
+            <button class="btn btn-sm" [ngClass]="{'btn-primary': selectedPeriod === 'month', 'btn-outline-primary': selectedPeriod !== 'month'}" (click)="changePeriod('month')">Mois</button>
+            <button class="btn btn-sm" [ngClass]="{'btn-primary': selectedPeriod === 'year', 'btn-outline-primary': selectedPeriod !== 'year'}" (click)="changePeriod('year')">Année</button>
           </div>
-          <div class="col-auto"></div>
         </div>
-        <div class="rounded bg-light-secondary overflow-hidden mb-3">
-          <div class="px-3 pt-3">
-            <div class="row mb-1 align-items-start">
-              <div class="col">
-                <h5 class="text-secondary mb-0">Bajaj Finery</h5>
-                <small class="text-muted">10% Profit</small>
+        <div class="card-body">
+          <canvas id="salesChart" height="300"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5>Répartition des commandes</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="orderStatusChart" height="250"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5>Commandes récentes</h5>
+          <a routerLink="/admin/orders" class="btn btn-sm btn-outline-primary">Voir tout</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+              <tr>
+                <th>ID</th>
+                <th>Client</th>
+                <th>Pharmacie</th>
+                <th>Montant</th>
+                <th>Statut</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let order of recentOrders">
+                <td>{{order.id}}</td>
+                <td>{{order.clientName}}</td>
+                <td>{{order.pharmacyName}}</td>
+                <td>{{order.amount | currency:'EUR'}}</td>
+                <td><span class="badge" [ngClass]="getStatusClass(order.status)">{{order.status}}</span></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5>Nouvelles pharmacies</h5>
+          <a routerLink="/admin/pharmacies" class="btn btn-sm btn-outline-primary">Voir tout</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Adresse</th>
+                <th>Date d'inscription</th>
+                <th>Statut</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let pharmacy of recentPharmacies">
+                <td>{{pharmacy.name}}</td>
+                <td>{{pharmacy.address}}</td>
+                <td>{{pharmacy.registrationDate | date:'dd/MM/yyyy'}}</td>
+                <td><span class="badge" [ngClass]="pharmacy.status === 'Active' ? 'bg-success' : 'bg-warning'">{{pharmacy.status}}</span></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5>Pharmacies par région</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="pharmaciesRegionChart" height="250"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5>Activité récente</h5>
+          <a href="#" class="btn btn-sm btn-outline-primary">Voir tout</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="activity-list">
+            <div class="activity-item" *ngFor="let activity of recentActivities">
+              <div class="activity-icon" [ngClass]="activity.type">
+                <i [class]="getActivityIcon(activity.type)"></i>
               </div>
-              <div class="col-auto">
-                <h4 class="mb-0">$1839.00</h4>
+              <div class="activity-content">
+                <div class="activity-title">{{activity.title}}</div>
+                <div class="activity-subtitle">{{activity.description}}</div>
+                <div class="activity-time">{{activity.time | date:'dd/MM/yyyy HH:mm'}}</div>
               </div>
             </div>
           </div>
-          <app-bajaj-chart />
-        </div>
-        <ul class="list-group list-group-flush">
-          @for (list of ListGroup; track list) {
-            <li class="list-group-item px-0 {{ list.space }}">
-              <div class="row align-items-start">
-                <div class="col">
-                  <h5 class="mb-0">{{ list.name }}</h5>
-                  <small class="{{ list.color }}">{{ list.profit }}</small>
-                </div>
-                <div class="col-auto">
-                  <h4 class="mb-0">
-                    {{ list.invest }}
-                    <span class="ms-2 align-top avatar avatar-xxs {{ list.bgColor }}">
-                      <i class="{{ list.icon }} {{ list.color }}"></i>
-                    </span>
-                  </h4>
-                </div>
-              </div>
-            </li>
-          }
-        </ul>
-        <div class="text-center">
-          <a href="javascript:" class="b-b-primary text-primary f-w-500">
-            View all
-            <i class="ti ti-chevron-right"></i>
-          </a>
         </div>
       </div>
     </div>

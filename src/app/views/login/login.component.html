@@ -1,4 +1,8 @@
-<div class="auth-main">
+<div class="overload" [style.display]="imLoading ? 'flex' : 'none'">
+  <div class="spinner"></div>
+</div>
+
+<div class="auth-main" *ngIf="!passwordFgt">
   <div class="auth-wrapper v3">
     <div class="auth-form">
       <div class="card my-5">
@@ -6,48 +10,93 @@
           <a href="#" class="d-flex justify-content-center">
             <img src="assets/images/logo-dark.png" width="150" alt="CmPharma" />
           </a>
-          <div class="row">
-            <div class="d-flex justify-content-center">
-              <div class="auth-header">
-                <h2 class="mt-5 text-center" style="color: #cb1f5d;"><b>Bon retour, Authentifiez vous pour acceder a votre back office </b></h2>
-                <br>
-                <br>
-              </div>
-            </div>
+
+          <div class="auth-header text-center mt-5">
+            <h2 style="color: #cb1f5d;">
+              <b>Bon retour, authentifiez-vous pour accéder à votre back office</b>
+            </h2>
           </div>
-          <div class="d-grid">
-            <button type="button" class="btn mt-2 btn-light-primary bg-light text-muted" (click)="loginWithGoogle()">
+
+          <div class="d-grid mt-4">
+            <button type="button" class="btn btn-light-primary bg-light text-muted" (click)="loginWithGoogle()">
               <img src="assets/images/authentication/google-icon.svg" alt="google" />
-              Connecter vous avec Google
+              Se connecter avec Google
             </button>
           </div>
+
           <div class="saprator mt-3">
             <span>OU</span>
           </div>
+
           <div class="form-floating mb-3">
-            <input type="email" class="form-control" id="floatingInput" [(ngModel)]="email" placeholder="Adresse email" />
-            <label for="floatingInput">Adresse email</label>
+            <input type="email" class="form-control" id="email" [(ngModel)]="email" placeholder="Adresse email" />
+            <label for="email">Adresse email</label>
           </div>
+
           <div class="form-floating mb-3">
             <input type="password" class="form-control" id="password" [(ngModel)]="password" placeholder="Mot de passe" />
             <label for="password">Mot de passe</label>
           </div>
+
           <div class="d-flex mt-1 justify-content-between">
             <div class="form-check">
-              <input class="form-check-input input-primary" type="checkbox" id="customCheckc1" checked />
-              <label class="form-check-label text-muted" for="customCheckc1">Se rappeler de moi</label>
+              <input class="form-check-input input-primary" type="checkbox" id="rememberMe" />
+              <label class="form-check-label text-muted" for="rememberMe">Se rappeler de moi</label>
             </div>
             <h5 class="text-secondary">
-              <a href="javascript:">Mot de passe oublié ?</a>
+              <a href="javascript:" (click)="clicPasswordFgt()">Mot de passe oublié ?</a>
             </h5>
           </div>
 
-          <!-- Affichage du message d'erreur si besoin -->
-          <div class="{{ errorMessage ? 'alert alert-danger mt-3' : '' }}">{{ errorMessage }}</div>
+          <div *ngIf="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
 
           <div class="d-grid mt-4">
-            <button type="button" class="btn text-white" style="background-color: #00a99d;" (click)="login()">Se connecter</button>
+            <button type="button" class="btn text-white" style="background-color: #00a99d;" (click)="login()">
+              Se connecter
+            </button>
           </div>
+
+          <hr />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="auth-main" *ngIf="passwordFgt">
+  <div class="auth-wrapper v3">
+    <div class="auth-form">
+      <div class="card my-5">
+        <div class="card-body">
+          <a href="#" class="d-flex justify-content-center">
+            <img src="assets/images/logo-dark.png" width="150" alt="CmPharma" />
+          </a>
+
+          <div class="auth-header text-center mt-5">
+            <h2 style="color: #cb1f5d;">
+              <b>Mot de passe oublié ?</b>
+            </h2>
+            <p class="text-muted mt-2">Entrez votre adresse email pour recevoir un lien de réinitialisation.</p>
+          </div>
+
+          <div class="form-floating mb-3 mt-4">
+            <input type="email" class="form-control" id="resetEmail" [(ngModel)]="email" placeholder="Adresse email" />
+            <label for="resetEmail">Adresse email</label>
+          </div>
+
+          <div *ngIf="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
+          <div *ngIf="successMessage" class="alert alert-success mt-3">{{ successMessage }}</div>
+
+          <div class="d-grid mt-4">
+            <button type="button" class="btn text-white" style="background-color: #00a99d;" (click)="sendResetLink()">
+              Envoyer le lien
+            </button>
+          </div>
+
+          <div class="d-flex justify-content-center mt-3">
+            <a href="javascript:" (click)="clicPasswordFgt()" class="text-muted">← Retour à la connexion</a>
+          </div>
+
           <hr />
         </div>
       </div>
