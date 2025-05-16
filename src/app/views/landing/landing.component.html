@@ -15,7 +15,7 @@
             <li><a href="#testimonials">Témoignages</a></li>
             <li><a href="#faq">FAQ</a></li>
           </ul>
-          <button class="btn-login" (click)="onLoginClick()">
+          <button class="btn-login" (click)="onLoginClick()" style="background-color: #ff6b6b">
             {{ userDetails ? 'Accéder à mon compte' : 'Connexion' }}
           </button>
           <!-- <button v-if="userDetails && userDetails !== null" class="btn-login" style="margin-left:10px; background-color:red;" (click)="onLogOutCall()">Se deconnecter</button> -->
@@ -42,7 +42,7 @@
           </div>
         </div>
         <div class="hero-image">
-          <img src="assets/images/hero-image.png" alt="cmPharma App" />
+          <img src="assets/images/welcome/cmpharmaview.png" alt="cmPharma App" />
         </div>
       </div>
     </div>
@@ -59,19 +59,19 @@
       <h2>Ils nous font confiance</h2>
       <div class="partners-grid">
         <div class="partner">
-          <img src="assets/images/partners/partner1.png" alt="Partner 1" />
+          <img src="assets/images/welcome/pharmacie1.jpg" alt="Partner 1" />
         </div>
         <div class="partner">
-          <img src="assets/images/partners/partner2.png" alt="Partner 2" />
+          <img src="assets/images/welcome/pharmacie2.jpg" alt="Partner 2" />
         </div>
         <div class="partner">
-          <img src="assets/images/partners/partner3.png" alt="Partner 3" />
+          <img src="assets/images/welcome/pharmacie3.jpg" alt="Partner 3" />
         </div>
         <div class="partner">
-          <img src="assets/images/partners/partner4.png" alt="Partner 4" />
+          <img src="assets/images/welcome/pharmacie4.jpg" alt="Partner 4" />
         </div>
         <div class="partner">
-          <img src="assets/images/partners/partner5.png" alt="Partner 5" />
+          <img src="assets/images/welcome/pharmacie5.png" alt="Partner 5" />
         </div>
       </div>
     </div>
@@ -124,7 +124,7 @@
                 <a href="#" class="btn-secondary">Créer un compte client</a>
               </div>
               <div class="tab-image">
-                <img src="assets/images/client-app.png" alt="Application client" />
+                <img src="assets/images/welcome/cmpharmaview.png" alt="Application client" />
               </div>
             </div>
           </div>
@@ -142,7 +142,7 @@
                 <a href="#" class="btn-secondary">Devenir pharmacie partenaire</a>
               </div>
               <div class="tab-image">
-                <img src="assets/images/pharmacy-dashboard.png" alt="Dashboard pharmacie" />
+                <img src="assets/images/welcome/pharmacieappview.png" alt="Dashboard pharmacie" />
               </div>
             </div>
           </div>
@@ -160,7 +160,7 @@
                 <a href="#" class="btn-secondary">Devenir livreur partenaire</a>
               </div>
               <div class="tab-image">
-                <img src="assets/images/delivery-app.png" alt="Application livreur" />
+                <img src="assets/images/welcome/view_deliver.png" alt="Application livreur" />
               </div>
             </div>
           </div>
@@ -188,7 +188,7 @@
         <div class="step-card">
           <div class="step-number">2</div>
           <div class="step-icon">
-            <i class="ti ti-pharmacy"></i>
+            <i class="fa fa-clinic-medical"></i>
           </div>
           <h3>Préparation</h3>
           <p>La pharmacie prépare votre commande et la met à disposition du livreur</p>
@@ -237,7 +237,7 @@
           </div>
           <div class="testimonial-author">
             <div class="author-avatar">
-              <img src="assets/images/avatars/{{ testimonial.name.toLowerCase().replace(' ', '-') }}.jpg" alt="{{ testimonial.name }}" onerror="this.src='assets/images/avatars/default.jpg'" />
+              <img src="assets/images/avatars/{{ testimonial.img }}" alt="{{ testimonial.name }}" onerror="this.src='assets/images/avatars/default.jpg'" />
             </div>
             <div class="author-info">
               <h4>{{ testimonial.name }}</h4>
@@ -324,14 +324,29 @@
         <div class="footer-contact">
           <h3>Contactez-nous</h3>
           <ul>
-            <!-- <li><i class="ti ti-mail"></i> contact@pharmacieconnectee.fr</li> -->
+<!--             <li><i class="ti ti-mail"></i> cybersds@gmail.com</li>-->
             <li><i class="ti ti-phone"></i> +33 1 23 45 67 89</li>
             <li><i class="ti ti-map-pin"></i> 123 Avenue de la Santé, 75001 Paris</li>
           </ul>
-          <div class="app-downloads">
-            <a href="#"><img src="assets/images/app-store.png" alt="App Store" /></a>
-            <a href="#"><img src="assets/images/google-play.png" alt="Google Play" /></a>
-          </div>
+        </div>
+        <div class="footer-downloads">
+          <h3>Nos apps mobiles</h3>
+          <ul class="app-stores">
+            <li>
+              cmPharma disponible sur :
+              <div class="store-links">
+                <a href="#" class="store-link apple"><i class="fa-brands fa-app-store-ios"></i></a>
+                <a href="#" class="store-link google"><i class="fa-brands fa-google-play"></i></a>
+              </div>
+            </li>
+            <li>
+              Application Livreur disponible sur :
+              <div class="store-links">
+                <a href="#" class="store-link apple"><i class="fa-brands fa-app-store-ios"></i></a>
+                <a href="#" class="store-link google"><i class="fa-brands fa-google-play"></i></a>
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
       <div class="footer-bottom">

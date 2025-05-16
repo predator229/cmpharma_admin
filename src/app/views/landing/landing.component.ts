@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from 'src/app/controllers/services/auth.service';
-import {filter, map, take} from "rxjs/operators";
+import { filter, map, take } from "rxjs/operators";
+import { Subscription } from 'rxjs';
 
 interface Feature {
   icon: string;
@@ -12,6 +13,7 @@ interface Feature {
 interface Testimonial {
   name: string;
   role: string;
+  img?: string;
   message: string;
 }
 interface FAQ {
@@ -32,18 +34,10 @@ interface HeroData {
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.scss']
 })
-export default class LandingComponent implements OnInit {
-
-  constructor(private authService: AuthService, private router: Router) {}
-
-  userDetails = this.authService.userDetailsLoaded$.pipe(
-    filter(loaded => loaded),
-    take(1),
-    map(() => {
-      const user = this.authService.getCurrentUser();
-      return user ? true : false;
-    })
-  ).subscribe();
+export default class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
+  // Propriété pour stocker l'état de l'utilisateur
+  userDetails: boolean = false;
+  private userSubscription: Subscription | null = null;
 
   heroData: HeroData = {
     title: 'La livraison de médicaments simplifiée',
@@ -51,6 +45,7 @@ export default class LandingComponent implements OnInit {
     ctaText: 'Créer un compte',
     ctaLink: '/register'
   };
+
   features: Feature[] = [
     {
       icon: 'ti ti-clock',
@@ -83,35 +78,41 @@ export default class LandingComponent implements OnInit {
       description: 'Une équipe à votre écoute pour répondre à toutes vos questions.'
     }
   ];
+
   screenshots: string[] = [
-    'assets/images/screenshots/screen-1.png',
-    'assets/images/screenshots/screen-2.png',
-    'assets/images/screenshots/screen-3.png',
-    'assets/images/screenshots/screen-4.png',
-    'assets/images/screenshots/screen-5.png'
+    'assets/images/welcome/capture6.png',
+    'assets/images/welcome/capture2.png',
+    'assets/images/welcome/capture3.png',
+    'assets/images/welcome/capture4.png',
+    'assets/images/welcome/capture5.png'
   ];
+
   testimonials: Testimonial[] = [
     {
       name: 'Marie Dubois',
       role: 'Cliente',
+      img: 'default.jpg',
       message: 'Un service exceptionnel ! J\'ai reçu mes médicaments en moins d\'une heure. Je recommande vivement cette application à tous ceux qui ont besoin de médicaments rapidement.'
     },
     {
       name: 'Pierre Martin',
       role: 'Pharmacien',
+      img: 'pharmacien.jpeg',
       message: 'cmPharma nous a permis d\'augmenter notre chiffre d\'affaires de 30% en seulement trois mois. La plateforme est intuitive et facile à utiliser.'
     },
-    {
-      name: 'Sophie Lefèvre',
-      role: 'Cliente',
-      message: 'Je suis une personne à mobilité réduite et cette application a changé ma vie. Je peux maintenant recevoir mes médicaments sans avoir à me déplacer.'
-    },
+    // {
+    //   name: 'Sophie Lefèvre',
+    //   role: 'Cliente',
+    //   message: 'Je suis une personne à mobilité réduite et cette application a changé ma vie. Je peux maintenant recevoir mes médicaments sans avoir à me déplacer.'
+    // },
     {
       name: 'Thomas Moreau',
       role: 'Livreur',
+      img: 'livreur.jpg',
       message: 'Travailler avec cmPharma me permet de gérer mon emploi du temps comme je le souhaite tout en gagnant un revenu complémentaire.'
     }
   ];
+
   faqs: FAQ[] = [
     {
       question: 'Comment fonctionne la livraison de médicaments ?',
@@ -139,61 +140,90 @@ export default class LandingComponent implements OnInit {
     }
   ];
 
+  constructor(private authService: AuthService, private router: Router) {}
+
   ngOnInit(): void {
+    // S'abonner à l'état de l'utilisateur
+    this.userSubscription = this.authService.userDetailsLoaded$.pipe(
+      filter(loaded => loaded),
+      take(1),
+      map(() => {
+        const user = this.authService.getCurrentUser();
+        return user ? true : false;
+      })
+    ).subscribe(isLoggedIn => {
+      this.userDetails = isLoggedIn;
+    });
+  }
+
+  ngAfterViewInit(): void {
+    // Initialiser les fonctionnalités interactives après que le DOM soit complètement chargé
     this.initTabsNavigation();
     this.initFaqAccordion();
     this.initMobileNavToggle();
   }
 
-  onLoginClick(): void {
-    if (this.userDetails){  this.router.navigate(['/admin/dashboard/overview/']); }
-    else{ this.router.navigate(['/login']); }
+  ngOnDestroy(): void {
+    // Nettoyer la souscription pour éviter les fuites de mémoire
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
+
+  onLoginClick(): void {
+    if (this.userDetails) {
+      this.router.navigate(['/admin/dashboard/overview/']);
+    } else {
+      this.router.navigate(['/login']);
+    }
+  }
+
   onLogOutCall(): void {
-    if (this.userDetails){  this.authService.logout(); }
+    if (this.userDetails) {
+      this.authService.logout();
+      this.userDetails = false;
+    }
   }
 
   private initTabsNavigation(): void {
-    document.addEventListener('DOMContentLoaded', () => {
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      tabBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const target = e.currentTarget as HTMLElement;
-          const tabId = target.getAttribute('data-tab');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLElement;
+        const tabId = target.getAttribute('data-tab');
 
-          document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-          document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
 
-          // Add active class to current button and pane
-          target.classList.add('active');
-          document.getElementById(tabId!)?.classList.add('active');
-        });
+        // Add active class to current button and pane
+        target.classList.add('active');
+        const tabPane = document.getElementById(tabId!);
+        if (tabPane) {
+          tabPane.classList.add('active');
+        }
       });
     });
   }
 
   private initFaqAccordion(): void {
-    document.addEventListener('DOMContentLoaded', () => {
-      const faqQuestions = document.querySelectorAll('.faq-question');
-      faqQuestions.forEach(question => {
-        question.addEventListener('click', () => {
-          const isExpanded = question.getAttribute('data-expanded') === 'true';
-          const answer = question.nextElementSibling as HTMLElement;
-          question.setAttribute('data-expanded', isExpanded ? 'false' : 'true');
-          answer.style.display = isExpanded ? 'none' : 'block';
-        });
+    const faqQuestions = document.querySelectorAll('.faq-question');
+    faqQuestions.forEach(question => {
+      question.addEventListener('click', () => {
+        const isExpanded = question.getAttribute('data-expanded') === 'true';
+        const answer = question.nextElementSibling as HTMLElement;
+        question.setAttribute('data-expanded', isExpanded ? 'false' : 'true');
+        answer.style.display = isExpanded ? 'none' : 'block';
       });
     });
   }
 
   private initMobileNavToggle(): void {
-    document.addEventListener('DOMContentLoaded', () => {
-      const navbarToggle = document.querySelector('.navbar-toggle');
-      const navbarMenu = document.querySelector('.navbar-menu');
-      navbarToggle?.addEventListener('click', () => {
-        navbarToggle.classList.toggle('active');
-        navbarMenu?.classList.toggle('active');
-      });
+    const navbarToggle = document.querySelector('.navbar-toggle');
+    const navbarMenu = document.querySelector('.navbar-menu');
+
+    navbarToggle?.addEventListener('click', () => {
+      navbarToggle.classList.toggle('active');
+      navbarMenu?.classList.toggle('active');
     });
   }
 }
