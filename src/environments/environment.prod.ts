@@ -3,5 +3,5 @@ import packageInfo from '../../package.json';
 export const environment = {
   appVersion: packageInfo.version,
   production: true,
-  baseUrl: 'http://server.cmpharma.fr/admin/api/', // Production API
+  baseUrl: '/server/admin/api/', // Production API
 };
