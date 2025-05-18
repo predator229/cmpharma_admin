@@ -26,43 +26,7 @@ export class AdminDashboardComponent implements OnInit {
     Chart.register(...registerables);
   }
   userDetails = this.authUser.getUserDetails();
-
-  // stats = [
-  //   {
-  //     name : 'Pharmacies',
-  //     type: 1,
-  //     total: 157,
-  //     difference: '12',
-  //     color: 'bg-success',
-  //     icon: 'fa fa-clinic-medical',
-  //     divicon: 'pharmacy-icon',
-  //   },
-  //   {
-  //     name : 'Commandes',
-  //     type: 1,
-  //     total: 2356,
-  //     difference: '23',
-  //     icon: 'fa fa-shopping-cart',
-  //     divicon: 'order-icon',
-  //   },
-  //   {
-  //     name : 'Revenus plateforme',
-  //     type: 1,
-  //     total: 45780,
-  //     difference: '18',
-  //     icon: 'fa fa-euro-sign',
-  //     divicon: 'revenue-icon',
-  //   },
-  //   {
-  //     name : 'Utilisateurs',
-  //     type: 0,
-  //     difference: '1',
-  //     total: 9,
-  //     icon: 'fa fa-user',
-  //     divicon: 'user-icon',
-  //   }
-  // ];
-
+  
   selectedPeriod = 'month';
   recentOrders = [
     { id: 'ORD-3845', clientName: 'Marie Dupont', pharmacyName: 'Pharmacie Centrale', amount: 78.50, status: 'Livrée' },
