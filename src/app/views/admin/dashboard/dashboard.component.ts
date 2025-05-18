@@ -22,6 +22,25 @@ import {ApiService} from "../../../controllers/services/api.service";
 
 export class AdminDashboardComponent implements OnInit {
   stats: any[] = [];
+  period: number = 4;
+  periods: [
+    {
+      key:1,
+      name:"Mois dernier"
+    },
+    {
+      key:4,
+      name:"Hier"
+    },
+    {
+      key:3,
+      name:"Semaine dernière"
+    },
+    {
+      key:2,
+      name:"Année dernière"
+    },
+];
   constructor(private authUser: AuthService, private loadingService: LoadingService, private apiService: ApiService)  {
     Chart.register(...registerables);
   }
@@ -59,7 +78,6 @@ export class AdminDashboardComponent implements OnInit {
     this.loadingService.setLoading(true);
     try {
       this.loadingService.setLoading(true);
-
       const token = await this.authUser.getRealToken();
       const uid = await this.authUser.getUid();
       if (!token) {
@@ -72,8 +90,9 @@ export class AdminDashboardComponent implements OnInit {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       });
+      const thisPeriod = this.period;
 
-      this.apiService.post('managers/dashboard', { uid }, headers)
+      this.apiService.post('managers/dashboard', { uid, thisPeriod }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
