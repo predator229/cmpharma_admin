@@ -26,7 +26,7 @@ export class AdminDashboardComponent implements OnInit {
     Chart.register(...registerables);
   }
   userDetails = this.authUser.getUserDetails();
-  
+
   selectedPeriod = 'month';
   recentOrders = [
     { id: 'ORD-3845', clientName: 'Marie Dupont', pharmacyName: 'Pharmacie Centrale', amount: 78.50, status: 'Livrée' },
@@ -73,7 +73,7 @@ export class AdminDashboardComponent implements OnInit {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('managers/managers/dashboard', { uid }, headers)
+      this.apiService.post('managers/dashboard', { uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
