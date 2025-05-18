@@ -22,12 +22,12 @@ import {ApiService} from "../../../controllers/services/api.service";
 
 export class AdminDashboardComponent implements OnInit {
   stats: any[] = [];
-  period: number = 4;
+  period: string = '1';
   periods: [
-    {
-      key:1,
-      name:"Mois dernier"
-    },
+    // {
+    //   key:1,
+    //   name:"Mois dernier"
+    // },
     {
       key:4,
       name:"Hier"
