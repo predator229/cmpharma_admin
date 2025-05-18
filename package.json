@@ -23,6 +23,7 @@
     "@angular/compiler": "19.2.10",
     "@angular/core": "^19.0.0",
     "@angular/forms": "19.2.10",
+    "@angular/google-maps": "19.2.16",
     "@angular/localize": "^19.0.0",
     "@angular/platform-browser": "19.2.10",
     "@angular/platform-browser-dynamic": "19.2.10",

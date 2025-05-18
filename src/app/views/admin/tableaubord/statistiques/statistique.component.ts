@@ -89,10 +89,8 @@ export class StatisticsComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      // Récupération des statistiques générales
       this.apiService.post('managers/statistics/general', {
         uid,
-        period: this.selectedPeriod
       }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
@@ -102,16 +100,12 @@ export class StatisticsComponent implements OnInit, OnDestroy {
             } else {
               this.generalStats = this.getMockGeneralStats();
             }
-
-            // Continuer avec les autres appels API
             this.loadRegionPerformance(uid, headers);
           },
           error: (error) => {
-            this.handleError('Erreur lors du chargement des statistiques générales');
             this.isLoading = false;
             this.loadingService.setLoading(false);
 
-            // Chargement des données mock en cas d'erreur
             this.loadMockData();
           }
         });

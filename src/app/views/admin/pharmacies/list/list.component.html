@@ -162,12 +162,11 @@
     </div>
   </div>
 
-  <div class="modal fade" id="pharmacyDetailsModal" tabindex="-1" aria-labelledby="pharmacyDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
+  <ng-template #userInfoModal let-modal>
+    <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="pharmacyDetailsModalLabel">Détails de la pharmacie</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button"  (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" *ngIf="selectedPharmacy">
           <div class="pharmacy-details">
@@ -259,9 +258,17 @@
                 <div class="detail-section">
                   <h5>Emplacement</h5>
                   <div class="pharmacy-map">
-                    <!-- Placeholder for Google Maps -->
-                    <div class="map-placeholder">
-                      <img src="assets/images/map-placeholder.png" alt="Carte">
+                    <div class="map-container">
+                      <google-map
+                        [center]="{lat: selectedPharmacy.location.latitude, lng: selectedPharmacy.location.longitude}"
+                        [zoom]="15"
+                        width="100%"
+                        height="400px">
+                        <map-marker
+                          [position]="{lat: selectedPharmacy.location.latitude, lng: selectedPharmacy.location.longitude}"
+                          [title]="selectedPharmacy.name">
+                        </map-marker>
+                      </google-map>
                     </div>
                   </div>
                 </div>
@@ -329,7 +336,6 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
           <div class="action-buttons" *ngIf="selectedPharmacy">
             <button class="btn btn-success" *ngIf="selectedPharmacy.status === 'pending'" (click)="approvePharmacy(selectedPharmacy)">
               <i class="fas fa-check"></i> Approuver
@@ -349,6 +355,5 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
+  </ng-template>
 </div>

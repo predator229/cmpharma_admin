@@ -8,7 +8,7 @@
     <div class="row">
       <div class="col-md-12">
         <div class="stats-card">
-          <label>Periode </label>
+          <label>Periode : </label>
           <select class="form-select" [(ngModel)]="period" (change)="loadGlobalsData()">
             <option value="1">Mois dernier</option>
             <option *ngFor="let period of periods" [value]="period.key">{{period.name}}</option>
@@ -110,7 +110,7 @@
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5>Nouvelles pharmacies</h5>
-          <a routerLink="/admin/pharmacies" class="btn btn-sm btn-outline-primary">Voir tout</a>
+          <a routerLink="/admin/pharmacies/list" class="btn btn-sm btn-outline-primary">Voir tout</a>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -121,14 +121,51 @@
                 <th>Adresse</th>
                 <th>Date d'inscription</th>
                 <th>Statut</th>
+                <th>Vue rapide</th>
               </tr>
               </thead>
               <tbody>
-              <tr *ngFor="let pharmacy of recentPharmacies">
-                <td>{{pharmacy.name}}</td>
-                <td>{{pharmacy.address}}</td>
-                <td>{{pharmacy.registrationDate | date:'dd/MM/yyyy'}}</td>
-                <td><span class="badge" [ngClass]="pharmacy.status === 'Active' ? 'bg-success' : 'bg-warning'">{{pharmacy.status}}</span></td>
+                <tr *ngFor="let pharmacy of recentPharmacies">
+                <td>
+                  <a [routerLink]="['/admin/pharmacies', pharmacy.id]">{{ pharmacy.name }}</a>
+                </td>
+                <td>
+                  {{ pharmacy.address }}
+<!--                    <li>{{ pharmacy.siret }}</li>-->
+<!--                    <li>{{ pharmacy.phoneNumber }}</li>-->
+<!--                    <li>{{ pharmacy.email }}</li>-->
+                      <a
+                        [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"
+                        target="_blank"
+                        rel="noopener noreferrer">
+                        📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}
+                      </a>
+                </td>
+                <td>{{ pharmacy.registerDate | date: 'dd/MM/yyyy' }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="pharmacy.status">
+                    {{ getStatusLabel(pharmacy.status) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="btn btn-sm btn-outline-primary" (click)="viewPharmacyDetails(pharmacy)">
+                      <i class="fas fa-eye"></i>
+                    </button>
+<!--                    <button class="btn btn-sm btn-outline-success" *ngIf="pharmacy.status === 'pending'" (click)="approvePharmacy(pharmacy)">-->
+<!--                      <i class="fas fa-check"></i>-->
+<!--                    </button>-->
+<!--                    <button class="btn btn-sm btn-outline-warning" *ngIf="pharmacy.status === 'active'" (click)="suspendPharmacy(pharmacy)">-->
+<!--                      <i class="fas fa-pause"></i>-->
+<!--                    </button>-->
+<!--                    <button class="btn btn-sm btn-outline-success" *ngIf="pharmacy.status === 'suspended'" (click)="activatePharmacy(pharmacy)">-->
+<!--                      <i class="fas fa-play"></i>-->
+<!--                    </button>-->
+<!--                    <button class="btn btn-sm btn-outline-danger" (click)="deletePharmacy(pharmacy)">-->
+<!--                      <i class="fas fa-trash"></i>-->
+<!--                    </button>-->
+                  </div>
+                </td>
               </tr>
               </tbody>
             </table>
@@ -137,7 +174,121 @@
       </div>
     </div>
   </div>
+  <ng-template #selectedPharmacyModal let-modal>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="pharmacyDetailsModalLabel">Détails de la pharmacie</h5>
+        <button type="button"  (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" *ngIf="selectedPharmacy">
+        <div class="pharmacy-details">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="pharmacy-logo">
+                <img [src]="selectedPharmacy.logoUrl || 'assets/images/pharmacy-placeholder.png'" alt="Logo pharmacie">
+              </div>
+            </div>
+            <div class="col-md-8">
+              <h3>{{selectedPharmacy.name}}</h3>
+              <p class="pharmacy-address">
+                <i class="fas fa-map-marker-alt"></i> {{selectedPharmacy.address}}
+              </p>
+              <p class="pharmacy-contact">
+                <i class="fas fa-phone"></i> {{selectedPharmacy.phoneNumber}}
+              </p>
+              <p class="pharmacy-email">
+                <i class="fas fa-envelope"></i> {{selectedPharmacy.email}}
+              </p>
+              <div class="pharmacy-status">
+                  <span class="status-badge" [ngClass]="selectedPharmacy.status">
+                    {{getStatusLabel(selectedPharmacy.status)}}
+                  </span>
+              </div>
+            </div>
+          </div>
 
+          <div class="row mt-4">
+            <div class="col-md-6">
+              <div class="detail-section">
+                <h5>Informations légales</h5>
+                <div class="detail-item">
+                  <span class="detail-label">Numéro de licence:</span>
+                  <span class="detail-value">{{selectedPharmacy.licenseNumber}}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">SIRET:</span>
+                  <span class="detail-value">{{selectedPharmacy.siret}}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Date d'inscription:</span>
+                  <span class="detail-value">{{selectedPharmacy.registerDate | date:'dd/MM/yyyy'}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="detail-section">
+                <h5>Performance</h5>
+                <div class="detail-item">
+                  <span class="detail-label">Commandes (30j):</span>
+                  <span class="detail-value">{{selectedPharmacy.orders30days || 0}}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Revenus (30j):</span>
+                  <span class="detail-value">{{selectedPharmacy.revenue30days | currency:'EUR'}}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Note client:</span>
+                  <span class="detail-value">
+                      <i class="fas fa-star"></i> {{selectedPharmacy.rating || 'N/A'}}
+                    </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-4">
+            <div class="col-md-12">
+              <div class="detail-section">
+                <h5>Horaires d'ouverture</h5>
+                <div class="opening-hours">
+                  <div class="day-hours" *ngFor="let day of days">
+                    <span class="day">{{day}}:</span>
+                    <span class="hours" *ngIf="selectedPharmacy.openingHours && selectedPharmacy.openingHours[day]">
+                        {{selectedPharmacy.openingHours[day].morning}} - {{selectedPharmacy.openingHours[day].afternoon}}
+                      </span>
+                    <span class="hours closed" *ngIf="!selectedPharmacy.openingHours || !selectedPharmacy.openingHours[day]">
+                        Fermé
+                      </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-4">
+            <div class="col-md-12">
+              <div class="detail-section">
+                <h5>Emplacement</h5>
+                <div class="pharmacy-map">
+                  <div class="map-container">
+                    <google-map
+                      [center]="{lat: selectedPharmacy.location.latitude, lng: selectedPharmacy.location.longitude}"
+                      [zoom]="15"
+                      width="100%"
+                      height="400px">
+                      <map-marker
+                        [position]="{lat: selectedPharmacy.location.latitude, lng: selectedPharmacy.location.longitude}"
+                        [title]="selectedPharmacy.name">
+                      </map-marker>
+                    </google-map>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>  </ng-template>
   <div class="row mt-4">
     <div class="col-md-4">
       <div class="card">

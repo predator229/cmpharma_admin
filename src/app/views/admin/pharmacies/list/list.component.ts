@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {Component, OnInit, OnDestroy, ViewChild, ElementRef} from '@angular/core';
 import { CommonModule } from "@angular/common";
 import { SharedModule } from "../../../theme/shared/shared.module";
 import { AuthService } from "../../../../controllers/services/auth.service";
@@ -10,13 +10,15 @@ import { ApiService } from '../../../../controllers/services/api.service';
 import Swal from 'sweetalert2';
 import { FormsModule } from '@angular/forms';
 import { LoadingService } from 'src/app/controllers/services/loading.service';
+import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
+import { GoogleMapsModule } from '@angular/google-maps';
 
 declare var bootstrap: any;
 
 @Component({
   selector: 'app-pharmacy-list',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterModule, FormsModule],
+  imports: [CommonModule, SharedModule, RouterModule, FormsModule, GoogleMapsModule],
   templateUrl: './list.component.html',
   styleUrls: ['./list.component.scss']
 })
@@ -37,6 +39,7 @@ export class PharmacyListComponent implements OnInit, OnDestroy {
   totalPages: number = 1;
   paginationStart: number = 0;
   paginationEnd: number = 0;
+  private modalService: NgbModal;
 
   regions: string[] = [];
 
@@ -48,8 +51,10 @@ export class PharmacyListComponent implements OnInit, OnDestroy {
 
   // Loading state
   isLoading: boolean = false;
+  @ViewChild('userInfoModal') userInfoModal: ElementRef | undefined;
 
   constructor(
+    modalService: NgbModal,
     private auth: AuthService,
     private router: Router,
     private apiService: ApiService,
@@ -58,17 +63,11 @@ export class PharmacyListComponent implements OnInit, OnDestroy {
     this.loadingService.isLoading$.subscribe((loading) => {
       this.isLoading = loading;
     });
+    this.modalService = modalService;
   }
 
   ngOnInit(): void {
     this.loadPharmacies();
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const modalElement = document.getElementById('pharmacyDetailsModal');
-      if (modalElement) {
-        this.detailsModal = new bootstrap.Modal(modalElement);
-      }
-    });
 
     this.auth.userDetailsLoaded$
       .pipe(takeUntil(this.destroy$))
@@ -289,9 +288,18 @@ export class PharmacyListComponent implements OnInit, OnDestroy {
   }
 
   viewPharmacyDetails(pharmacy: Pharmacy): void {
-    this.selectedPharmacy = pharmacy;
-    if (this.detailsModal) {
-      this.detailsModal.show();
+    if (pharmacy) {
+      this.selectedPharmacy = pharmacy;
+      setTimeout(() => {
+        this.modalService.open(this.userInfoModal, {
+          size: 'xl',
+          backdrop: 'static',
+          // keyboard: false,
+          centered: true
+        });
+      }, 0);
+    }else{
+      alert('putain')
     }
   }
 
@@ -593,6 +601,10 @@ export class PharmacyListComponent implements OnInit, OnDestroy {
       return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
     }
     return 'fa-sort';
+  }
+
+  closeModal() {
+    this.modalService.dismissAll('ok');
   }
 
 }

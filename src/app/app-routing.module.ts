@@ -20,6 +20,7 @@ const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard/overview', loadComponent: () =>import('./views/admin/tableaubord/dashboard/dashboard.component').then((c) => c.AdminDashboardComponent),},
       { path: 'dashboard/stats', loadComponent: () =>import('./views/admin/tableaubord/statistiques/statistique.component').then((c) => c.StatisticsComponent),},
+      { path: 'dashboard/activity', loadComponent: () =>import('./views/admin/tableaubord/recentActivities/recentactivities.component').then((c) => c.RecentactivitiesComponent),},
       { path: 'pharmacies/list',loadComponent: () =>import('./views/admin/pharmacies/list/list.component').then((c) => c.PharmacyListComponent), },
       { path: 'pharmacies/:id',  loadComponent: () => import('./views/admin/pharmacies/details/details.component').then((c) => c.PharmacyDetailComponent), },
     ],

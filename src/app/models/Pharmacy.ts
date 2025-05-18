@@ -22,7 +22,7 @@ export class Pharmacy {
   totalRevenue: number;
   suspensionDate: Date | null;
   suspensionReason: string | null;
-  registerDate: Date;
+  registerDate?: Date;
   orders30days: number | null;
   revenue30days: number | null;
   rating: number | null;

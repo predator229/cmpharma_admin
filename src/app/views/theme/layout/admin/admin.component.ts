@@ -26,7 +26,6 @@ import {LoadingService} from "../../../../controllers/services/loading.service";
     CommonModule,
     NavigationComponent,
     NavBarComponent,
-    ConfigurationComponent,
     RouterModule,
     BreadcrumbComponent,
     FormsModule

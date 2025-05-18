@@ -9,18 +9,24 @@ import {HttpHeaders} from "@angular/common/http";
 import {Subject, takeUntil} from "rxjs";
 import Swal from "sweetalert2";
 import {ApiService} from "../../../../controllers/services/api.service";
+import {RouterLink} from "@angular/router";
+import {Pharmacy} from "../../../../models/Pharmacy";
+import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
+import {GoogleMap, MapMarker} from "@angular/google-maps";
 
 
 @Component({
   selector: 'app-admin-dashboard-overview',
   standalone: true,
-  imports: [CommonModule, SharedModule],
+  imports: [CommonModule, SharedModule, RouterLink, GoogleMap, MapMarker],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
 
 export class AdminDashboardComponent implements OnInit {
   stats: any[] = [];
+  recentActivities: any[] = [];
+  recentPharmacies: Pharmacy[] = [];
   period: string = '1';
   periods: any[] = [
     {
@@ -36,9 +42,16 @@ export class AdminDashboardComponent implements OnInit {
       name:"Année dernière"
     },
   ];
-  constructor(private authUser: AuthService, private loadingService: LoadingService, private apiService: ApiService)  {
+  private modalService: NgbModal;
+  days: string[] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+  selectedPharmacy: Pharmacy | null = null;
+
+  constructor(modalService: NgbModal, private authUser: AuthService, private loadingService: LoadingService, private apiService: ApiService)  {
     Chart.register(...registerables);
+    this.modalService = modalService;
   }
+
   userDetails = this.authUser.getUserDetails();
 
   selectedPeriod = 'month';
@@ -49,19 +62,8 @@ export class AdminDashboardComponent implements OnInit {
     { id: 'ORD-3842', clientName: 'Thomas Petit', pharmacyName: 'Pharmacie Moderne', amount: 56.30, status: 'Livrée' },
     { id: 'ORD-3841', clientName: 'Laura Moreau', pharmacyName: 'Pharmacie Centrale', amount: 89.75, status: 'Annulée' }
   ];
-  recentPharmacies = [
-    { name: 'Pharmacie Lafayette', address: '12 Rue de la Paix, Paris', registrationDate: new Date('2025-04-28'), status: 'Active' },
-    { name: 'Pharmacie Principale', address: '45 Avenue Victor Hugo, Lyon', registrationDate: new Date('2025-04-26'), status: 'En attente' },
-    { name: 'Grande Pharmacie', address: '8 Boulevard Gambetta, Marseille', registrationDate: new Date('2025-04-25'), status: 'Active' },
-    { name: 'Pharmacie du Marché', address: '3 Place de la République, Bordeaux', registrationDate: new Date('2025-04-22'), status: 'Active' }
-  ];
-  recentActivities = [
-    { type: 'order', title: 'Nouvelle commande', description: 'Commande #ORD-3845 a été passée', time: new Date('2025-05-07T09:45:00') },
-    { type: 'pharmacy', title: 'Nouvelle pharmacie', description: 'Pharmacie Lafayette a rejoint la plateforme', time: new Date('2025-05-06T16:30:00') },
-    { type: 'payment', title: 'Paiement reçu', description: 'Paiement de 1250€ reçu de Pharmacie Centrale', time: new Date('2025-05-06T14:15:00') },
-    { type: 'user', title: 'Nouveau client', description: 'Pierre Dubois a créé un compte', time: new Date('2025-05-06T11:20:00') },
-    { type: 'delivery', title: 'Livraison effectuée', description: 'Commande #ORD-3840 a été livrée', time: new Date('2025-05-06T10:05:00') }
-  ];
+
+  @ViewChild('selectedPharmacyModal') selectedPharmacyModal: ElementRef | undefined;
 
   ngOnInit(): void {
     this.initCharts();
@@ -69,6 +71,44 @@ export class AdminDashboardComponent implements OnInit {
   }
   private destroy$ = new Subject<void>();
 
+  viewPharmacyDetails(pharmacy: Pharmacy): void {
+    this.selectedPharmacy = pharmacy;
+
+    setTimeout(() => {
+      this.modalService.open(this.selectedPharmacyModal, {
+        size: 'xl',
+        backdrop: 'static',
+        centered: true
+      });
+    }, 0);
+  }
+  public getStatusLabel(status: string): string {
+    switch (status) {
+      case 'active': return 'Actif';
+      case 'pending': return 'En attente';
+      case 'suspended': return 'Suspendu';
+      case 'inactive': return 'Inactif';
+      case 'deleted': return 'Supprimé';
+      case 'rejected': return 'Inscription Rejeté';
+      default: return 'Inconnu';
+    }
+  }
+  private mapToPharmacy(data: any): Pharmacy {
+    return new Pharmacy({
+      id: data.id,
+      name: data.name,
+      address: data.address,
+      status: data.status,
+      ownerId: data.ownerId,
+      location_latitude: data.location?.latitude || 0,
+      location_longitude: data.location?.longitude || 0,
+      products: data.products || [],
+      workingHours: data.workingHours || {},
+      orders: data.orders || [],
+      totalRevenue: data.totalRevenue || 0,
+      registerDate: data.created_at,
+    });
+  }
   async loadGlobalsData (){
     this.loadingService.setLoading(true);
     try {
@@ -92,9 +132,16 @@ export class AdminDashboardComponent implements OnInit {
         .subscribe({
           next: (response: any) => {
             if (response && response.data) {
-              this.stats = response.data;
+              if (response.data.global_infos){ this.stats = response.data.global_infos;}
+              else{ this.stats = [];}
+              if (response.data.recent_activities){ this.recentActivities = response.data.recent_activities;}
+              else{ this.recentActivities = []; }
+              if (response.data.recent_pharmacies){ this.recentPharmacies = response.data.recent_pharmacies.map((item: any) => this.mapToPharmacy(item));;}
+              else{ this.recentPharmacies = []; }
             } else {
-              this.stats = [];
+              this.stats = []; //damien
+              this.recentActivities = [];
+              this.recentPharmacies = [];
             }
             this.loadingService.setLoading(false);
           },
@@ -138,6 +185,7 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
+  //['login', 'logout', 'order_created', 'order_updated', 'pharmacy_updated', 'profile_updated'];
   getActivityIcon(type: string): string {
     switch (type) {
       case 'order':
@@ -252,14 +300,8 @@ export class AdminDashboardComponent implements OnInit {
     // Ici, vous feriez la mise à jour des graphiques avec les nouvelles données
   }
 
-  saveUserInfo() {
-    if (this.userDetails.name && this.userDetails.name.trim() !== '') {
-      // Traitement éventuel côté service, ici ou plus tard
-      console.log('Nom sauvegardé:', this.userDetails.name);
-    }
-  }
   closeModal() {
-    this.userDetails.name = 'temp'; // ou toute autre logique pour forcer la fermeture
+    this.modalService.dismissAll('ok');
   }
 }
 

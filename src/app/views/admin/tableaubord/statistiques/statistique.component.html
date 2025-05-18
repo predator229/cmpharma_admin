@@ -1,15 +1,4 @@
-<div class="statistics-container">
-  <div class="statistics-header">
-    <h2>Statistiques détaillées</h2>
-    <div class="period-filter">
-      <label>Période </label>
-      <select class="form-select" [(ngModel)]="selectedPeriod" (change)="loadStatisticsData()">
-        <option value="1">Mois dernier</option>
-        <option *ngFor="let period of periods" [value]="period.key">{{period.name}}</option>
-      </select>
-    </div>
-  </div>
-
+<div class="dashboard-container">
   <div class="loading-spinner" *ngIf="isLoading">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Chargement...</span>
@@ -17,35 +6,9 @@
   </div>
 
   <div class="statistics-content" *ngIf="!isLoading">
-    <!-- Statistiques Générales -->
-    <div class="row">
-      <div class="col-md-3" *ngFor="let stat of generalStats">
-        <div class="stats-card">
-          <div class="stats-icon {{stat.divicon}}">
-            <i class="{{stat.icon}}"></i>
-          </div>
-          <div class="stats-info">
-            <div class="row">
-              <div class="col-12">
-                <h3>{{ stat.total }}</h3>
-                <div class="stats-footer">
-                  <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'">
-                    <i [class]="stat.type == 1 ? 'fa fa-arrow-up' : 'fa fa-arrow-down'"></i>
-                  </span>
-                  <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'"> {{ stat.peperiod }} ( {{ stat.difference }} %) </span>
-                </div>
-              </div>
-            </div>
-            <p>{{ stat.name }}</p>
-            <p class="text-muted" style="font-size: 10px;">Total sur la période</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Graphiques -->
     <div class="row mt-4">
-      <div class="col-md-8">
+      <div class="col-md-12">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5>Évolution des ventes par période</h5>
@@ -60,7 +23,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-12">
         <div class="card">
           <div class="card-header">
             <h5>Répartition des revenus</h5>
