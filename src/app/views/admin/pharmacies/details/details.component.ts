@@ -334,7 +334,7 @@ export class PharmacyDetailComponent implements OnInit, OnDestroy {
 
     if (!confirmed) return;
 
-    const endpoint = status === 'active' ? 'pharmacies/activate' : 'pharmacies/suspend';
+    const endpoint = status === 'active' ? 'managers/pharmacies/activate' : 'managers/pharmacies/suspend';
 
     const token = await this.auth.getRealToken();
     const uid = await this.auth.getUid();
