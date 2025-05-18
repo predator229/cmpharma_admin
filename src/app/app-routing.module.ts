@@ -5,8 +5,9 @@ import { GuestComponent } from './views/theme/layout/guest/guest.component';
 import { AuthGuard } from './controllers/guards/auth.guard';
 import { RoleGuard } from './controllers/guards/role.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
-import {AdminDashboardComponent} from "./views/admin/dashboard/dashboard.component";
+import {AdminDashboardComponent} from "./views/admin/tableaubord/dashboard/dashboard.component";
 import {PharmacyListComponent} from "./views/admin/pharmacies/list/list.component";
+import {StatisticsComponent} from "./views/admin/tableaubord/statistiques/statistique.component";
 
 const routes: Routes = [
   // ADMIN AREA
@@ -17,7 +18,8 @@ const routes: Routes = [
     data: { roles: ['admin', 'manager'] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard/overview', loadComponent: () =>import('./views/admin/dashboard/dashboard.component').then((c) => c.AdminDashboardComponent),},
+      { path: 'dashboard/overview', loadComponent: () =>import('./views/admin/tableaubord/dashboard/dashboard.component').then((c) => c.AdminDashboardComponent),},
+      { path: 'dashboard/stats', loadComponent: () =>import('./views/admin/tableaubord/statistiques/statistique.component').then((c) => c.StatisticsComponent),},
       { path: 'pharmacies/list',loadComponent: () =>import('./views/admin/pharmacies/list/list.component').then((c) => c.PharmacyListComponent), },
       { path: 'pharmacies/:id',  loadComponent: () => import('./views/admin/pharmacies/details/details.component').then((c) => c.PharmacyDetailComponent), },
     ],

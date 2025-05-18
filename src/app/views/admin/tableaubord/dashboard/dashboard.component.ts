@@ -3,13 +3,12 @@ import {Component, OnInit, ViewChild, ElementRef} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SharedModule } from 'src/app/views/theme/shared/shared.module';
 import { Chart, registerables } from 'chart.js';
-import {AuthService} from "../../../controllers/services/auth.service";
-import {Pharmacy} from "../../../models/Pharmacy";
-import {LoadingService} from "../../../controllers/services/loading.service";
+import {AuthService} from "../../../../controllers/services/auth.service";
+import {LoadingService} from "../../../../controllers/services/loading.service";
 import {HttpHeaders} from "@angular/common/http";
 import {Subject, takeUntil} from "rxjs";
 import Swal from "sweetalert2";
-import {ApiService} from "../../../controllers/services/api.service";
+import {ApiService} from "../../../../controllers/services/api.service";
 
 
 @Component({
