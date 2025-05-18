@@ -18,5 +18,5 @@ import { AuthInterceptor } from './controllers/interceptors/auth.interceptor';
   ]
 })
 export class AppComponent {
-  title = 'cmPharma - ma Pharmacie connecte';
+  title = 'ctmpharma - ma Pharmacie connecte';
 }

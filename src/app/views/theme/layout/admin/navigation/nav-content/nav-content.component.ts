@@ -31,7 +31,7 @@ export class NavContentComponent implements OnInit {
   SubmenuCollapse = output();
 
   // version
-  title = 'cmPharma - ma Pharmacie connecte';
+  title = 'ctmPharma - ma Pharmacie connecte';
   currentApplicationVersion = environment.appVersion;
 
   navigations!: NavigationItem[];
