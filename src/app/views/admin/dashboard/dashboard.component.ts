@@ -23,11 +23,7 @@ import {ApiService} from "../../../controllers/services/api.service";
 export class AdminDashboardComponent implements OnInit {
   stats: any[] = [];
   period: string = '1';
-  periods: [
-    // {
-    //   key:1,
-    //   name:"Mois dernier"
-    // },
+  periods: any[] = [
     {
       key:4,
       name:"Hier"
@@ -40,7 +36,7 @@ export class AdminDashboardComponent implements OnInit {
       key:2,
       name:"Année dernière"
     },
-];
+  ];
   constructor(private authUser: AuthService, private loadingService: LoadingService, private apiService: ApiService)  {
     Chart.register(...registerables);
   }

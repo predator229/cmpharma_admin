@@ -8,13 +8,13 @@
     <div class="row">
       <div class="col-md-12">
 <!--        <div class="stats-card">-->
-<!--          <div class="filter-group">-->
+          <div class="filter-group">
             <label>Filtrer par région:</label>
             <select class="form-select" [(ngModel)]="period" (change)="loadGlobalsData()">
               <option value="1">Mois dernier</option>
               <option *ngFor="let period of periods" [value]="period.key">{{period.name}}</option>
             </select>
-<!--          </div>-->
+          </div>
 <!--        </div>-->
       </div>
     </div>
