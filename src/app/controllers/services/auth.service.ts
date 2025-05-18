@@ -58,7 +58,7 @@ export class AuthService {
           Swal.fire({
             icon: 'error',
             title: 'Erreur',
-            text: 'Une erreur s\'est produite lors de la connectiopn avec le serveur. Veuillez reassayer !',
+            text: 'Une erreur s\'est produite lors de la connection avec le serveur. Veuillez reassayer !',
           });
           return of(null);  // Retourne une Observable avec null en cas d'erreur
         })
