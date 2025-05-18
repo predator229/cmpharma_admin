@@ -8,7 +8,7 @@
     <div class="row">
       <div class="col-md-12">
         <div class="stats-card">
-          <label>Periode :</label>
+          <label>Periode </label>
           <select class="form-select" [(ngModel)]="period" (change)="loadGlobalsData()">
             <option value="1">Mois dernier</option>
             <option *ngFor="let period of periods" [value]="period.key">{{period.name}}</option>
@@ -19,7 +19,7 @@
 
     <div class="row">
       <div class="col-md-3" *ngFor="let stat of stats">
-      <div class="stats-card">
+        <div class="stats-card">
           <div class="stats-icon {{stat.divicon}}">
             <i class="{{stat.icon}}"></i>
           </div>
@@ -28,24 +28,19 @@
               <div class="col-12"><h3>{{ stat.total }}</h3></div>
             </div>
             <p>{{ stat.name }}</p>
+            <p class="text-muted" style="font-size: 10px;">Total sur la periode</p>
           </div>
+          <br>
           <div class="stats-footer">
             <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'">
               <i [class]="stat.type == 1 ? 'fa fa-arrow-up' : 'fa fa-arrow-down'"></i>
             </span>
-            <br>
-            <div class="row">
-              <div class="col-md-12">
-                <span class="text-muted" style="font-size: 10px;">Total sur la periode</span>
-<!--                <span class="stat-value"> </span>-->
-                <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'"> {{ stat.peperiod }} ( {{ stat.difference }} %) </span>
-              </div>
-            </div>
+            <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'"> {{ stat.peperiod }} ( {{ stat.difference }} %) </span>
+          </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
   <div class="row">
     <div class="col-md-8">
