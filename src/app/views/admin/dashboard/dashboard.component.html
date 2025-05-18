@@ -25,18 +25,19 @@
           </div>
           <div class="stats-info">
             <div class="row">
-              <div class="col-12"><h3>{{ stat.total }}</h3></div>
+              <div class="col-12">
+                <h3>{{ stat.total }}</h3>
+                <div class="stats-footer">
+                  <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'"><i [class]="stat.type == 1 ? 'fa fa-arrow-up' : 'fa fa-arrow-down'"></i></span>
+                  <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'"> {{ stat.peperiod }} ( {{ stat.difference }} %) </span>
+                </div>
+              </div>
             </div>
             <p>{{ stat.name }}</p>
             <p class="text-muted" style="font-size: 10px;">Total sur la periode</p>
           </div>
           <br>
-          <div class="stats-footer">
-            <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'">
-              <i [class]="stat.type == 1 ? 'fa fa-arrow-up' : 'fa fa-arrow-down'"></i>
-            </span>
-            <span [ngClass]="stat.type == 1 ? 'positive' : 'negative'"> {{ stat.peperiod }} ( {{ stat.difference }} %) </span>
-          </div>
+
           </div>
         </div>
       </div>
