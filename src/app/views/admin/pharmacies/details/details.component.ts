@@ -128,7 +128,7 @@ export class PharmacyDetailComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacies/details', { id: pharmacyId, uid }, headers)
+      this.apiService.post('managers/pharmacies/details', { id: pharmacyId, uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -220,7 +220,7 @@ export class PharmacyDetailComponent implements OnInit, OnDestroy {
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     });
-    this.apiService.post('pharmacies/activities', { id:pharmacyId,uid }, headers)
+    this.apiService.post('managers/pharmacies/activities', { id:pharmacyId,uid }, headers)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
@@ -385,7 +385,7 @@ export class PharmacyDetailComponent implements OnInit, OnDestroy {
 
     const uid = await this.auth.getUid();
 
-    this.apiService.post('pharmacies/delete', { id: this.pharmacy.id, uid }, await this.getAuthHeaders())
+    this.apiService.post('managers/pharmacies/delete', { id: this.pharmacy.id, uid }, await this.getAuthHeaders())
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
@@ -422,7 +422,7 @@ export class PharmacyDetailComponent implements OnInit, OnDestroy {
       uid
     };
 
-    this.apiService.post('pharmacies/contact', messageData, await this.getAuthHeaders())
+    this.apiService.post('managers/pharmacies/contact', messageData, await this.getAuthHeaders())
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {

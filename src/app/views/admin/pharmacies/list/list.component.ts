@@ -102,7 +102,7 @@ export class PharmacyListComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacies/list', { uid }, headers)
+      this.apiService.post('managers/pharmacies/list', { uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -361,7 +361,7 @@ export class PharmacyListComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacies/approve', { id: pharmacy.id, uid }, headers)
+      this.apiService.post('managers/pharmacies/approve', { id: pharmacy.id, uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -406,7 +406,7 @@ export class PharmacyListComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacies/suspend', { id: pharmacy.id, uid }, headers)
+      this.apiService.post('managers/pharmacies/suspend', { id: pharmacy.id, uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -452,7 +452,7 @@ export class PharmacyListComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacies/activate', { id: pharmacy.id, uid }, headers)
+      this.apiService.post('managers/pharmacies/activate', { id: pharmacy.id, uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -499,7 +499,7 @@ export class PharmacyListComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacies/delete', {id : pharmacy.id, uid}, headers)
+      this.apiService.post('managers/pharmacies/delete', {id : pharmacy.id, uid}, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
