@@ -12,8 +12,8 @@ import Swal from "sweetalert2";
   selector: 'app-statistics',
   standalone: true,
   imports: [CommonModule, SharedModule],
-  templateUrl: './statistics.component.html',
-  styleUrls: ['./statistics.component.scss']
+  templateUrl: './statistique.component.html',
+  styleUrls: ['./statistique.component.scss']
 })
 export class StatisticsComponent implements OnInit, OnDestroy {
 // Propriétés pour le filtering et le chargement
