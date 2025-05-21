@@ -60,7 +60,7 @@ export class AuthService {
             title: 'Erreur',
             text: 'Une erreur s\'est produite lors de la connection avec le serveur. Veuillez reassayer !',
           });
-          return of(null);  // Retourne une Observable avec null en cas d'erreur
+          return of(null);
         })
       ).toPromise();
 

@@ -68,7 +68,7 @@ export default class LoginComponent {
     ).subscribe();
   }
 
-  loginWithGoogle() {
+  async loginWithGoogle() {
     this.imLoading = true;
     this.authService.loginWithGoogle()
       .then(() => this.handleAuthSuccess())
