@@ -131,15 +131,12 @@
                 </td>
                 <td>
                   {{ pharmacy.address }}
-<!--                    <li>{{ pharmacy.siret }}</li>-->
-<!--                    <li>{{ pharmacy.phoneNumber }}</li>-->
-<!--                    <li>{{ pharmacy.email }}</li>-->
-                      <a
-                        [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"
-                        target="_blank"
-                        rel="noopener noreferrer">
-                        📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}
-                      </a>
+                    <a
+                      [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"
+                      target="_blank"
+                      rel="noopener noreferrer">
+                      📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}
+                    </a>
                 </td>
                 <td>{{ pharmacy.registerDate | date: 'dd/MM/yyyy' }}</td>
                 <td>
@@ -271,16 +268,17 @@
                 <h5>Emplacement</h5>
                 <div class="pharmacy-map">
                   <div class="map-container">
-                    <google-map
-                      [center]="{lat: selectedPharmacy.location.latitude, lng: selectedPharmacy.location.longitude}"
-                      [zoom]="15"
-                      width="100%"
-                      height="400px">
-                      <map-marker
-                        [position]="{lat: selectedPharmacy.location.latitude, lng: selectedPharmacy.location.longitude}"
-                        [title]="selectedPharmacy.name">
-                      </map-marker>
-                    </google-map>
+<!--                    <google-map-->
+<!--                      [center]="{lat: selectedPharmacy.location.latitude, lng: selectedPharmacy.location.longitude}"-->
+<!--                      [zoom]="15"-->
+<!--                      width="100%"-->
+<!--                      height="400px">-->
+<!--                      <map-marker-->
+<!--                        [position]="{lat: selectedPharmacy.location.latitude, lng: selectedPharmacy.location.longitude}"-->
+<!--                        [title]="selectedPharmacy.name">-->
+<!--                      </map-marker>-->
+<!--                    </google-map>-->
+                    <app-map [latitude]="selectedPharmacy.location.latitude" [longitude]="selectedPharmacy.location.longitude" [zoom]="15" [height]="400"></app-map>
                   </div>
                 </div>
               </div>

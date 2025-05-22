@@ -13,12 +13,13 @@ import {RouterLink} from "@angular/router";
 import {Pharmacy} from "../../../../models/Pharmacy";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {GoogleMap, MapMarker} from "@angular/google-maps";
+import {MapComponent} from "../../../../generalmap.component";
 
 
 @Component({
   selector: 'app-admin-dashboard-overview',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterLink, GoogleMap, MapMarker],
+  imports: [CommonModule, SharedModule, RouterLink, GoogleMap, MapMarker, MapComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
