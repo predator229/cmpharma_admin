@@ -98,7 +98,7 @@ export default class LandingComponent implements OnInit, OnDestroy, AfterViewIni
       name: 'Pierre Martin',
       role: 'Pharmacien',
       img: 'pharmacien.jpeg',
-      message: 'cmPharma nous a permis d\'augmenter notre chiffre d\'affaires de 30% en seulement trois mois. La plateforme est intuitive et facile à utiliser.'
+      message: 'ctmPharma nous a permis d\'augmenter notre chiffre d\'affaires de 30% en seulement trois mois. La plateforme est intuitive et facile à utiliser.'
     },
     // {
     //   name: 'Sophie Lefèvre',
@@ -109,7 +109,7 @@ export default class LandingComponent implements OnInit, OnDestroy, AfterViewIni
       name: 'Thomas Moreau',
       role: 'Livreur',
       img: 'livreur.jpg',
-      message: 'Travailler avec cmPharma me permet de gérer mon emploi du temps comme je le souhaite tout en gagnant un revenu complémentaire.'
+      message: 'Travailler avec ctmPharma me permet de gérer mon emploi du temps comme je le souhaite tout en gagnant un revenu complémentaire.'
     }
   ];
 
@@ -136,7 +136,7 @@ export default class LandingComponent implements OnInit, OnDestroy, AfterViewIni
     },
     {
       question: 'Comment devenir livreur ?',
-      answer: 'Pour rejoindre notre réseau de livreurs, téléchargez notre application dédiée "cmPharma Livreurs", créez votre profil et soumettez les documents nécessaires. Après validation, vous pourrez commencer à effectuer des livraisons.'
+      answer: 'Pour rejoindre notre réseau de livreurs, téléchargez notre application dédiée "ctmPharma Livreurs", créez votre profil et soumettez les documents nécessaires. Après validation, vous pourrez commencer à effectuer des livraisons.'
     }
   ];
 
