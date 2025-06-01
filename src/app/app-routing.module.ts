@@ -8,6 +8,7 @@ import { LoginGuard } from './controllers/guards/login.guard';
 import {AdminDashboardComponent} from "./views/admin/tableaubord/dashboard/dashboard.component";
 import {PharmacyListComponent} from "./views/admin/pharmacies/list/list.component";
 import {StatisticsComponent} from "./views/admin/tableaubord/statistiques/statistique.component";
+import {BecomePartnerComponent} from "./views/become_partner/become-partner.component";
 
 const routes: Routes = [
   // ADMIN AREA
@@ -46,6 +47,7 @@ const routes: Routes = [
       { path: 'login', loadComponent: () => import('./views/login/login.component'), canActivate: [LoginGuard], },
       { path: '', loadComponent: () => import('./views/landing/landing.component'), },
       { path: 'welcome', loadComponent: () => import('./views/landing/landing.component'), },
+      { path: 'become-partner', loadComponent: () => import('./views/become_partner/become-partner.component').then((c) => c.BecomePartnerComponent), },
       { path: 'not-found', loadComponent: () => import('./views/errors/not-found/not-found.component') },
       { path: 'use-proxy', loadComponent: () => import('./views/errors/use-proxy/use-proxy.component') },
     ],

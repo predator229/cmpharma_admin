@@ -124,7 +124,7 @@ $transition: all 0.3s ease;
   padding: 12px 28px;
   background-color: transparent;
   color: $secondary-color;
-  border: 2px solid $secondary-color;
+  border: 2px solid $primary-color;
   border-radius: 50px;
   font-weight: 600;
   transition: $transition;
@@ -476,7 +476,7 @@ $transition: all 0.3s ease;
         h3 {
           font-size: 1.8rem;
           margin-bottom: 20px;
-          color: $secondary-color;
+          color: $light-text;
         }
 
         ul {

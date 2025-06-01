@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, UserCredential, sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, UserCredential, sendPasswordResetEmail } from 'firebase/auth';
 import { app } from '../../firebase.config';
 import { ApiService } from './api.service';
 import { map, catchError } from 'rxjs/operators';
@@ -104,7 +104,9 @@ export class AuthService {
     const provider = new GoogleAuthProvider();
     return signInWithPopup(this.auth, provider);
   }
-
+  public signUpWithEmail(email: string, password: string): Promise<UserCredential> {
+    return createUserWithEmailAndPassword(this.auth, email, password);
+  }
   public async logout(): Promise<void> {
     try {
       await signOut(this.auth);
