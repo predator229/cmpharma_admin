@@ -87,23 +87,10 @@ export class BecomePartnerComponent implements OnInit {
           Validators.required,
           this.fullNameValidator
         ]],
-        owner_function: ['', [
-          Validators.required,
-          Validators.minLength(3),
-          Validators.maxLength(100)
-        ]],
         owner_phone: ['', [
           Validators.required,
           Validators.pattern(/^\+33[0-9]{9}$/)
         ]],
-        password: ['', [
-          Validators.required,
-          Validators.minLength(8),
-          this.passwordValidator
-        ]],
-        confirm_password: ['', [
-          Validators.required
-        ]]
       }, {
         validators: this.passwordMatchValidator
       });
@@ -215,7 +202,7 @@ export class BecomePartnerComponent implements OnInit {
   }
   validateCurrentStep(): boolean {
     const step1Fields = ['pharmacy_name', 'pharmacy_address', 'pharmacy_phone', 'pharmacy_email'];
-    const step2Fields = ['owner_full_name', 'owner_function', 'owner_email', 'owner_phone', 'password', 'confirm_password'];
+    const step2Fields = ['owner_full_name', 'owner_email', 'owner_phone'];
 
     const fieldsToValidate = this.currentStep === 1 ? step1Fields : step2Fields;
 
@@ -245,6 +232,17 @@ export class BecomePartnerComponent implements OnInit {
       formData.type_account = this.ownerExist ? 1 : 2;
       formData.email = this.partnerForm.value.owner_email;
 
+      const fullFormData = {
+        type_account: this.ownerExist ? 1 : 2,
+        pharmacy_name: this.partnerForm.value.pharmacy_name,
+        pharmacy_address: this.partnerForm.value.pharmacy_address,
+        pharmacy_phone: this.partnerForm.value.pharmacy_phone,
+        pharmacy_email: this.partnerForm.value.pharmacy_email,
+        owner_full_name: this.partnerForm.value.owner_full_name,
+        owner_email: this.partnerForm.value.owner_email,
+        owner_phone: this.partnerForm.value.owner_phone,
+      };
+
       try {
         this.isLoading =true;
         const headers = new HttpHeaders({
@@ -252,78 +250,24 @@ export class BecomePartnerComponent implements OnInit {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         });
-        this.apiService.post('pharmacies/check-owner-info', {
-          type_account : formData.type_account,
-          email: formData.email,
-        }, headers)
+        this.apiService.post('pharmacies/check-owner-and-save-info', fullFormData, headers)
           .pipe(takeUntil(this.destroy$))
           .subscribe({
             next: async (response: any) => {
               if (response && !response.error) {
                   if (!response.continue){
                     this.handleError(response.errorMessage ?? 'Erreur lors de la communication avec le serveur');
-                  }else { let_continue = true; }
+                  }else {
+                    Swal.fire({
+                      icon: 'success',
+                      title: 'Success',
+                      text: "Felicitations, la pharmacie a ete enregistree avec succes !"+(this.ownerExist ? "Vous pouvez retrouver la pharmacie dans votre tableau de bord" : " Pour vous connectez, vous devez consulter votre boite mail et confirmer votre adresse email pour creer votre mot de passe!")
+                    });
+                    this.router.navigate(['/login']);
+                  }
               } else {
                 this.handleError('Erreur lors de la communication avec le serveur');
               }
-              if (let_continue){
-                const fullFormData = {
-                  pharmacy_name: this.partnerForm.value.pharmacy_name,
-                  pharmacy_address: this.partnerForm.value.pharmacy_address,
-                  pharmacy_phone: this.partnerForm.value.pharmacy_phone,
-                  pharmacy_email: this.partnerForm.value.pharmacy_email,
-                  owner_full_name: this.partnerForm.value.owner_full_name,
-                  owner_email: this.partnerForm.value.owner_email,
-                  owner_phone: this.partnerForm.value.owner_phone,
-                  function_phone: this.partnerForm.value.owner_function,
-                  uid: uid
-                };
-                if (this.ownerExist){
-                  if (response.uid) { fullFormData.uid = response.uid; }
-                  else {
-                    this.isLoading = false;
-                    this.handleError('Probleme lors de la reconnaissance du compte associer au partenaire. Veuillez reeassayez');
-                    return;
-                  }
-                }
-                else{
-                  await this.authService.signUpWithEmail(this.partnerForm.value.owner_email, this.partnerForm.value.password)
-                    .then(() => fullFormData.uid = this.authService.getUid())
-                    .catch(function(){ this.isLoading = false; this.handleError('Erreur d\'authentification, veuillez vérifier vos informations.'); return;});
-                }
-                if (fullFormData.uid){
-                  const headers = new HttpHeaders({
-                    // 'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                  });
-                  this.apiService.post('pharmacies/new-pharmacie-', {
-                    type_account : formData.type_account,
-                    email: formData.pharmacy_email,
-                  }, headers)
-                    .pipe(takeUntil(this.destroy$))
-                    .subscribe({
-                        next: async (response: any) => {
-                          if (response && !response.error) {
-                            Swal.fire({ //cybershieldds@gmail.com
-                              icon: 'success',
-                              title: 'Succes',
-                              text: response.message ?? "Felicitations, la pharmacie a ete enregistree avec succes ! Veuillez confirmer les addresses email indiquees (adresse email de la pharmacie et adresse email du compte associe au partenaire) pour finaliser l'enregistrement. Vous pouvez des maintenant vous connecter avec votre compte !",
-                            });
-
-                          }
-                        },
-                      error: (error) => {
-                        this.handleError('Erreur lors de la communication avec le serveur');
-                      }
-                    });
-                }
-                else{
-                  this.handleError('Probleme lors de la reconnaissance du compte associer au partenaire. Veuillez reeassayez');
-                  return;
-                }
-              }
-
               this.isLoading = false;
             },
             error: (error) => {
