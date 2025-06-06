@@ -263,7 +263,6 @@ export class BecomePartnerComponent implements OnInit {
                       title: 'Success',
                       text: "Felicitations, la pharmacie a ete enregistree avec succes !"+(this.ownerExist ? "Vous pouvez retrouver la pharmacie dans votre tableau de bord" : " Pour vous connectez, vous devez consulter votre boite mail et confirmer votre adresse email pour creer votre mot de passe!")
                     });
-                    this.router.navigate(['/login']);
                   }
               } else {
                 this.handleError('Erreur lors de la communication avec le serveur');

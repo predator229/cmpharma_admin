@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, UserCredential, sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, UserCredential, sendPasswordResetEmail, confirmPasswordReset } from 'firebase/auth';
 import { app } from '../../firebase.config';
 import { ApiService } from './api.service';
 import { map, catchError } from 'rxjs/operators';
@@ -124,6 +124,14 @@ export class AuthService {
 
   public async getRealToken(): Promise<string | null> {
     return this.currentUser ? await this.currentUser.getIdToken(true) : null;
+  }
+  public async confirmResetPassword(oobCode: string, newPassword: string): Promise<void> {
+    try {
+      await confirmPasswordReset(this.auth, oobCode, newPassword);
+    } catch (error: any) {
+      console.error('Erreur lors de la confirmation du reset password :', error.message);
+      throw error;
+    }
   }
 
   public getCurrentUser(): User | null {
