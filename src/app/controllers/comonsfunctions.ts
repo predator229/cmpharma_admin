@@ -2,17 +2,23 @@ import {PharmacyClass} from "../models/Pharmacy.class";
 import {OpeningHoursClass} from "../models/OpeningHours.class";
 import {Image} from "../models/Image.class";
 import {Location} from "../models/Location";
+import {Group, GroupCode} from "../models/Group.class";
 
 /**
  * Fonctions communes réutilisables dans l'application
  */
 export class CommonFunctions {
+  static getRoleRedirectMap(group: Group) {
+    const roleRedirectMap: Record<string, string> = {
+      [GroupCode.PHARMACIST_OWNER]: 'pharmacy/dashboard/',
+      [GroupCode.PHARMACIST_MANAGER]: 'pharmacy/dashboard/',
+      [GroupCode.SUPERADMIN]: 'admin/dashboard/overview',
+      [GroupCode.MANAGER]: 'admin/dashboard/overview',
+      [GroupCode.ADMIN]: 'admin/dashboard/overview',
+    };
+    return group.code && typeof roleRedirectMap[group.code] !=="undefined" ? roleRedirectMap[group.code] : null;
+  }
 
-  /**
-   * Mappe les données brutes vers une instance de PharmacyClass
-   * @param data - Les données brutes à mapper
-   * @returns Une instance de PharmacyClass ou null si les données sont invalides
-   */
   static mapToPharmacy(data: any): PharmacyClass | null {
     if (typeof data !== "object" || data === null) {
       return null;
@@ -39,6 +45,7 @@ export class CommonFunctions {
       registerDate: data.registerDate ? new Date(data.registerDate) : new Date(),
       rating: data.rating || null,
       workingHours: data.workingHours ? data.workingHours.map((wh: any) => new OpeningHoursClass(wh)) : [],
+      comentaire: data.commentaire ?? '',
       createdAt: data.createdAt ? new Date(data.createdAt) : null,
       updatedAt: data.updatedAt ? new Date(data.updatedAt) : null,
       totalRevenue: data.totalRevenue || 0,
@@ -46,6 +53,7 @@ export class CommonFunctions {
       revenue30days: data.revenue30days || null,
     });
   }
+
 
   /**
    * Extraire la liste des regions par raport au region specifier dans l'ensemble des pharmacies

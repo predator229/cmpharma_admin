@@ -1,5 +1,6 @@
 import { Country } from "./Country";
 import {SetupBase} from "./SetupBase";
+import {Group} from "./Group.class";
 
 export interface ApiUserDetails{
   error:number,
@@ -16,8 +17,7 @@ export interface ApiUserDetails{
   mobils?: string[];
   phone?: string;
   pharmaciesManaged: string[];
-  role: 'superadmin' | 'admin' | 'manager' | 'pharmacist-owner' | 'pharmacits-manager';
-  permissions: ('read' | 'write' | 'delete' | 'update')[];
+  groups: Group[];
   isActivated: boolean;
   lastLogin: Date | null;
   createdAt: Date;

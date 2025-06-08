@@ -1,6 +1,6 @@
 // Angular import
 import { CommonModule } from '@angular/common';
-import { Component, output } from '@angular/core';
+import {Component, Input, output} from '@angular/core';
 import { RouterModule } from '@angular/router';
 
 // project import
@@ -21,6 +21,7 @@ export class NavigationComponent {
   navCollapsedMob = false;
   windowWidth = window.innerWidth;
   themeMode!: string;
+  @Input() public url!: String;
 
   // public method
   navCollapseMob() {

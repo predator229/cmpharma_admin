@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from 'src/app/controllers/services/auth.service';
 import { filter, map, take } from "rxjs/operators";
 import { Subscription } from 'rxjs';
+import {Group} from "../../models/Group.class";
+import {CommonFunctions} from "../../controllers/comonsfunctions";
 
 interface Feature {
   icon: string;
@@ -36,6 +38,7 @@ interface HeroData {
 })
 export default class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
   userDetails: boolean = false;
+  urlDashboard: String | null = '/admin/dashboard/overview/';
   private userSubscription: Subscription | null = null;
 
   heroData: HeroData = {
@@ -148,6 +151,14 @@ export default class LandingComponent implements OnInit, OnDestroy, AfterViewIni
       map(() => {
         const user = this.authService.getCurrentUser();
         // if (user) { this.authService.logout();  }
+        if (user){
+          const _userDetails = this.authService.getUserDetails();
+          if (!_userDetails || !Array.isArray(_userDetails.groups) || _userDetails.groups.length === 0) {
+            return false;
+          }
+          const group = _userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g) !== null);
+          this.urlDashboard = group ? CommonFunctions.getRoleRedirectMap(group) : null;
+        }
         return user ? true : false;
       })
     ).subscribe(isLoggedIn => {
@@ -170,8 +181,8 @@ export default class LandingComponent implements OnInit, OnDestroy, AfterViewIni
   }
 
   onLoginClick(): void {
-    if (this.userDetails) {
-      this.router.navigate(['/admin/dashboard/overview/']);
+    if (this.userDetails && this.urlDashboard) {
+      this.router.navigate([this.urlDashboard]);
     } else {
       this.router.navigate(['/login']);
     }

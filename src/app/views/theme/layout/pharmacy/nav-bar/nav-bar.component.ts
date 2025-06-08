@@ -1,6 +1,6 @@
 // Angular import
 import { CommonModule } from '@angular/common';
-import { Component, output } from '@angular/core';
+import {Component, Input, output} from '@angular/core';
 
 // project import
 import { setupsConfig } from 'src/app/app-config';
@@ -23,6 +23,7 @@ export class NavBarComponent {
   navCollapsed: boolean;
   windowWidth: number;
   navCollapsedMob: boolean;
+  @Input() url!: String;
 
   // Constructor
   constructor() {

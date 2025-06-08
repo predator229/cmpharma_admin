@@ -9,7 +9,7 @@ import { AuthModule } from './views/login/login.module';
 
 // Gardiens de route
 import { AuthGuard } from './controllers/guards/auth.guard';
-import { RoleGuard } from './controllers/guards/role.guard';
+import { GroupGuard } from './controllers/guards/group.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
 import {SharedModule} from "./views/theme/shared/shared.module";
 import {RouterModule} from "@angular/router";
@@ -26,7 +26,7 @@ import {RouterModule} from "@angular/router";
   ],
   providers: [
     AuthGuard,
-    RoleGuard,
+    GroupGuard,
     LoginGuard
   ],
   // bootstrap: [AppComponent],

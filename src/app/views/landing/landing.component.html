@@ -16,7 +16,7 @@
             <li><a href="#faq">FAQ</a></li>
           </ul>
           <button class="btn-login" (click)="onLoginClick()" style="background-color: #ff6b6b">
-            {{ userDetails ? 'Accéder à mon compte' : 'Connexion' }}
+            {{ userDetails && urlDashboard ? 'Accéder à mon compte' : 'Connexion' }}
           </button>
           <!-- <button v-if="userDetails && userDetails !== null" class="btn-login" style="margin-left:10px; background-color:red;" (click)="onLogOutCall()">Se deconnecter</button> -->
         </div>

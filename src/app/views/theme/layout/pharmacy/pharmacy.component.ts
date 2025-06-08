@@ -16,6 +16,8 @@ import { SharedModule } from "../../shared/shared.module";
 import {UserDetails} from "../../../../models/UserDatails";
 import {filter, map, take} from "rxjs/operators";
 import {LoadingService} from "../../../../controllers/services/loading.service";
+import {Group} from "../../../../models/Group.class";
+import {CommonFunctions} from "../../../../controllers/comonsfunctions";
 
 @Component({
   selector: 'app-pharmacy',
@@ -42,6 +44,7 @@ export class PharmacyComponent implements AfterViewInit {
   private router: Router;
   public displayName: boolean;
   public displaySurname: boolean;
+  public urlDashboard: String = "";
 
   public imLoading: boolean = false;
 
@@ -57,13 +60,20 @@ export class PharmacyComponent implements AfterViewInit {
     this.authUser = authUser;
 
     this.authUser.userDetailsLoaded$.pipe(
-      filter(loaded => loaded), // Wait for auth to be stabilized
+      filter(loaded => loaded),
       take(1),
       map(() => {
         this.userDetails = this.authUser.getUserDetails();
         if (!this.userDetails) {
           this.router.navigate(['/login']);
+          return false;
         }
+        if (!Array.isArray(this.userDetails.groups) || this.userDetails.groups.length === 0) {
+          return false;
+        }
+        const group = this.userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g) !== null);
+        this.urlDashboard = group ? CommonFunctions.getRoleRedirectMap(group) : null;
+        return true;
       })
     ).subscribe();
   }

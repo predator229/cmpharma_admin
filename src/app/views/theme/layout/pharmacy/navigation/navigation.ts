@@ -23,6 +23,8 @@ export const NavigationItems: NavigationItem[] = [
     icon: 'icon-navigation',
     children: [
       { id: 'pharmacy-pharmacy-dashboard', title: 'Tableau de bord', type: 'item', url: '/pharmacy/dashboard', icon: 'ti ti-home' },
+      { id: 'pharmacy-speed-view', title: 'Comande a preparer', type: 'item', url: '/pharmacy/todo', icon: 'ti ti-list-check' },
+      { id: 'pharmacy-list-view', title: 'Mes pharmacies', type: 'item', url: '/pharmacy/pharmacies/list', icon: 'fa fa-home' },
       {
         id: 'pharmacy-products',
         title: 'Produits',
@@ -180,16 +182,6 @@ export const NavigationItems: NavigationItem[] = [
     type: 'group',
     icon: 'icon-navigation',
     children: [
-      {
-        id: 'pharmacy-coupons-menu',
-        title: 'Coupons',
-        type: 'collapse',
-        icon: 'ti ti-tag',
-        children: [
-          { id: 'pharmacy-coupons-list', title: 'Liste', type: 'item', url: '/pharmacy/coupons/list' },
-          { id: 'pharmacy-coupons-add', title: 'Ajouter', type: 'item', url: '/pharmacy/coupons/add' }
-        ]
-      },
       { id: 'pharmacy-reviews', title: 'Avis', type: 'item', url: '/pharmacy/reviews', icon: 'ti ti-star' }
     ]
   },
@@ -199,34 +191,9 @@ export const NavigationItems: NavigationItem[] = [
     type: 'group',
     icon: 'icon-navigation',
     children: [
-      { id: 'pharmacy-chat', title: 'Chat', type: 'item', url: '/pharmacy/chat', icon: 'ti ti-message' },
-      { id: 'pharmacy-email', title: 'Email', type: 'item', url: '/pharmacy/email', icon: 'ti ti-mail' },
+      { id: 'pharmacy-chat', title: 'Messagerie interne', type: 'item', url: '/pharmacy/chat', icon: 'ti ti-message' },
       { id: 'pharmacy-calendar', title: 'Calendrier', type: 'item', url: '/pharmacy/calendar', icon: 'ti ti-calendar' },
-      { id: 'pharmacy-todo', title: 'Tâches', type: 'item', url: '/pharmacy/todo', icon: 'ti ti-list-check' },
       { id: 'pharmacy-support', title: 'Support', type: 'item', url: '/pharmacy/support', icon: 'ti ti-headset' }
-    ]
-  },
-  {
-    id: 'pharmacy-pages',
-    title: 'Pages',
-    type: 'group',
-    icon: 'icon-navigation',
-    children: [
-      {
-        id: 'pharmacy-pages-menu',
-        title: 'Pages',
-        type: 'collapse',
-        icon: 'ti ti-file',
-        children: [
-          { id: 'pharmacy-welcome', title: 'Bienvenue', type: 'item', url: '/pharmacy/pages/welcome' },
-          { id: 'pharmacy-coming-soon', title: 'Bientôt disponible', type: 'item', url: '/pharmacy/pages/coming-soon' },
-          { id: 'pharmacy-timeline', title: 'Chronologie', type: 'item', url: '/pharmacy/pages/timeline' },
-          { id: 'pharmacy-pricing', title: 'Tarification', type: 'item', url: '/pharmacy/pages/pricing' },
-          { id: 'pharmacy-maintenance', title: 'Maintenance', type: 'item', url: '/pharmacy/pages/maintenance' },
-          { id: 'pharmacy-404', title: 'Erreur 404', type: 'item', url: '/pharmacy/pages/404' },
-          { id: 'pharmacy-404-alt', title: 'Erreur 404 Alt', type: 'item', url: '/pharmacy/pages/404-alt' }
-        ]
-      }
     ]
   }
 

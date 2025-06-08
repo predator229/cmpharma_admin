@@ -6,6 +6,9 @@ import { AuthService } from 'src/app/controllers/services/auth.service';
 import { filter, take, map } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import Swal from 'sweetalert2';
+import {Group} from "../../models/Group.class";
+import {CommonFunctions} from "../../controllers/comonsfunctions";
+import {waitForAsync} from "@angular/core/testing";
 
 
 @Component({
@@ -57,16 +60,30 @@ export default class LoginComponent {
       take(1),
       map(() => {
         const user = this.authService.getCurrentUser();
+        const userDetails = this.authService.getUserDetails();
         if (!user) {
-          this.showError('L\'email n\'est associe a aucun compte.');
+          this.showError('L\'email n\'est associé à aucun compte.');
+          this.imLoading = false;
           return false;
         }
+        if (!userDetails || !Array.isArray(userDetails.groups) || userDetails.groups.length === 0) {
+          // this.showError('Aucun groupe utilisateur trouvé.');
+          this.imLoading = false;
+          return false;
+        }
+        const group = userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g) !== null);
+        const redirectUrl = group ? CommonFunctions.getRoleRedirectMap(group) : null;
         this.imLoading = false;
-        window.location.href = '/admin/dashboard/overview';
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+        } else {
+          // window.location.href = '/login';
+        }
         return true;
       })
     ).subscribe();
   }
+
 
   async loginWithGoogle() {
     this.imLoading = true;

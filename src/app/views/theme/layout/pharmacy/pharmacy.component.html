@@ -1,7 +1,7 @@
 <div class="overload" [style.display]="imLoading ? 'flex' : 'none'">
   <div class="spinner"></div>
 </div>
-<app-navigation
+<app-navigation [url]="urlDashboard"
   class="coded-navbar pc-sidebar"
   [ngClass]="{
     'navbar-collapsed': navCollapsed,
@@ -11,12 +11,12 @@
   }"
   (NavCollapsedMob)="navMobClick()"
 />
-<app-nav-bar (NavCollapse)="this.navCollapsed = !this.navCollapsed" (NavCollapsedMob)="navMobClick()" />
+<app-nav-bar [url]="urlDashboard" (NavCollapse)="this.navCollapsed = !this.navCollapsed" (NavCollapsedMob)="navMobClick()" />
 <div class="pc-container">
   <div class="coded-wrapper">
     <div class="coded-content">
       <div class="coded-inner-content">
-        <app-breadcrumb />
+        <app-breadcrumb [url]="urlDashboard" />
         <div class="main-body">
           <div class="page-wrapper">
             <ng-template #userInfoModal let-modal>

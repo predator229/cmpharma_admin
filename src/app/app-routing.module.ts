@@ -4,15 +4,15 @@ import { AdminComponent } from './views/theme/layout/admin/admin.component';
 import { PharmacyComponent } from './views/theme/layout/pharmacy/pharmacy.component';
 import { GuestComponent } from './views/theme/layout/guest/guest.component';
 import { AuthGuard } from './controllers/guards/auth.guard';
-import { RoleGuard } from './controllers/guards/role.guard';
+import { GroupGuard } from './controllers/guards/group.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
+import {GroupCode} from "./models/Group.class";
 
-const routes: Routes = [
-  {
+const routes: Routes = [{
     path: 'admin',
     component: AdminComponent,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['admin', 'manager', 'superadmin'] },
+    canActivate: [AuthGuard, GroupGuard],
+    data: { roles: [GroupCode.ADMIN, GroupCode.MANAGER, GroupCode.SUPERADMIN] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard/overview', loadComponent: () =>import('./views/admin/tableaubord/dashboard/dashboard.component').then((c) => c.AdminDashboardComponent),},
@@ -27,11 +27,13 @@ const routes: Routes = [
   {
     path: 'pharmacy',
     component: PharmacyComponent,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['pharmacist-owner', 'pharmacist-manager', 'superadmin'] },
+    canActivate: [AuthGuard, GroupGuard],
+    data: { roles: [GroupCode.PHARMACIST_OWNER, GroupCode.PHARMACIST_MANAGER, GroupCode.SUPERADMIN] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard',loadComponent: () =>import('./views/pharmacy/dashboard/dashboard.component').then((c) => c.DefaultComponent), },
+      { path: 'pharmacies/list', loadComponent: () =>import('./views/pharmacy/pharmacies/list/list.component').then((c) => c.PharmacyListComponentPharmacie), },
+      { path: 'pharmacies/:id',  loadComponent: () => import('./views/pharmacy/pharmacies/details/details.component').then((c) => c.PharmacyDetailComponentPharmacie), },
     ],
   },
 

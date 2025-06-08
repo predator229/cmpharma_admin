@@ -16,7 +16,7 @@
             <ul class="breadcrumb">
               <li class="breadcrumb-item">
                 @if (type === 'icon') {
-                  <a [routerLink]="['/admin/dashboard/overview']" title="Accueil" style="color:#00a99d">
+                  <a [routerLink]="[url]" title="Accueil" style="color:#00a99d">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="24"
@@ -33,7 +33,7 @@
                   </a>
                 }
                 @if (type === 'text') {
-                  <a [routerLink]="['/admin/dashboard/overview']">{{ 'Acceuil' }}</a>
+                  <a [routerLink]="[url]">{{ 'Acceuil' }}</a>
                 }
               </li>
               @for (breadcrumb of navigationList; track breadcrumb) {

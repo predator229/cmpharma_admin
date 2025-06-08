@@ -26,9 +26,9 @@ interface titleType {
 export class BreadcrumbComponent {
   private route = inject(Router);
   private titleService = inject(Title);
-
   // public props
   @Input() type: string;
+  @Input() public url!: String;
 
   navigations: NavigationItem[];
   breadcrumbList: string[] = [];

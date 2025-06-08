@@ -1,9 +1,11 @@
 import { ApiUserDetails } from "./ApiUserDetails";
 import { Country } from "./Country";
 import {SetupBase} from "./SetupBase";
-
-
+import {Permission} from "./Permission.class";
+import {OpeningHoursClass} from "./OpeningHours.class";
+import {Group} from "./Group.class";
   export class UserDetails {
+    groups: Group[];
     id: string;
     email: string;
     name?: string;
@@ -17,8 +19,6 @@ import {SetupBase} from "./SetupBase";
     phone?: string;
     setups?: SetupBase;
     pharmaciesManaged: string[];
-    role: 'superadmin' | 'admin' | 'manager' | 'pharmacist-owner' | 'pharmacits-manager';
-    permissions: ('read' | 'write' | 'delete' | 'update')[];
     isActivated: boolean;
     lastLogin: Date | null;
     createdAt: Date;
@@ -38,13 +38,14 @@ import {SetupBase} from "./SetupBase";
       phone?: string;
       setups?: SetupBase;
       pharmaciesManaged?: string[];
-      role: 'superadmin' | 'admin' | 'manager' | 'pharmacist-owner' | 'pharmacits-manager';
-      permissions?: ('read' | 'write' | 'delete' | 'update')[];
+      groups: Group[];
+      permissions?: Permission[] | [String];
       isActivated?: boolean;
       lastLogin?: Date | null;
       createdAt: Date;
       updatedAt: Date;
     }) {
+      this.groups = data.groups ? data.groups.map((group: any) => new Group(group)) : [];
       this.id = data.id || '';
       this.email = data.email || '';
       this.name = data.name || '';
@@ -58,12 +59,12 @@ import {SetupBase} from "./SetupBase";
       this.setups = data.setups ?? null;
       this.phone = data.phone || '';
       this.pharmaciesManaged = data.pharmaciesManaged || [];
-      this.role = data.role || 'admin';
-      this.permissions = data.permissions || ['read', 'write'];
       this.isActivated = data.isActivated !== undefined ? data.isActivated : true;
       this.lastLogin = data.lastLogin || null;
       this.createdAt = data.createdAt;
       this.updatedAt = data.updatedAt;
+
+      console.log(this);
     }
 
     static fromApiResponse(data: ApiUserDetails): UserDetails {
@@ -81,8 +82,7 @@ import {SetupBase} from "./SetupBase";
         phone: data.user.phone,
         setups: data.user.setups ?? null,
         pharmaciesManaged: data.user.pharmaciesManaged,
-        role: data.user.role as UserDetails['role'],
-        permissions: data.user.permissions,
+        groups: data.user.groups ? data.user.groups.map((group: any) => new Group(group)) : [],
         isActivated: data.user.isActivated,
         lastLogin: data.user.lastLogin,
         createdAt: new Date(data.user.createdAt),

@@ -12,6 +12,7 @@ import { RouterModule } from '@angular/router';
 export class NavLogoComponent {
   // public props
   @Input() navCollapsed: boolean;
+  @Input() url!: String;
   @Output() NavCollapse = new EventEmitter();
   windowWidth = window.innerWidth;
 

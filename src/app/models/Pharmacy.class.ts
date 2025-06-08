@@ -20,6 +20,8 @@ export class PharmacyClass {
   registerDate: Date;
   rating: number | null;
   workingHours: OpeningHoursClass[];
+  comentaire?: string | null;
+
   createdAt: Date | null;
   updatedAt: Date | null;
 
@@ -45,6 +47,7 @@ export class PharmacyClass {
     registerDate?: Date;
     rating?: number | null;
     workingHours?: OpeningHoursClass[];
+    comentaire?: string | null;
     createdAt?: Date;
     updatedAt?: Date;
     totalRevenue?: number;
@@ -67,6 +70,7 @@ export class PharmacyClass {
     this.registerDate = data.registerDate ?? new Date();
     this.rating = data.rating ?? null;
     this.workingHours = (data.workingHours ?? []).map(w => new OpeningHoursClass(w));
+    this.comentaire = data.comentaire ?? '';
     this.createdAt = data.createdAt ? new Date(data.createdAt) : null;
     this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : null;
 

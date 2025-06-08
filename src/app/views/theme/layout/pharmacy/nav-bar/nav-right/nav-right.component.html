@@ -130,7 +130,7 @@
         <div class="dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown" ngbDropdownMenu>
           <div class="dropdown-header">
             <h4>{{ userDetails ? userDetails.name+' '+userDetails.surname : '' }}</h4>
-            <p class="text-muted">{{ userDetails ? userDetails.role : '' }}</p>
+            <p class="text-muted">{{ userDetails && userDetails.groups ? userDetails.groups[0].code : '' }}</p>
             <form class="header-search">
               <div class="search-btn">
                 <i class="ti ti-search"></i>

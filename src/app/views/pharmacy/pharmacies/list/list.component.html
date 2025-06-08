@@ -86,6 +86,7 @@
                   <i class="fas" [ngClass]="getSortIcon('rating')"></i>
                 </div>
               </th>
+              <th>Commentaire Administrateur</th>
               <th>Actions</th>
             </tr>
             </thead>
@@ -93,7 +94,7 @@
             <tr *ngFor="let pharmacy of filteredPharmacies">
               <ng-container *ngIf="pharmacy">
                 <td>
-                <a [routerLink]="['/admin/pharmacies', pharmacy.id]">{{ pharmacy.name }}</a>
+                <a [routerLink]="['/pharmacy/pharmacies', pharmacy.id]">{{ pharmacy.name }}</a>
                 </td>
                 <td>{{ pharmacy.address }}</td>
                 <td>{{ pharmacy.siret }}</td>
@@ -120,21 +121,13 @@
                   <span *ngIf="pharmacy.rating === null">—</span>
                 </td>
                 <td>
+                  <span *ngIf="pharmacy.comentaire !='' || pharmacy.status === 'pending'" style="color: crimson">
+                    {{ pharmacy.comentaire !='' ? pharmacy.comentaire : (pharmacy.status === 'pending' ? "Nous avons besoin d'information complémentaire" : 'pff') }}
+                  </span>
+                <td>
                   <div class="action-buttons">
                     <button class="btn btn-sm btn-outline-primary" (click)="viewPharmacyDetails(pharmacy)">
                       <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-success" *ngIf="pharmacy.status === 'pending'" (click)="approvePharmacy(pharmacy)">
-                      <i class="fas fa-check"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-warning" *ngIf="pharmacy.status === 'active'" (click)="suspendPharmacy(pharmacy)">
-                      <i class="fas fa-pause"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-success" *ngIf="pharmacy.status === 'suspended'" (click)="activatePharmacy(pharmacy)">
-                      <i class="fas fa-play"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" (click)="deletePharmacy(pharmacy)">
-                      <i class="fas fa-trash"></i>
                     </button>
                   </div>
                 </td>
@@ -337,23 +330,6 @@
         </div>
       </div>
       <div class="modal-footer">
-        <div class="action-buttons" *ngIf="selectedPharmacy">
-          <button class="btn btn-success" *ngIf="selectedPharmacy.status === 'pending'" (click)="approvePharmacy(selectedPharmacy)">
-            <i class="fas fa-check"></i> Approuver
-          </button>
-          <button class="btn btn-warning" *ngIf="selectedPharmacy.status === 'active'" (click)="suspendPharmacy(selectedPharmacy)">
-            <i class="fas fa-pause"></i> Suspendre
-          </button>
-          <button class="btn btn-success" *ngIf="selectedPharmacy.status === 'suspended'" (click)="activatePharmacy(selectedPharmacy)">
-            <i class="fas fa-play"></i> Réactiver
-          </button>
-          <button class="btn btn-danger" (click)="deletePharmacy(selectedPharmacy)">
-            <i class="fas fa-trash"></i> Supprimer
-          </button>
-          <button class="btn btn-info" (click)="contactPharmacy(selectedPharmacy)">
-            <i class="fas fa-envelope"></i> Contacter
-          </button>
-        </div>
       </div>
     </div>
   </ng-template>
@@ -367,7 +343,7 @@
         <div class="pharmacy-details">
           <form [formGroup]="partnerForm" (ngSubmit)="onSubmit()">
             <div class="steps-container">
-              <div class="form-step" [class.active]="currentStep === 1" *ngIf="currentStep === 1">
+              <div class="form-step" class="active">
                 <h3 class="step-title">Informations generales sur la pharmacie</h3>
                 <hr>
                 <p class="step-subtitle">
@@ -447,90 +423,9 @@
                   </div>
                 </div>
                 <div class="form-actions">
-                  <div></div>
-                  <button type="button" class="btn btn-primary" (click)="nextStep()">
-                    Suivant
-                    <i class="fas fa-arrow-right"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="form-step" [class.active]="currentStep === 2" *ngIf="currentStep === 2" >
-                <h3 class="step-title">Informations du responsable</h3>
-                <hr>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label>Associer la pharmacie à un compte partenaire existant ?</label>
-                    <div class="form-radio-group">
-                      <div class="form-radio">
-                        <input type="radio" id="ownerExistYes" [value]="true" formControlName="ownerExist">
-                        <label for="ownerExistYes">Oui</label>
-                      </div>
-                      <div class="form-radio">
-                        <input type="radio" id="ownerExistNo" [value]="false" formControlName="ownerExist">
-                        <label for="ownerExistNo">Non</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="form-group" *ngIf="!ownerExist">
-                    <label for="owner_full_name">Nom complet du responsable <span class="required">*</span></label>
-                    <input
-                      type="text"
-                      id="owner_full_name"
-                      formControlName="owner_full_name"
-                      class="form-control"
-                      [class.error]="isFieldInvalid('owner_full_name')"
-                      [class.success]="isFieldValid('owner_full_name')"
-                      placeholder="Dr Jean Dupont">
-                    <div class="error-message" [class.show]="isFieldInvalid('owner_full_name')">
-                      {{ getFieldError('owner_full_name') }}
-                    </div>
-                    <div class="success-message" [class.show]="isFieldValid('owner_full_name')">
-                      ✓ Valide
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label for="owner_email">Email du responsable <span class="required">*</span></label>
-                    <input
-                      type="email"
-                      id="owner_email"
-                      formControlName="owner_email"
-                      class="form-control"
-                      [class.error]="isFieldInvalid('owner_email')"
-                      [class.success]="isFieldValid('owner_email')"
-                      placeholder="jean.dupont@pharmacie.fr">
-                    <div class="error-message" [class.show]="isFieldInvalid('owner_email')">
-                      {{ getFieldError('owner_email') }}
-                    </div>
-                    <div class="success-message" [class.show]="isFieldValid('owner_email')">
-                      ✓ Valide
-                    </div>
-                  </div>
-                  <div class="form-group" *ngIf="!ownerExist">
-                    <label for="owner_phone">Téléphone du responsable <span class="required">*</span></label>
-                    <input
-                      type="tel"
-                      id="owner_phone"
-                      formControlName="owner_phone"
-                      class="form-control"
-                      [class.error]="isFieldInvalid('owner_phone')"
-                      [class.success]="isFieldValid('owner_phone')"
-                      placeholder="+33698765432">
-                    <div class="error-message" [class.show]="isFieldInvalid('owner_phone')">
-                      {{ getFieldError('owner_phone') }}
-                    </div>
-                    <div class="success-message" [class.show]="isFieldValid('owner_phone')">
-                      ✓ Valide
-                    </div>
-                  </div>
-                </div>
-                <div class="form-actions">
-                  <button type="button" class="btn btn-secondary" (click)="prevStep()">
-                    <i class="fas fa-arrow-left"></i>
-                    Précédent
-                  </button>
                   <button type="submit" class="btn btn-outline-primary" [disabled]="isSubmitting">
                     <div class="loading-spinner" *ngIf="isSubmitting"></div>
-                    <span>{{ isSubmitting ? 'Création en cours...' : 'Créer le compte' }}</span>
+                    <span>Créer le compte...</span>
                     <i class="fas fa-check" *ngIf="!isSubmitting"></i>
                   </button>
                 </div>

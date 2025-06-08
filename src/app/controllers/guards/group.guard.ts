@@ -3,11 +3,13 @@ import { CanActivate, ActivatedRouteSnapshot, Router, UrlTree } from '@angular/r
 import { AuthService } from '../services/auth.service';
 import { Observable } from 'rxjs';
 import { filter, map, take } from 'rxjs/operators';
+import {group} from "@angular/animations";
+import {Group} from "../../models/Group.class";
 
 @Injectable({
   providedIn: 'root'
 })
-export class RoleGuard implements CanActivate {
+export class GroupGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(
@@ -20,9 +22,10 @@ export class RoleGuard implements CanActivate {
         const expectedRoles = route.data['roles'] as string[];
         const userDetails = this.authService.getUserDetails();
 
-        if (userDetails && expectedRoles.includes(userDetails.role)) {
+        if (userDetails && userDetails.groups && userDetails.groups.some((group: Group) => expectedRoles.includes(group.code))) {
           return true;
         } else {
+          this.authService.logout();
           return this.router.createUrlTree(['/login']);
         }
       })

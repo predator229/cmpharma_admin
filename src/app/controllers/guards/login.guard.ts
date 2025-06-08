@@ -3,6 +3,7 @@ import { CanActivate, Router, UrlTree } from '@angular/router';
 import { Observable } from 'rxjs';
 import { map, filter, take } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
+import {Group, GroupCode} from "../../models/Group.class";
 
 @Injectable({
   providedIn: 'root'
@@ -18,17 +19,22 @@ export class LoginGuard implements CanActivate {
       map(() => {
         const user = this.authService.getCurrentUser();
         const userDetails = this.authService.getUserDetails();
-        if (!user || !userDetails) { return true; }
+
+        if (!user || !userDetails || !Array.isArray(userDetails.groups)) {
+          return true;
+        }
 
         const roleRedirectMap: Record<string, string> = {
-          admin: 'admin/dashboard/overview',
-          manager: 'admin/dashboard/overview',
-          superadmin: 'admin/dashboard/overview',
-          'pharmacist-owner': 'pharmacy/dashboard/',
-          'pharmacist-manager': 'pharmacy/dashboard/',
+          [GroupCode.PHARMACIST_OWNER]: 'pharmacy/dashboard/',
+          [GroupCode.PHARMACIST_MANAGER]: 'pharmacy/dashboard/',
+          [GroupCode.SUPERADMIN]: 'admin/dashboard/overview',
+          [GroupCode.MANAGER]: 'admin/dashboard/overview',
+          [GroupCode.ADMIN]: 'admin/dashboard/overview',
         };
-        const redirectPath = roleRedirectMap[userDetails.role];
-
+        const matchingGroup = userDetails.groups.find((g: Group) =>
+          g?.code && roleRedirectMap[g.code]
+        );
+        const redirectPath = matchingGroup ? roleRedirectMap[matchingGroup.code] : null;
         return redirectPath
           ? this.router.createUrlTree([redirectPath])
           : true;
