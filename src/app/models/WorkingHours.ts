@@ -1,9 +1,21 @@
-export class WorkingHours {
-  opening: string;
-  closing: string;
+import { OpeningHoursClass } from "./OpeningHours.class";
 
-  constructor(data: { opening: string; closing: string }) {
-    this.opening = data.opening;
-    this.closing = data.closing;
+interface BaseDocument {
+  _id?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export class WorkingHours implements BaseDocument {
+  _id?: string;
+  day?: string | OpeningHoursClass;
+  createdAt?: Date;
+  updatedAt?: Date;
+
+  constructor(data: Partial<WorkingHours>) {
+    this.day = data.day;
+    this._id = data._id;
+    this.createdAt = data.createdAt;
+    this.updatedAt = data.updatedAt;
   }
 }

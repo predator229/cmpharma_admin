@@ -131,12 +131,12 @@
                 </td>
                 <td>
                   {{ pharmacy.address }}
-                    <a
-                      [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"
-                      target="_blank"
-                      rel="noopener noreferrer">
-                      📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}
-                    </a>
+<!--                    <a-->
+<!--                      [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"-->
+<!--                      target="_blank"-->
+<!--                      rel="noopener noreferrer">-->
+<!--                      📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}-->
+<!--                    </a>-->
                 </td>
                 <td>{{ pharmacy.registerDate | date: 'dd/MM/yyyy' }}</td>
                 <td>
@@ -248,14 +248,10 @@
               <div class="detail-section">
                 <h5>Horaires d'ouverture</h5>
                 <div class="opening-hours">
-                  <div class="day-hours" *ngFor="let day of days">
-                    <span class="day">{{day}}:</span>
-                    <span class="hours" *ngIf="selectedPharmacy.openingHours && selectedPharmacy.openingHours[day]">
-                        {{selectedPharmacy.openingHours[day].morning}} - {{selectedPharmacy.openingHours[day].afternoon}}
-                      </span>
-                    <span class="hours closed" *ngIf="!selectedPharmacy.openingHours || !selectedPharmacy.openingHours[day]">
-                        Fermé
-                      </span>
+                  <div class="day-hours" *ngFor="let day of selectedPharmacy.workingHours">
+                    <span class="day">{{day.getDayName()}}:</span>
+                    <span class="hours open" *ngIf="day.open">{{day.opening}} - {{day.closing}}</span>
+                    <span class="hours closed" *ngIf="!day.open">Fermé</span>
                   </div>
                 </div>
               </div>
@@ -278,7 +274,7 @@
 <!--                        [title]="selectedPharmacy.name">-->
 <!--                      </map-marker>-->
 <!--                    </google-map>-->
-                    <app-map [latitude]="selectedPharmacy.location.latitude" [longitude]="selectedPharmacy.location.longitude" [zoom]="15" [height]="400"></app-map>
+<!--                    <app-map [latitude]="selectedPharmacy.location.latitude" [longitude]="selectedPharmacy.location.longitude" [zoom]="15" [height]="400"></app-map>-->
                   </div>
                 </div>
               </div>

@@ -35,7 +35,6 @@ interface HeroData {
   styleUrls: ['./landing.component.scss']
 })
 export default class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
-  // Propriété pour stocker l'état de l'utilisateur
   userDetails: boolean = false;
   private userSubscription: Subscription | null = null;
 
@@ -143,12 +142,12 @@ export default class LandingComponent implements OnInit, OnDestroy, AfterViewIni
   constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit(): void {
-    // S'abonner à l'état de l'utilisateur
     this.userSubscription = this.authService.userDetailsLoaded$.pipe(
       filter(loaded => loaded),
       take(1),
       map(() => {
         const user = this.authService.getCurrentUser();
+        // if (user) { this.authService.logout();  }
         return user ? true : false;
       })
     ).subscribe(isLoggedIn => {

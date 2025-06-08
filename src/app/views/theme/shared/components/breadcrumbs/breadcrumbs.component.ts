@@ -13,6 +13,7 @@ interface titleType {
   title: string;
   breadcrumbs: unknown;
   type: string;
+  icon: string|null,
 }
 
 @Component({
@@ -48,7 +49,7 @@ export class BreadcrumbComponent {
         const breadcrumbList = this.filterNavigation(this.navigations, activeLink);
         this.navigationList = breadcrumbList.splice(-2);
         const title = breadcrumbList[breadcrumbList.length - 1]?.title || 'Bienvenue';
-        this.titleService.setTitle(title + ' | cmPharma Pharmacies connectees');
+        this.titleService.setTitle(title + ' | CtmPharma Pharmacies connectees');
       }
     });
   }
@@ -61,7 +62,8 @@ export class BreadcrumbComponent {
             url: 'url' in navItem ? navItem.url : false,
             title: navItem.title,
             breadcrumbs: 'breadcrumbs' in navItem ? navItem.breadcrumbs : true,
-            type: navItem.type
+            type: navItem.type,
+            icon: navItem.icon ?? null,
           }
         ];
       }
@@ -73,7 +75,8 @@ export class BreadcrumbComponent {
             url: 'url' in navItem ? navItem.url : false,
             title: navItem.title,
             breadcrumbs: 'breadcrumbs' in navItem ? navItem.breadcrumbs : true,
-            type: navItem.type
+            type: navItem.type,
+            icon: navItem.icon ?? null,
           });
           return breadcrumbList;
         }

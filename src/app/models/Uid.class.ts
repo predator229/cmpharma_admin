@@ -3,16 +3,15 @@ interface BaseDocument {
   createdAt?: Date;
   updatedAt?: Date;
 }
-export class Location implements BaseDocument {
+
+export class Uid implements BaseDocument {
   _id?: string;
-  latitude: number;
-  longitude?: number;
+  uid: string;
   createdAt?: Date;
   updatedAt?: Date;
 
-  constructor(data: Partial<Location>) {
-    this.latitude = data.latitude || 0;
-    this.longitude = data.longitude;
+  constructor(data: Partial<Uid>) {
+    this.uid = data.uid || '';
     this._id = data._id;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;

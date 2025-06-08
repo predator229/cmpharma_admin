@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, Renderer2 } from '@angular/core';
-import { BerryConfig } from 'src/app/app-config';
+import {AuthService} from "../../../../../controllers/services/auth.service";
 
 @Component({
   selector: 'app-configuration',
@@ -10,14 +10,14 @@ import { BerryConfig } from 'src/app/app-config';
 })
 export class ConfigurationComponent implements OnInit {
   // public method
-  styleSelectorToggle!: boolean; // open configuration menu
+  styleSelectorToggle!: boolean;
   setFontFamily!: string; // fontFamily
 
-  constructor(private renderer: Renderer2) {}
+  constructor(private renderer: Renderer2, private authService: AuthService) {}
+  userDetails = this.authService.getUserDetails();
 
   ngOnInit(): void {
-    this.setFontFamily = BerryConfig.font_family;
-    this.fontFamily(this.setFontFamily);
+    this.fontFamily(this.userDetails?.setups?.font_family ?? this.setFontFamily);
   }
 
   fontFamily(font: string) {

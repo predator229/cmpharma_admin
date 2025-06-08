@@ -1,4 +1,3 @@
-<!-- Vertical layout -->
 <ng-scrollbar style="height: calc(100vh - 70px)" visibility="hover">
   <div class="navbar-content">
 
@@ -7,7 +6,13 @@
         @if (item.type === 'group') {
           <app-nav-group [item]="item" />
         } @else if (item.type === 'collapse') {
-          <app-nav-collapse [item]="item" />
+          @if (item.children.length > 0) {
+            @for (child of item.children; track child) {
+              <app-nav-item [item]="child" />
+            }
+          } @else {
+            <app-nav-collapse [item]="item" />
+          }
         } @else if (item.type === 'item') {
           <app-nav-item [item]="item" />
         }

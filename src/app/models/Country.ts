@@ -5,6 +5,12 @@ interface ApiCountry{
   code:string;
   dial_code:string;
 }
+interface BaseDocument {
+  _id?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export class Country{
   id: string;
   name: string;

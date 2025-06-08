@@ -10,16 +10,17 @@ import {Subject, takeUntil} from "rxjs";
 import Swal from "sweetalert2";
 import {ApiService} from "../../../../controllers/services/api.service";
 import {RouterLink} from "@angular/router";
-import {Pharmacy} from "../../../../models/Pharmacy";
+import {PharmacyClass} from "../../../../models/Pharmacy.class";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {GoogleMap, MapMarker} from "@angular/google-maps";
 import {MapComponent} from "../../../../generalmap.component";
+import {CommonFunctions} from "../../../../controllers/comonsfunctions";
 
 
 @Component({
   selector: 'app-admin-dashboard-overview',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterLink, GoogleMap, MapMarker, MapComponent],
+  imports: [CommonModule, SharedModule, RouterLink, MapMarker, MapComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
@@ -27,7 +28,7 @@ import {MapComponent} from "../../../../generalmap.component";
 export class AdminDashboardComponent implements OnInit {
   stats: any[] = [];
   recentActivities: any[] = [];
-  recentPharmacies: Pharmacy[] = [];
+  recentPharmacies: PharmacyClass[] = [];
   period: string = '1';
   periods: any[] = [
     {
@@ -46,7 +47,7 @@ export class AdminDashboardComponent implements OnInit {
   private modalService: NgbModal;
   days: string[] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-  selectedPharmacy: Pharmacy | null = null;
+  selectedPharmacy: PharmacyClass | null = null;
 
   constructor(modalService: NgbModal, private authUser: AuthService, private loadingService: LoadingService, private apiService: ApiService)  {
     Chart.register(...registerables);
@@ -72,7 +73,7 @@ export class AdminDashboardComponent implements OnInit {
   }
   private destroy$ = new Subject<void>();
 
-  viewPharmacyDetails(pharmacy: Pharmacy): void {
+  viewPharmacyDetails(pharmacy: PharmacyClass): void {
     this.selectedPharmacy = pharmacy;
 
     setTimeout(() => {
@@ -93,22 +94,6 @@ export class AdminDashboardComponent implements OnInit {
       case 'rejected': return 'Inscription Rejeté';
       default: return 'Inconnu';
     }
-  }
-  private mapToPharmacy(data: any): Pharmacy {
-    return new Pharmacy({
-      id: data.id,
-      name: data.name,
-      address: data.address,
-      status: data.status,
-      ownerId: data.ownerId,
-      location_latitude: data.location?.latitude || 0,
-      location_longitude: data.location?.longitude || 0,
-      products: data.products || [],
-      workingHours: data.workingHours || {},
-      orders: data.orders || [],
-      totalRevenue: data.totalRevenue || 0,
-      registerDate: data.created_at,
-    });
   }
   async loadGlobalsData (){
     this.loadingService.setLoading(true);
@@ -137,8 +122,14 @@ export class AdminDashboardComponent implements OnInit {
               else{ this.stats = [];}
               if (response.data.recent_activities){ this.recentActivities = response.data.recent_activities;}
               else{ this.recentActivities = []; }
-              if (response.data.recent_pharmacies){ this.recentPharmacies = response.data.recent_pharmacies.map((item: any) => this.mapToPharmacy(item));;}
-              else{ this.recentPharmacies = []; }
+              if (response.data.recent_pharmacies) {
+                this.recentPharmacies = response.data.recent_pharmacies
+                  .reduce((acc: PharmacyClass[], item: any) => {
+                    const pharmacy = CommonFunctions.mapToPharmacy(item);
+                    if (pharmacy) acc.push(pharmacy);
+                    return acc;
+                  }, []);
+              }else{ this.recentPharmacies = []; }
             } else {
               this.stats = []; //damien
               this.recentActivities = [];

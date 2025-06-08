@@ -1,11 +1,7 @@
-// Angular import
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { RouterModule } from '@angular/router';
-
-// project import
 import { NavigationItem } from '../../navigation';
-
 import { NavItemComponent } from '../nav-item/nav-item.component';
 
 @Component({
@@ -18,20 +14,17 @@ import { NavItemComponent } from '../nav-item/nav-item.component';
 export class NavCollapseComponent implements OnInit {
   private location = inject(Location);
 
-  // public props
   @Input() item!: NavigationItem;
   windowWidth = window.innerWidth;
-  current_url = ''; // Add current URL property
+  current_url = '';
 
   ngOnInit() {
     this.current_url = this.location.path();
 
-    // eslint-disable-next-line
-    //@ts-ignore
-    const baseHref = this.location['_baseHref'] || ''; // Use baseHref if necessary
+    const baseHref = this.location['_baseHref'] || '';
     this.current_url = baseHref + this.current_url;
+    // this.item.title += ' - ' + this.item.icon;
 
-    // Timeout to allow DOM to fully render before checking for the links
     setTimeout(() => {
       const links = document.querySelectorAll('a.nav-link') as NodeListOf<HTMLAnchorElement>;
       links.forEach((link: HTMLAnchorElement) => {

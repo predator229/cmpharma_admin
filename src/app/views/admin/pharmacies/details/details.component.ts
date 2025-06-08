@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from "@angular/common";
 import { SharedModule } from "../../../theme/shared/shared.module";
 import { AuthService } from "../../../../controllers/services/auth.service";
-import { Pharmacy } from "../../../../models/Pharmacy";
+import { PharmacyClass } from "../../../../models/Pharmacy.class";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
 import { Subject, takeUntil } from 'rxjs';
 import { HttpHeaders } from '@angular/common/http';
@@ -12,6 +12,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import Swal from 'sweetalert2';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import {Chart, ChartConfiguration} from 'chart.js';
+import {CommonFunctions} from "../../../../controllers/comonsfunctions";
 
 declare var bootstrap: any;
 declare var google: any;
@@ -24,10 +25,10 @@ declare var google: any;
   styleUrls: ['./details.component.scss']
 })
 export class PharmacyDetailComponent implements OnInit, OnDestroy {
-  pharmacy: Pharmacy | null = null;
+  pharmacy: PharmacyClass | null = null;
   recentOrders: any[] = [];
   pharmacyActivities: any[] = [];
-  days: string[] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+  commonsFunction : CommonFunctions;
 
   contactForm: FormGroup;
   currentDocument: { title: string, url: string | SafeResourceUrl, type: string } = { title: '', url: '', type: '' };
@@ -133,7 +134,7 @@ export class PharmacyDetailComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (response: any) => {
             if (response && response.data) {
-              this.pharmacy = this.mapToPharmacy(response.data);
+              this.pharmacy = CommonFunctions.mapToPharmacy(response.data);
               this.loadRecentOrders(pharmacyId);
               this.loadPharmacyActivities(pharmacyId);
 
@@ -158,22 +159,6 @@ export class PharmacyDetailComponent implements OnInit, OnDestroy {
       this.handleError('Une erreur s\'est produite');
       this.loadingService.setLoading(false);
     }
-  }
-
-  mapToPharmacy(data: any): Pharmacy {
-    return new Pharmacy({
-      id: data.id,
-      name: data.name,
-      address: data.address,
-      status: data.status,
-      ownerId: data.ownerId,
-      location_latitude: data.location?.latitude || 0,
-      location_longitude: data.location?.longitude || 0,
-      products: data.products || [],
-      workingHours: data.workingHours || {},
-      orders: data.orders || [],
-      totalRevenue: data.totalRevenue || 0
-    });
   }
 
   async loadRecentOrders(pharmacyId: string): Promise<void> {

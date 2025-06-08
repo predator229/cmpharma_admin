@@ -62,10 +62,10 @@
                   </div>
                   <div class="detail-item">
                     <span class="detail-label"><i class="fas fa-map-pin"></i> Coordonnées:</span>
-                    <span class="detail-value">
-                      <a [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude" target="_blank">
-                        {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}
-                      </a>
+                    <span class="detail-value" *ngIf="pharmacy.location">
+<!--                      <a [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude" target="_blank">-->
+<!--                        {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}-->
+<!--                      </a>-->
                     </span>
                   </div>
                 </div>
@@ -197,14 +197,10 @@
           </div>
           <div class="card-body">
             <div class="opening-hours">
-              <div class="day-hours" *ngFor="let day of days">
-                <span class="day">{{ day }}:</span>
-                <span class="hours" *ngIf="pharmacy.openingHours && pharmacy.openingHours[day]">
-                  {{ pharmacy.openingHours[day].morning }} - {{ pharmacy.openingHours[day].afternoon }}
-                </span>
-                <span class="hours closed" *ngIf="!pharmacy.openingHours || !pharmacy.openingHours[day]">
-                  Fermé
-                </span>
+              <div class="day-hours" *ngFor="let day of pharmacy.workingHours">
+                <span class="day">{{day.getDayName()}}:</span>
+                <span class="hours open" *ngIf="day.open">{{day.opening}} - {{day.closing}}</span>
+                <span class="hours closed" *ngIf="!day.open">Fermé</span>
               </div>
             </div>
           </div>

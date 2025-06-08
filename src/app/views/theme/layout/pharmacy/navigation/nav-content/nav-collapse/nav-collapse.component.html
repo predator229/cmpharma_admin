@@ -1,23 +1,57 @@
 @if (!item.hidden) {
-  <li data-username="Berry Dashboard" class="nav-item coded-hasmenu" [routerLinkActive]="['active']">
-    <a [routerLinkActive]="['active']" href="javascript:" class="nav-link" (click)="navCollapse($event)">
-      @if (item.icon) {
-        <span class="coded-micon">
-          <i class="{{ item.icon }}"></i>
-        </span>
-      }
-      <span class="coded-mtext">
-        {{ item.title }}
-      </span>
-    </a>
-    <ul class="coded-submenu" [routerLinkActive]="['active']" [ngClass]="item.classes!">
-      @for (items of item.children; track items) {
-        @if (items.type === 'item') {
-          <app-nav-item [item]="items" />
-        } @else if (items.type === 'collapse') {
-          <app-nav-collapse [item]="items" />
+  @if (item.children.length > 0){
+    @for (child of item.children; track child) {
+    <li data-username="Pharmacy Dashboard" class="nav-item coded-hasmenu" [routerLinkActive]="['active']">
+      <a [routerLinkActive]="['active']" href="javascript:" class="nav-link" (click)="navCollapse($event)">
+        @if (child.icon) {
+          <span class="coded-micon">
+            <i class="{{ child.icon }}"></i>
+          </span>
         }
-      }
-    </ul>
-  </li>
+        <span class="coded-mtext">
+          {{ child.title }}
+        </span>
+      </a>
+      <ul class="coded-submenu" [routerLinkActive]="['active']" [ngClass]="child.classes!">
+        @for (child_ of child.children; track child_) {
+          @if (child_.type === 'item') {
+            <app-nav-item [item]="child_" />
+          } @else if (child_.type === 'collapse') {
+            <app-nav-collapse [item]="child_" />
+          }
+        }
+      </ul>
+    </li>
+    }
+  }
+  @else{
+    <li data-username="Pharmacy Dashboard" class="nav-item coded-hasmenu" [routerLinkActive]="['active']">
+      <a [routerLinkActive]="['active']" href="javascript:" class="nav-link" (click)="navCollapse($event)">
+        @if (item.icon) {
+          <span class="coded-micon">
+            <i class="{{ item.icon }}"></i>
+          </span>
+        }
+        <span class="coded-mtext">
+          {{ item.title }}
+        </span>
+      </a>
+      <ul class="coded-submenu" [routerLinkActive]="['active']" [ngClass]="item.classes!">
+        @for (items of item.children; track items) {
+          @if (items.type === 'item') {
+            <app-nav-item [item]="items" />
+          } @else if (items.type === 'collapse') {
+            <app-nav-collapse [item]="items" />
+          }
+        }
+      </ul>
+    </li>
+  }
 }
+<!--@if (item.children.length > 0) {-->
+<!--  @for (child of item.children; track child) {-->
+<!--    <app-nav-item [item]="child" />-->
+<!--  }-->
+<!--} @else {-->
+<!--  <app-nav-collapse [item]="item" />-->
+<!--}-->

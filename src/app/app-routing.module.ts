@@ -1,22 +1,18 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdminComponent } from './views/theme/layout/admin/admin.component';
+import { PharmacyComponent } from './views/theme/layout/pharmacy/pharmacy.component';
 import { GuestComponent } from './views/theme/layout/guest/guest.component';
 import { AuthGuard } from './controllers/guards/auth.guard';
 import { RoleGuard } from './controllers/guards/role.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
-import {AdminDashboardComponent} from "./views/admin/tableaubord/dashboard/dashboard.component";
-import {PharmacyListComponent} from "./views/admin/pharmacies/list/list.component";
-import {StatisticsComponent} from "./views/admin/tableaubord/statistiques/statistique.component";
-import {BecomePartnerComponent} from "./views/become_partner/become-partner.component";
 
 const routes: Routes = [
-  // ADMIN AREA
   {
     path: 'admin',
     component: AdminComponent,
     canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['admin', 'manager'] },
+    data: { roles: ['admin', 'manager', 'superadmin'] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard/overview', loadComponent: () =>import('./views/admin/tableaubord/dashboard/dashboard.component').then((c) => c.AdminDashboardComponent),},
@@ -30,9 +26,9 @@ const routes: Routes = [
   // PHARMACY AREA
   {
     path: 'pharmacy',
-    component: AdminComponent, // layout pharmacy
+    component: PharmacyComponent,
     canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['pharmacist-owner'] },
+    data: { roles: ['pharmacist-owner', 'pharmacist-manager', 'superadmin'] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard',loadComponent: () =>import('./views/pharmacy/dashboard/dashboard.component').then((c) => c.DefaultComponent), },
