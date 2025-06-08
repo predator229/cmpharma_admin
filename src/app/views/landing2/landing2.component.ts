@@ -33,10 +33,10 @@ interface HeroData {
   selector: 'app-landing',
   standalone: true,
   imports: [RouterModule, CommonModule],
-  templateUrl: './landing.component.html',
-  styleUrls: ['./landing.component.scss']
+  templateUrl: './landing2.component.html',
+  styleUrls: ['./landing2.component.scss']
 })
-export default class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
+export default class Landing2Component implements OnInit, OnDestroy, AfterViewInit {
   userDetails: boolean = false;
   urlDashboard: String | null = '/admin/dashboard/overview/';
   private userSubscription: Subscription | null = null;
@@ -188,8 +188,11 @@ export default class LandingComponent implements OnInit, OnDestroy, AfterViewIni
     }
   }
 
-  fastKnow(): void {
-    this.router.navigate(['/welcome-action']);
+  onLogOutCall(): void {
+    if (this.userDetails) {
+      this.authService.logout();
+      this.userDetails = false;
+    }
   }
 
   private initTabsNavigation(): void {

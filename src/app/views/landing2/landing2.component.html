@@ -1,0 +1,171 @@
+<section class="cta-section">
+  <div class="container">
+    <!-- CTA Principal -->
+    <div class="main-cta">
+      <div class="cta-content">
+        <h2>Commencez dès maintenant avec ctmPharma</h2>
+        <p class="cta-subtitle">Rejoignez des milliers d'utilisateurs qui font déjà confiance à notre plateforme</p>
+
+        <!-- Boutons d'action principaux -->
+        <div class="primary-actions">
+          <button class="btn-primary large" (click)="onLoginClick()">
+            <i class="ti ti-user"></i>
+            {{ userDetails ? 'Accéder à mon espace' : 'Me connecter' }}
+          </button>
+          <a routerLink="/welcome" class="btn-secondary large">
+            <i class="ti ti-play"></i>
+            Voir comment ça marche
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions spécifiques par type d'utilisateur -->
+    <div class="user-actions-grid">
+      <div class="action-card pharmacy">
+        <div class="card-icon">
+          <i class="fa fa-clinic-medical"></i>
+        </div>
+        <div class="card-content">
+          <h3>Vous êtes pharmacien ?</h3>
+          <p>Augmentez vos ventes et fidélisez votre clientèle grâce à notre plateforme</p>
+          <ul class="benefits-list">
+            <li><i class="ti ti-check"></i> Tres faible tot de commissions</li>
+            <li><i class="ti ti-check"></i> Dashboard de gestion intuitif</li>
+            <li><i class="ti ti-check"></i> Support client dédié</li>
+          </ul>
+        </div>
+        <div class="card-action">
+          <a routerLink="{{ userDetails ? '/login' : '/become-partner' }}" class="btn-cta pharmacy-btn">
+            <span>{{ userDetails ? 'Mon espace client' : 'Devenir partenaire' }}</span>
+            <i class="ti ti-arrow-right"></i>
+          </a>
+          <small>Configuration en moins de 24h chronos</small>
+        </div>
+      </div>
+
+      <div class="action-card delivery">
+        <div class="card-icon">
+          <i class="ti ti-truck-delivery"></i>
+        </div>
+        <div class="card-content">
+          <h3>Vous voulez livrer ?</h3>
+          <p>Rejoignez notre réseau de livreurs et générez des revenus complémentaires</p>
+          <ul class="benefits-list">
+            <li><i class="ti ti-check"></i> Horaires flexibles</li>
+            <li><i class="ti ti-check"></i> Paiement immédiat</li>
+            <li><i class="ti ti-check"></i> Jusqu'à 25€/heure</li>
+          </ul>
+        </div>
+        <div class="card-action">
+          <a href="#" class="btn-cta delivery-btn">
+            <span>Obtener l'application</span>
+            <i class="ti ti-arrow-right"></i>
+          </a>
+          <small>Inscription gratuite</small>
+        </div>
+      </div>
+
+      <div class="action-card client">
+        <div class="card-icon">
+          <i class="ti ti-device-mobile"></i>
+        </div>
+        <div class="card-content">
+          <h3>Besoin de médicaments ?</h3>
+          <p>Commandez en ligne et recevez vos médicaments à domicile en quelques heures</p>
+          <ul class="benefits-list">
+            <li><i class="ti ti-check"></i> Livraison en 2h</li>
+            <li><i class="ti ti-check"></i> Ordonnances acceptées</li>
+            <li><i class="ti ti-check"></i> Paiement sécurisé</li>
+          </ul>
+        </div>
+        <div class="card-action">
+          <button class="btn-cta client-btn" (click)="onLoginClick()">
+            <span>Commander maintenant</span>
+            <i class="ti ti-arrow-right"></i>
+          </button>
+          <small>Première livraison gratuite</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section téléchargement des apps -->
+    <div class="app-download-cta">
+      <div class="download-content">
+        <h3><i class="ti ti-download"></i> Téléchargez nos applications</h3>
+        <p>Accédez à tous nos services directement depuis votre smartphone</p>
+      </div>
+      <div class="download-grid">
+        <div class="app-card">
+          <div class="app-info">
+            <i class="ti ti-device-mobile app-icon"></i>
+            <div>
+              <strong>CtmPharma Client</strong>
+              <span>Pour commander vos médicaments</span>
+            </div>
+          </div>
+          <div class="store-buttons">
+            <a href="#" class="store-btn apple">
+              <i class="fa-brands fa-app-store-ios"></i>
+              <span>App Store</span>
+            </a>
+            <a href="#" class="store-btn google">
+              <i class="fa-brands fa-google-play"></i>
+              <span>Play Store</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="app-card">
+          <div class="app-info">
+            <i class="ti ti-truck app-icon"></i>
+            <div>
+              <strong>CtmPharma Livreur</strong>
+              <span>Pour nos partenaires livreurs</span>
+            </div>
+          </div>
+          <div class="store-buttons">
+            <a href="#" class="store-btn apple">
+              <i class="fa-brands fa-app-store-ios"></i>
+              <span>App Store</span>
+            </a>
+            <a href="#" class="store-btn google">
+              <i class="fa-brands fa-google-play"></i>
+              <span>Play Store</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section de contact rapide -->
+    <div class="quick-contact">
+      <div class="contact-content">
+        <h3>Une question ? Nous sommes là pour vous aider</h3>
+        <div class="contact-options">
+          <a href="tel:+33764017756" class="contact-btn">
+            <i class="ti ti-phone"></i>
+            <span>
+              <strong>Appelez-nous</strong>
+              <small>+33 764 017 756</small>
+            </span>
+          </a>
+          <a href="mailto:cybershieldds@gmail.com" class="contact-btn">
+            <i class="ti ti-mail"></i>
+            <span>
+              <strong>Écrivez-nous</strong>
+              <small>Réponse sous 2h</small>
+            </span>
+          </a>
+          <a href="#" class="contact-btn">
+            <i class="ti ti-message-circle"></i>
+            <span>
+              <strong>Chat en direct</strong>
+              <small>Support 24/7</small>
+            </span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

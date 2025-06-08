@@ -1,4 +1,4 @@
-<!-- landing.component.html -->
+ landing.component.html
 <div class="pharmacy-landing">
   <!-- Navigation -->
   <header class="navbar-wrapper">
@@ -18,7 +18,10 @@
           <button class="btn-login" (click)="onLoginClick()" style="background-color: #ff6b6b">
             {{ userDetails && urlDashboard ? 'Accéder à mon compte' : 'Connexion' }}
           </button>
-          <!-- <button v-if="userDetails && userDetails !== null" class="btn-login" style="margin-left:10px; background-color:red;" (click)="onLogOutCall()">Se deconnecter</button> -->
+          <button class="btn-express-tour" (click)="fastKnow()">
+            <i class="ti ti-rocket"></i>
+            <span>Tour express</span>
+          </button>
         </div>
         <div class="navbar-toggle">
           <span></span>
@@ -95,6 +98,65 @@
       </div>
     </div>
   </section>
+
+  <!-- Call To Action Section -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="section-header text-center">
+        <h2>Rejoignez l’expérience <strong>ctmPharma</strong></h2>
+        <p class="subtitle">Un rôle pour chacun, un service pour tous.</p>
+      </div>
+
+      <div class="cta-grid">
+        <!-- Client -->
+        <div class="cta-card client">
+          <div class="cta-icon">
+            <i class="ti ti-user-plus"></i>
+          </div>
+          <h3>Vous etes un client ?</h3>
+          <p>Commandez vos médicaments en ligne et recevez-les en quelques heures, où que vous soyez.</p>
+          <ul class="cta-benefits">
+            <li><i class="ti ti-check"></i> Livraison rapide & sécurisée</li>
+            <li><i class="ti ti-check"></i> Ordonnances acceptées</li>
+            <li><i class="ti ti-check"></i> Paiement 100% sécurisé</li>
+          </ul>
+          <a href="#" class="btn-primary text-white">Commander maintenant</a>
+        </div>
+
+        <!-- Pharmacie -->
+        <div class="cta-card pharmacy">
+          <div class="cta-icon">
+            <i class="ti ti-building-store"></i>
+          </div>
+          <h3>Vous êtes une pharmacie ?</h3>
+          <p>Développez votre activité en ligne et touchez plus de patients chaque jour.</p>
+          <ul class="cta-benefits">
+            <li><i class="ti ti-check"></i> Commission ultra réduite</li>
+            <li><i class="ti ti-check"></i> Tableau de bord performant</li>
+            <li><i class="ti ti-check"></i> Support dédié 7j/7</li>
+          </ul>
+          <a routerLink="/become-partner" class="btn-primary text-white">Devenir partenaire</a>
+        </div>
+
+        <!-- Livreur -->
+        <div class="cta-card delivery">
+          <div class="cta-icon">
+            <i class="ti ti-truck"></i>
+          </div>
+          <h3>Vous êtes livreur ?</h3>
+          <p>Travaillez en toute liberté, sans contrainte, et augmentez vos revenus.</p>
+          <ul class="cta-benefits">
+            <li><i class="ti ti-check"></i> Flexibilité totale</li>
+            <li><i class="ti ti-check"></i> Paiement instantané</li>
+            <li><i class="ti ti-check"></i> Renumeration imbatable</li>
+          </ul>
+          <a href="#" class="btn-primary text-white">Obtener l'application</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
 
   <!-- User Types Section -->
   <section class="user-types-section">
@@ -283,6 +345,8 @@
             <button class="btn-secondary" (click)="onLoginClick()">
             {{ userDetails ? 'Accéder à mon compte' : 'Connexion' }}
             </button>
+          <button class="btn-secondary" style="margin-left:10px;" (click)="fastKnow()">Tour express</button>
+
         </div>
       </div>
     </div>

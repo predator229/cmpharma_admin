@@ -46,6 +46,7 @@ const routes: Routes = [{
       { path: 'login', loadComponent: () => import('./views/login/login.component'), canActivate: [LoginGuard], },
       { path: '', loadComponent: () => import('./views/landing/landing.component'), },
       { path: 'welcome', loadComponent: () => import('./views/landing/landing.component'), },
+      { path: 'welcome-action', loadComponent: () => import('./views/landing2/landing2.component'), },
       { path: 'become-partner', loadComponent: () => import('./views/become_partner/become-partner.component').then((c) => c.BecomePartnerComponent), },
       { path: 'set-password', loadComponent: () => import('./views/set-password/set-password.component').then(m => m.SetPasswordComponent) },
       { path: 'not-found', loadComponent: () => import('./views/errors/not-found/not-found.component') },
