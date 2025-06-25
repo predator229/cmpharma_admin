@@ -7,15 +7,33 @@ import { SharedModule } from 'src/app/views/theme/shared/shared.module';
 import { BajajChartComponent } from 'src/app/views/theme/shared/components/apexchart/bajaj-chart/bajaj-chart.component';
 import { BarChartComponent } from 'src/app/views/theme/shared/components/apexchart/bar-chart/bar-chart.component';
 import { ChartDataMonthComponent } from 'src/app/views/theme/shared/components/apexchart/chart-data-month/chart-data-month.component';
+import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
+import {AuthService} from "../../../controllers/services/auth.service";
+import {LoadingService} from "../../../controllers/services/loading.service";
+import {ApiService} from "../../../controllers/services/api.service";
+import {Chart, registerables} from "chart.js";
 
 @Component({
-  selector: 'app-default',
+  selector: 'app-pharmacy-dashboard-overview',
   imports: [CommonModule, BajajChartComponent, BarChartComponent, ChartDataMonthComponent, SharedModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
 export class DefaultComponent {
-  // public method
+  private modalService: NgbModal;
+  userDetails: any;
+
+  constructor(modalService: NgbModal, private authUser: AuthService, private loadingService: LoadingService, private apiService: ApiService)  {
+    Chart.register(...registerables);
+    this.modalService = modalService;
+  }
+  ngOnInit(): void {
+    this.userDetails = this.authUser.getUserDetails();
+    if (this.userDetails?.onlyShowListPharm) {
+      window.location.href = "pharmacy/pharmacies/list";
+    }
+  }
+
   ListGroup = [
     {
       name: 'Bajaj Finery',

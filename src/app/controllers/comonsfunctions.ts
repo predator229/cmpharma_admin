@@ -3,15 +3,16 @@ import {OpeningHoursClass} from "../models/OpeningHours.class";
 import {Image} from "../models/Image.class";
 import {Location} from "../models/Location";
 import {Group, GroupCode} from "../models/Group.class";
+import {UserDetails} from "../models/UserDatails";
 
 /**
  * Fonctions communes réutilisables dans l'application
  */
 export class CommonFunctions {
-  static getRoleRedirectMap(group: Group) {
+  static getRoleRedirectMap(group: Group, userDetails: UserDetails) {
     const roleRedirectMap: Record<string, string> = {
-      [GroupCode.PHARMACIST_OWNER]: 'pharmacy/dashboard/',
-      [GroupCode.PHARMACIST_MANAGER]: 'pharmacy/dashboard/',
+      [GroupCode.PHARMACIST_OWNER]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard/',
+      [GroupCode.PHARMACIST_MANAGER]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard/',
       [GroupCode.SUPERADMIN]: 'admin/dashboard/overview',
       [GroupCode.MANAGER]: 'admin/dashboard/overview',
       [GroupCode.ADMIN]: 'admin/dashboard/overview',

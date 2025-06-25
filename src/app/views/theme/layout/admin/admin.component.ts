@@ -71,8 +71,8 @@ export class AdminComponent implements AfterViewInit {
         if (!Array.isArray(this.userDetails.groups) || this.userDetails.groups.length === 0) {
           return false;
         }
-        const group = this.userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g) !== null);
-        this.urlDashboard = group ? CommonFunctions.getRoleRedirectMap(group) : null;
+        const group = this.userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g, this.userDetails) !== null);
+        this.urlDashboard = group ? CommonFunctions.getRoleRedirectMap(group, this.userDetails) : null;
         return true;
       })
     ).subscribe();

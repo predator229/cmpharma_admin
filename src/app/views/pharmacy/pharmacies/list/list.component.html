@@ -436,4 +436,28 @@
       </div>
     </div>
   </ng-template>
+  <ng-template #showInfo let-modal>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="showInfoModal">Information !</h5>
+        <button type="button"  (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="pharmacy-details">
+          <form>
+            <div class="steps-container">
+              <div class="form-step active">
+                <hr>
+                <p class="step-subtitle">
+                  {{ messageNotification }}
+                </p>
+                <hr>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
 </div>

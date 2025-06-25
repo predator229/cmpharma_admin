@@ -67,17 +67,16 @@ export default class LoginComponent {
           return false;
         }
         if (!userDetails || !Array.isArray(userDetails.groups) || userDetails.groups.length === 0) {
-          // this.showError('Aucun groupe utilisateur trouvé.');
           this.imLoading = false;
           return false;
         }
-        const group = userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g) !== null);
-        const redirectUrl = group ? CommonFunctions.getRoleRedirectMap(group) : null;
+        const group = userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g, userDetails) !== null);
+        const redirectUrl = group ? CommonFunctions.getRoleRedirectMap(group, userDetails) : null;
         this.imLoading = false;
         if (redirectUrl) {
           window.location.href = redirectUrl;
         } else {
-          // window.location.href = '/login';
+          window.location.href = '/login';
         }
         return true;
       })

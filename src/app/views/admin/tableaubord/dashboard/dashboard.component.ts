@@ -20,7 +20,7 @@ import {CommonFunctions} from "../../../../controllers/comonsfunctions";
 @Component({
   selector: 'app-admin-dashboard-overview',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterLink, MapMarker, MapComponent],
+  imports: [CommonModule, SharedModule, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
@@ -45,7 +45,6 @@ export class AdminDashboardComponent implements OnInit {
     },
   ];
   private modalService: NgbModal;
-  days: string[] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
   selectedPharmacy: PharmacyClass | null = null;
 

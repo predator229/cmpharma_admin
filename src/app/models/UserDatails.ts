@@ -20,6 +20,7 @@ import {Group} from "./Group.class";
     setups?: SetupBase;
     pharmaciesManaged: string[];
     isActivated: boolean;
+    onlyShowListPharm?: boolean;
     lastLogin: Date | null;
     createdAt: Date;
     updatedAt: Date;
@@ -42,6 +43,7 @@ import {Group} from "./Group.class";
       permissions?: Permission[] | [String];
       isActivated?: boolean;
       lastLogin?: Date | null;
+      onlyShowListPharm?: boolean;
       createdAt: Date;
       updatedAt: Date;
     }) {
@@ -60,6 +62,7 @@ import {Group} from "./Group.class";
       this.phone = data.phone || '';
       this.pharmaciesManaged = data.pharmaciesManaged || [];
       this.isActivated = data.isActivated !== undefined ? data.isActivated : true;
+      this.onlyShowListPharm = data.onlyShowListPharm || false;
       this.lastLogin = data.lastLogin || null;
       this.createdAt = data.createdAt;
       this.updatedAt = data.updatedAt;
@@ -83,6 +86,7 @@ import {Group} from "./Group.class";
         setups: data.user.setups ?? null,
         pharmaciesManaged: data.user.pharmaciesManaged,
         groups: data.user.groups ? data.user.groups.map((group: any) => new Group(group)) : [],
+        onlyShowListPharm: data?.onlyShowListPharm || false,
         isActivated: data.user.isActivated,
         lastLogin: data.user.lastLogin,
         createdAt: new Date(data.user.createdAt),

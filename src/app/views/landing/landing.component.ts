@@ -156,8 +156,8 @@ export default class LandingComponent implements OnInit, OnDestroy, AfterViewIni
           if (!_userDetails || !Array.isArray(_userDetails.groups) || _userDetails.groups.length === 0) {
             return false;
           }
-          const group = _userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g) !== null);
-          this.urlDashboard = group ? CommonFunctions.getRoleRedirectMap(group) : null;
+          const group = _userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g, _userDetails) !== null);
+          this.urlDashboard = group ? CommonFunctions.getRoleRedirectMap(group, _userDetails) : null;
         }
         return user ? true : false;
       })
@@ -174,7 +174,6 @@ export default class LandingComponent implements OnInit, OnDestroy, AfterViewIni
   }
 
   ngOnDestroy(): void {
-    // Nettoyer la souscription pour éviter les fuites de mémoire
     if (this.userSubscription) {
       this.userSubscription.unsubscribe();
     }

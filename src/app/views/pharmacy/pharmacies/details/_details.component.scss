@@ -430,3 +430,281 @@ $font-large: 1.25rem;  // ~20px
     }
   }
 }
+
+
+
+.pharmacy-details {
+  padding: 0;
+}
+
+.steps-container {
+  padding: 0;
+}
+
+.form-step {
+  padding: 20px 0;
+}
+
+.step-subtitle {
+  color: #6c757d;
+  font-size: 0.95rem;
+  margin: 15px 0;
+  text-align: center;
+  font-style: italic;
+}
+
+.form-label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.form-label.small {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.form-control, .form-select {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-control.is-invalid, .form-select.is-invalid {
+  border-color: #dc3545;
+}
+
+.form-control.is-invalid:focus, .form-select.is-invalid:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.invalid-feedback {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #dc3545;
+}
+
+.form-check {
+  margin-bottom: 0;
+}
+
+.form-check-input {
+  margin-top: 0.25rem;
+}
+
+.form-check-label {
+  color: #495057;
+  font-size: 0.875rem;
+}
+
+.row.mb-2.align-items-center {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 8px !important;
+}
+
+.row.mb-2.align-items-center:nth-child(even) {
+  background-color: #ffffff;
+  border: 1px solid #e9ecef;
+}
+
+/* Boutons */
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+.btn-primary:disabled {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  opacity: 0.6;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+}
+
+.btn-secondary:hover {
+  background-color: #545b62;
+  border-color: #545b62;
+}
+
+/* Spinner */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .col-md-6, .col-md-4, .col-md-2 {
+    margin-bottom: 1rem;
+  }
+
+  .row.mb-2.align-items-center {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .row.mb-2.align-items-center > div {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Animation pour les champs conditionnels */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  outline: none;
+}
+
+/* Style pour les champs requis */
+.form-label::after {
+  content: "";
+}
+
+.form-label:has(+ .form-control[required])::after,
+.form-label:has(+ .form-select[required])::after {
+  content: " *";
+  color: #dc3545;
+}
+.file-upload-container {
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  transition: border-color 0.3s ease;
+}
+
+.file-upload-container:hover {
+  border-color: #0d6efd;
+  background-color: #f0f8ff;
+}
+
+.file-preview {
+  margin-top: 10px;
+}
+
+.preview-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  margin-bottom: 5px;
+}
+
+.preview-image {
+  max-width: 60px;
+  max-height: 60px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-info i {
+  font-size: 1.2em;
+  color: #6c757d;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #495057;
+}
+
+.file-size {
+  font-size: 0.85em;
+  color: #6c757d;
+}
+
+.working-hours-row {
+  background-color: #f8f9fa;
+  padding: 8px;
+  border-radius: 5px;
+  margin-bottom: 8px;
+}
+
+.working-hours-row:nth-child(even) {
+  background-color: #ffffff;
+}
+
+.input-group-text {
+  font-size: 0.875rem;
+  min-width: 40px;
+}
+
+.step-subtitle {
+  color: #6c757d;
+  font-style: italic;
+  margin-bottom: 20px;
+}
+
+.modal-body {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.form-label {
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.form-label i {
+  margin-right: 5px;
+  color: #0d6efd;
+}
+
+.required-field::after {
+  content: " *";
+  color: red;
+}

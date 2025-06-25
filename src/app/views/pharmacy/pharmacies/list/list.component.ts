@@ -15,8 +15,6 @@ import { GoogleMapsModule } from '@angular/google-maps';
 import {CommonFunctions} from "../../../../controllers/comonsfunctions";
 import {UserDetails} from "../../../../models/UserDatails";
 
-// declare var bootstrap: any;
-
 @Component({
   selector: 'app-pharmacy-list-pharmacies',
   standalone: true,
@@ -47,6 +45,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
 
   partnerForm: FormGroup;
   isSubmitting: boolean = false;
+  messageNotification: string;
 
   private destroy$ = new Subject<void>();
 
@@ -54,6 +53,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
   isLoading: boolean = false;
   @ViewChild('userInfoModal') userInfoModal: ElementRef | undefined;
   @ViewChild('addPharmacy') addPharmacy: ElementRef | undefined;
+  @ViewChild('showInfo') showInfo: ElementRef | undefined;
   public currentPage: number = 1;
   private userDetail: UserDetails;
 
@@ -80,6 +80,9 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
         this.userDetail = this.auth.getUserDetails();
         if (loaded && this.userDetail) {
           this.loadPharmacies();
+        }
+        if (this.userDetail?.onlyShowListPharm) {
+          this.messageNotification = "Une ou plusieurs de vos pharmacies sont en attente de compléments d'informations. Veuillez compléter toutes les informations requises pour poursuivre le processus d'enregistrement.\n";          this.openShowMsg();
         }
       });
   }
@@ -287,6 +290,17 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
     }else{
       alert('putain')
     }
+  }
+  openShowMsg(): void {
+    this.modalService.dismissAll('ok');
+    setTimeout(() => {
+      this.modalService.open(this.showInfo, {
+        size: 'xl',
+        backdrop: 'static',
+        // keyboard: false,
+        centered: true
+      });
+    }, 0);
   }
   openCreateModal() {
     this.modalService.dismissAll('ok');

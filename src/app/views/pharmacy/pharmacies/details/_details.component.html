@@ -70,11 +70,11 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="detail-item">
-                  <span class="detail-label">SIRET:</span>
+                  <span class="detail-label">SIRET <span style="color:red">*</span> :</span>
                   <span class="detail-value">{{ pharmacy.siret }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Numéro de licence:</span>
+                  <span class="detail-label">Numéro de licence <span style="color:red">*</span> :</span>
                   <span class="detail-value">{{ pharmacy.licenseNumber }}</span>
                 </div>
               </div>
@@ -181,7 +181,7 @@
       <div class="col-md-4">
         <div class="card mb-4">
           <div class="card-header">
-            <h5><i class="fas fa-clock"></i> Horaires d'ouverture</h5>
+            <h5><i class="fas fa-clock"></i> Horaires d'ouverture <span style="color:red">*</span></h5>
           </div>
           <div class="card-body">
             <div class="opening-hours">
@@ -196,7 +196,7 @@
 
         <div class="card mb-4">
           <div class="card-header">
-            <h5><i class="fas fa-file-alt"></i> Documents</h5>
+            <h5><i class="fas fa-file-alt"></i> Documents <span style="color:red">*</span> </h5>
           </div>
           <div class="card-body">
             <div class="document-list">
@@ -368,3 +368,403 @@
     </div>
   </div>
 </div>
+<ng-template #showInfo let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="showInfoModal">Information !</h5>
+      <button type="button"  (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form>
+          <div class="steps-container">
+            <div class="form-step active">
+              <hr>
+              <p class="step-subtitle">
+                {{ msgFormInfo }}
+              </p>
+              <hr>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #formRequiredInfo let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="formRequiredInfoModal">Informations manquantes !</h5>
+      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form [formGroup]="pharmacyForm" (ngSubmit)="onSubmit()">
+          <div class="steps-container">
+            <div class="form-step active">
+              <hr>
+              <p class="step-subtitle">{{ msgFormInfo }}</p>
+              <hr>
+
+              <!-- Informations générales -->
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="name" class="form-label">Nom de la pharmacie *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="name"
+                    formControlName="name"
+                    [class.is-invalid]="pharmacyForm.get('name')?.invalid && pharmacyForm.get('name')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('name')?.invalid && pharmacyForm.get('name')?.touched">
+                    Le nom de la pharmacie est requis
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="phoneNumber" class="form-label">Numéro de téléphone *</label>
+                  <input
+                    type="tel"
+                    class="form-control"
+                    id="phoneNumber"
+                    formControlName="phoneNumber"
+                    [class.is-invalid]="pharmacyForm.get('phoneNumber')?.invalid && pharmacyForm.get('phoneNumber')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('phoneNumber')?.invalid && pharmacyForm.get('phoneNumber')?.touched">
+                    Le numéro de téléphone est requis
+                  </div>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="email" class="form-label">Email *</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="email"
+                    formControlName="email"
+                    [class.is-invalid]="pharmacyForm.get('email')?.invalid && pharmacyForm.get('email')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('email')?.invalid && pharmacyForm.get('email')?.touched">
+                    <span *ngIf="pharmacyForm.get('email')?.errors?.['required']">L'email est requis</span>
+                    <span *ngIf="pharmacyForm.get('email')?.errors?.['email']">Format d'email invalide</span>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="licenseNumber" class="form-label">Numéro de licence *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="licenseNumber"
+                    formControlName="licenseNumber"
+                    [class.is-invalid]="pharmacyForm.get('licenseNumber')?.invalid && pharmacyForm.get('licenseNumber')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('licenseNumber')?.invalid && pharmacyForm.get('licenseNumber')?.touched">
+                    <span *ngIf="pharmacyForm.get('licenseNumber')?.errors?.['required']">Le numéro de licence est requis</span>
+                    <span *ngIf="pharmacyForm.get('licenseNumber')?.errors?.['minlength'] || pharmacyForm.get('licenseNumber')?.errors?.['maxlength']">
+                      Le numéro de licence doit contenir entre 8 et 20 caractères
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-12">
+                  <label for="siret" class="form-label">SIRET *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="siret"
+                    formControlName="siret"
+                    [class.is-invalid]="pharmacyForm.get('siret')?.invalid && pharmacyForm.get('siret')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('siret')?.invalid && pharmacyForm.get('siret')?.touched">
+                    <span *ngIf="pharmacyForm.get('siret')?.errors?.['required']">Le numéro SIRET est requis</span>
+                    <span *ngIf="pharmacyForm.get('siret')?.errors?.['minlength'] || pharmacyForm.get('siret')?.errors?.['maxlength']">
+                      Le numéro SIRET doit contenir entre 8 et 20 caractères
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Adresse -->
+              <div class="mb-3">
+                <label for="address" class="form-label">Adresse complète *</label>
+                <textarea
+                  class="form-control"
+                  id="address"
+                  rows="2"
+                  formControlName="address"
+                  [class.is-invalid]="pharmacyForm.get('address')?.invalid && pharmacyForm.get('address')?.touched"
+                ></textarea>
+                <div class="invalid-feedback" *ngIf="pharmacyForm.get('address')?.invalid && pharmacyForm.get('address')?.touched">
+                  L'adresse est requise
+                </div>
+              </div>
+
+              <!-- Bouton pour afficher les champs de localisation -->
+              <div class="mb-3">
+                <button type="button" class="btn btn-outline-info btn-sm" (click)="toggleLocationFields()">
+                  <i class="fas fa-map-marker-alt"></i>
+                  {{ showLocationFields ? 'Masquer' : 'Ajouter' }} les coordonnées GPS
+                </button>
+              </div>
+
+              <!-- Localisation -->
+              <div class="row mb-3" *ngIf="showLocationFields">
+                <div class="col-md-12">
+                  <label for="latitude" class="form-label">Latitude</label>
+                  <app-map-selector
+                    [readonly]="false"
+                    [lat]="pharmacyForm.value.latitude"
+                    [lng]="pharmacyForm.value.longitude"
+                    [height]="'300px'"
+                    (positionChange)="onMapChange($event)">
+                  </app-map-selector>
+                </div>
+              </div>
+
+              <!-- Section Documents requis -->
+              <hr>
+              <h6 class="mb-3"><i class="fas fa-file-upload"></i> Documents requis *</h6>
+
+              <!-- Logo (optionnel) -->
+              <div class="mb-4">
+                <label for="logoFile" class="form-label">Logo de la pharmacie (optionnel)</label>
+                <div class="file-upload-container">
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="logoFile"
+                    accept="image/jpeg,image/jpg,image/png"
+                    (change)="onFileSelected($event, 'logo')"
+                  >
+                  <small class="form-text text-muted">Formats acceptés: JPG, PNG (max 5MB)</small>
+
+                  <!-- Prévisualisation du logo -->
+                  <div class="file-preview mt-2" *ngIf="previewUrls.logo">
+                    <div class="preview-item">
+                      <img [src]="previewUrls.logo" alt="Aperçu logo" class="preview-image">
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeFile('logo')">
+                        <i class="fas fa-times"></i> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Licence pharmaceutique -->
+              <div class="mb-4">
+                <label for="licenseFile" class="form-label">Licence pharmaceutique *</label>
+                <div class="file-upload-container">
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="licenseFile"
+                    accept=".pdf,image/jpeg,image/jpg,image/png"
+                    (change)="onFileSelected($event, 'license')"
+                    [class.is-invalid]="pharmacyForm.get('licenseFile')?.invalid && pharmacyForm.get('licenseFile')?.touched"
+                  >
+                  <small class="form-text text-muted">Formats acceptés: PDF, JPG, PNG (max 5MB)</small>
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('licenseFile')?.invalid && pharmacyForm.get('licenseFile')?.touched">
+                    La licence pharmaceutique est requise
+                  </div>
+
+                  <!-- Fichier sélectionné -->
+                  <div class="file-preview mt-2" *ngIf="selectedFiles.license">
+                    <div class="preview-item">
+                      <div class="file-info">
+                        <i [class]="getFileIcon('license')"></i>
+                        <span class="file-name">{{ selectedFiles.license.name }}</span>
+                        <span class="file-size">({{ (selectedFiles.license.size / 1024 / 1024).toFixed(2) }} MB)</span>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeFile('license')">
+                        <i class="fas fa-times"></i> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pièce d'identité -->
+              <div class="mb-4">
+                <label for="idDocumentFile" class="form-label">Pièce d'identité *</label>
+                <div class="file-upload-container">
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="idDocumentFile"
+                    accept=".pdf,image/jpeg,image/jpg,image/png"
+                    (change)="onFileSelected($event, 'idDocument')"
+                    [class.is-invalid]="pharmacyForm.get('idDocumentFile')?.invalid && pharmacyForm.get('idDocumentFile')?.touched"
+                  >
+                  <small class="form-text text-muted">Formats acceptés: PDF, JPG, PNG (max 5MB)</small>
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('idDocumentFile')?.invalid && pharmacyForm.get('idDocumentFile')?.touched">
+                    La pièce d'identité est requise
+                  </div>
+
+                  <!-- Fichier sélectionné -->
+                  <div class="file-preview mt-2" *ngIf="selectedFiles.idDocument">
+                    <div class="preview-item">
+                      <div class="file-info">
+                        <i [class]="getFileIcon('idDocument')"></i>
+                        <span class="file-name">{{ selectedFiles.idDocument.name }}</span>
+                        <span class="file-size">({{ (selectedFiles.idDocument.size / 1024 / 1024).toFixed(2) }} MB)</span>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeFile('idDocument')">
+                        <i class="fas fa-times"></i> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Attestation d'assurance -->
+              <div class="mb-4">
+                <label for="insuranceFile" class="form-label">Attestation d'assurance *</label>
+                <div class="file-upload-container">
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="insuranceFile"
+                    accept=".pdf,image/jpeg,image/jpg,image/png"
+                    (change)="onFileSelected($event, 'insurance')"
+                    [class.is-invalid]="pharmacyForm.get('insuranceFile')?.invalid && pharmacyForm.get('insuranceFile')?.touched"
+                  >
+                  <small class="form-text text-muted">Formats acceptés: PDF, JPG, PNG (max 5MB)</small>
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('insuranceFile')?.invalid && pharmacyForm.get('insuranceFile')?.touched">
+                    L'attestation d'assurance est requise
+                  </div>
+
+                  <!-- Fichier sélectionné -->
+                  <div class="file-preview mt-2" *ngIf="selectedFiles.insurance">
+                    <div class="preview-item">
+                      <div class="file-info">
+                        <i [class]="getFileIcon('insurance')"></i>
+                        <span class="file-name">{{ selectedFiles.insurance.name }}</span>
+                        <span class="file-size">({{ (selectedFiles.insurance.size / 1024 / 1024).toFixed(2) }} MB)</span>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeFile('insurance')">
+                        <i class="fas fa-times"></i> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <hr>
+
+              <!-- Horaires d'ouverture -->
+              <div class="mb-3">
+                <label class="form-label"><i class="fas fa-clock"></i> Horaires d'ouverture *</label>
+                <div formArrayName="workingHours">
+                  <div
+                    *ngFor="let hourControl of workingHoursFormArray.controls; let i = index"
+                    [formGroupName]="i"
+                    class="row mb-2 align-items-center working-hours-row"
+                  >
+                    <div class="col-md-2">
+                      <label class="form-label small fw-bold">{{ getDayName(i) }}</label>
+                    </div>
+                    <div class="col-md-2">
+                      <div class="form-check">
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          formControlName="open"
+                          [id]="'open-' + i"
+                        >
+                        <label class="form-check-label small" [for]="'open-' + i">
+                          Ouvert
+                        </label>
+                      </div>
+                    </div>
+                    <div class="col-md-4" *ngIf="hourControl.get('open')?.value">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">De</span>
+                        <input
+                          type="time"
+                          class="form-control"
+                          formControlName="opening"
+                          placeholder="Ouverture"
+                        >
+                      </div>
+                    </div>
+                    <div class="col-md-4" *ngIf="hourControl.get('open')?.value">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">À</span>
+                        <input
+                          type="time"
+                          class="form-control"
+                          formControlName="closing"
+                          placeholder="Fermeture"
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Commentaires -->
+              <div class="mb-3">
+                <label for="comentaire" class="form-label">Commentaires</label>
+                <textarea
+                  class="form-control"
+                  id="comentaire"
+                  rows="3"
+                  formControlName="comentaire"
+                  placeholder="Informations complémentaires, remarques particulières..."
+                ></textarea>
+              </div>
+
+              <!-- Suspension (si applicable) -->
+              <div class="row mb-3" *ngIf="pharmacyForm.get('status')?.value === 'suspended'">
+                <div class="col-md-6">
+                  <label for="suspensionDate" class="form-label">Date de suspension</label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="suspensionDate"
+                    formControlName="suspensionDate"
+                  >
+                </div>
+
+                <div class="col-md-6">
+                  <label for="suspensionReason" class="form-label">Raison de la suspension</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="suspensionReason"
+                    formControlName="suspensionReason"
+                    placeholder="Motif de la suspension"
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Footer du modal -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSubmit()"
+        [disabled]="pharmacyForm.invalid || isSubmitting"
+      >
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="fas fa-save" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les informations' }}
+      </button>
+    </div>
+  </div>
+</ng-template>
