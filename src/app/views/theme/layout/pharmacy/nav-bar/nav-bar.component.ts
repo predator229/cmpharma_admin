@@ -8,6 +8,7 @@ import { setupsConfig } from 'src/app/app-config';
 import { NavLeftComponent } from './nav-left/nav-left.component';
 import { NavLogoComponent } from './nav-logo/nav-logo.component';
 import { NavRightComponent } from './nav-right/nav-right.component';
+import {UserDetails} from "../../../../../models/UserDatails";
 
 @Component({
   selector: 'app-nav-bar',
@@ -24,6 +25,7 @@ export class NavBarComponent {
   windowWidth: number;
   navCollapsedMob: boolean;
   @Input() url!: String;
+  @Input() userDetails!: UserDetails;
 
   // Constructor
   constructor() {

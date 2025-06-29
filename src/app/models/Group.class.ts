@@ -3,11 +3,16 @@ import {isArray} from "@angular/compiler-cli/src/ngtsc/annotations/common";
 
 export enum GroupCode {
   SUPERADMIN = 'superadmin',
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  PHARMACIST_OWNER = 'pharmacist-owner',
-  PHARMACIST_MANAGER = 'pharmacist-manager'
+  MANAGER_ADMIN = 'manager_admin',
+  ADMIN_TECHNIQUE = 'admin_technique',
+  SUPPORT_ADMIN = 'support_admin',
+  MANAGER_PHARMACY = 'manager_pharmacy',
+  PHARMACIEN = 'pharmacien',
+  PREPARATEUR = 'preparateur',
+  CAISSIER = 'caissier',
+  CONSULTANT = 'consultant'
 }
+
 export enum Platform {
   PHARMACY = 'Pharmacy',
   DELIVER = 'Deliver',
@@ -42,7 +47,7 @@ export class Group implements IGroup {
 
   constructor(data: Partial<IGroup>) {
     this._id = data._id;
-    this.code = data.code || GroupCode.MANAGER;
+    this.code = data.code || GroupCode.MANAGER_PHARMACY;
     this.name = data.name || '';
     this.description = data.description || '';
     this.isActive = data.isActive !== undefined ? data.isActive : true;
@@ -56,7 +61,6 @@ export class Group implements IGroup {
     }
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
-    console.log('i created group ok !');
   }
   isGroupActive(): boolean {
     return this.isActive;

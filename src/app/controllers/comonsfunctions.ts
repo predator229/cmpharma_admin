@@ -11,11 +11,15 @@ import {UserDetails} from "../models/UserDatails";
 export class CommonFunctions {
   static getRoleRedirectMap(group: Group, userDetails: UserDetails) {
     const roleRedirectMap: Record<string, string> = {
-      [GroupCode.PHARMACIST_OWNER]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard/',
-      [GroupCode.PHARMACIST_MANAGER]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard/',
+      [GroupCode.MANAGER_PHARMACY]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
+      [GroupCode.PHARMACIEN]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
+      [GroupCode.PREPARATEUR]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
+      [GroupCode.CAISSIER]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
+      [GroupCode.CONSULTANT]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
       [GroupCode.SUPERADMIN]: 'admin/dashboard/overview',
-      [GroupCode.MANAGER]: 'admin/dashboard/overview',
-      [GroupCode.ADMIN]: 'admin/dashboard/overview',
+      [GroupCode.MANAGER_ADMIN]: 'admin/dashboard/overview',
+      [GroupCode.ADMIN_TECHNIQUE]: 'admin/dashboard/overview',
+      [GroupCode.SUPPORT_ADMIN]: 'admin/dashboard/overview',
     };
     return group.code && typeof roleRedirectMap[group.code] !=="undefined" ? roleRedirectMap[group.code] : null;
   }

@@ -1,5 +1,5 @@
 @if (!item.hidden) {
-  @if (item.url && !item.external) {
+  @if (item.url && !item.external && userDetails.canAccessNavigationItem?.(item.permissions)) {
     <li [ngClass]="item.classes!" [routerLinkActive]="['active']">
       <a class="nav-link" [target]="item.target ? '_blank' : '_self'" [routerLink]="[item.url]" (click)="closeOtherMenu($event)">
         @if (item.icon) {
@@ -13,7 +13,7 @@
       </a>
     </li>
   }
-  @if (item.url && item.external) {
+  @if (item.url && item.external && userDetails.canAccessNavigationItem?.(item.permissions)) {
     <li [ngClass]="item.classes!" [routerLinkActive]="['active']">
       <a [target]="item.target ? '_blank' : '_self'" [href]="item.url">
         @if (item.icon) {

@@ -2,14 +2,12 @@
   <div class="navbar-wrapper">
     <div class="m-header">
       <a [routerLink]="[url]" class="b-brand">
-        @if (themeMode === 'compact') {
-<!--          <img src="assets/images/Logo-small.svg" alt="small-menu-logo" class="logo logo-sm" />-->
-        } @else {
+        @if (themeMode !== 'compact') {
           <img src="assets/images/logo-dark.png" width="150px" alt="logo" class="logo logo-lg" />
         }
       </a>
     </div>
-    <app-nav-content (NavCollapsedMob)="navCollapseMob()" (SubmenuCollapse)="navSubmenuCollapse()" class="scroll-div w-100 compact" />
+    <app-nav-content (NavCollapsedMob)="navCollapseMob()" (SubmenuCollapse)="navSubmenuCollapse()" class="scroll-div w-100 compact" [userDetails]="userDetails" />
   </div>
 </nav>
 

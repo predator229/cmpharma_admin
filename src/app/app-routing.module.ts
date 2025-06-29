@@ -12,7 +12,7 @@ const routes: Routes = [{
     path: 'admin',
     component: AdminComponent,
     canActivate: [AuthGuard, GroupGuard],
-    data: { roles: [GroupCode.ADMIN, GroupCode.MANAGER, GroupCode.SUPERADMIN] },
+    data: { roles: [GroupCode.MANAGER_ADMIN, GroupCode.ADMIN_TECHNIQUE, GroupCode.SUPPORT_ADMIN, GroupCode.SUPERADMIN] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard/overview', loadComponent: () =>import('./views/admin/tableaubord/dashboard/dashboard.component').then((c) => c.AdminDashboardComponent),},
@@ -28,7 +28,7 @@ const routes: Routes = [{
     path: 'pharmacy',
     component: PharmacyComponent,
     canActivate: [AuthGuard, GroupGuard],
-    data: { roles: [GroupCode.PHARMACIST_OWNER, GroupCode.PHARMACIST_MANAGER, GroupCode.SUPERADMIN] },
+    data: { roles: [GroupCode.MANAGER_PHARMACY, GroupCode.PHARMACIEN, GroupCode.CAISSIER, GroupCode.CONSULTANT, GroupCode.SUPERADMIN] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard',loadComponent: () =>import('./views/pharmacy/dashboard/dashboard.component').then((c) => c.DefaultComponent), },

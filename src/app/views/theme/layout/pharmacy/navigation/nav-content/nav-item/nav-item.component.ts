@@ -1,10 +1,13 @@
 // Angular import
-import { Component, Input } from '@angular/core';
+import {Component, Input, Renderer2} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import {Router, RouterModule} from '@angular/router';
 
 // Project import
 import { NavigationItem } from '../../navigation';
+import {UserDetails} from "../../../../../../../models/UserDatails";
+import {AuthService} from "../../../../../../../controllers/services/auth.service";
+import {LoadingService} from "../../../../../../../controllers/services/loading.service";
 
 @Component({
   selector: 'app-nav-item',
@@ -14,8 +17,21 @@ import { NavigationItem } from '../../navigation';
   styleUrl: './nav-item.component.scss'
 })
 export class NavItemComponent {
-  // public props
   @Input() item!: NavigationItem;
+  @Input() userDetails!: UserDetails;
+  isLoading = false;
+
+  constructor(private renderer: Renderer2, private authService: AuthService, private router: Router, private loadingService: LoadingService) {
+    this.loadingService.isLoading$.subscribe((loading) => {
+      this.isLoading = loading;
+    });
+  }
+  ngOnInit(): void {
+    this.userDetails = this.userDetails ? this.userDetails : this.authService.getUserDetails();
+  }
+  logout() {
+    this.authService.logout();
+  }
 
   // public method
   closeOtherMenu(event: MouseEvent) {

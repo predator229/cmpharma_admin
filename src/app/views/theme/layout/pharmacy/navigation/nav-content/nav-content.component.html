@@ -4,17 +4,17 @@
     <ul class="nav coded-inner-navbar" tabindex="0" (click)="fireOutClick()" (keydown.space)="fireOutClick()" (keydown.enter)="fireOutClick()">
       @for (item of navigations; track item) {
         @if (item.type === 'group') {
-          <app-nav-group [item]="item" />
+          <app-nav-group [item]="item" [userDetails]="userDetails" />
         } @else if (item.type === 'collapse') {
           @if (item.children.length > 0) {
             @for (child of item.children; track child) {
-              <app-nav-item [item]="child" />
+              <app-nav-item [item]="child" [userDetails]="userDetails" />
             }
           } @else {
-            <app-nav-collapse [item]="item" />
+            <app-nav-collapse [item]="item" [userDetails]="userDetails" />
           }
         } @else if (item.type === 'item') {
-          <app-nav-item [item]="item" />
+          <app-nav-item [item]="item" [userDetails]="userDetails" />
         }
       }
     </ul>

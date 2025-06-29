@@ -10,8 +10,9 @@
     'mob-open': navCollapsedMob
   }"
   (NavCollapsedMob)="navMobClick()"
+  [userDetails]="userDetails"
 />
-<app-nav-bar [url]="urlDashboard" (NavCollapse)="this.navCollapsed = !this.navCollapsed" (NavCollapsedMob)="navMobClick()" />
+<app-nav-bar [url]="urlDashboard" (NavCollapse)="this.navCollapsed = !this.navCollapsed" (NavCollapsedMob)="navMobClick()" [userDetails]="userDetails" />
 <div class="pc-container">
   <div class="coded-wrapper">
     <div class="coded-content">

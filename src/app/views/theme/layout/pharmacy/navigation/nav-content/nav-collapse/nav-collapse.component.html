@@ -1,7 +1,8 @@
 @if (!item.hidden) {
-  @if (item.children.length > 0){
+  @if (item.children.length > 0 && userDetails.hasPermissions(item.permissions)){
     @for (child of item.children; track child) {
-    <li data-username="Pharmacy Dashboard" class="nav-item coded-hasmenu" [routerLinkActive]="['active']">
+<!--      @if (userDetails.hasPermissions(child.permissions) ){-->
+        <li data-username="Pharmacy Dashboard" class="nav-item coded-hasmenu" [routerLinkActive]="['active']">
       <a [routerLinkActive]="['active']" href="javascript:" class="nav-link" (click)="navCollapse($event)">
         @if (child.icon) {
           <span class="coded-micon">
@@ -22,6 +23,7 @@
         }
       </ul>
     </li>
+<!--      }-->
     }
   }
   @else{
@@ -48,10 +50,3 @@
     </li>
   }
 }
-<!--@if (item.children.length > 0) {-->
-<!--  @for (child of item.children; track child) {-->
-<!--    <app-nav-item [item]="child" />-->
-<!--  }-->
-<!--} @else {-->
-<!--  <app-nav-collapse [item]="item" />-->
-<!--}-->

@@ -1,7 +1,7 @@
 // Angular import
-import { Component, OnInit, output, inject } from '@angular/core';
+import {Component, OnInit, output, inject, Input, Renderer2} from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import {Router, RouterModule} from '@angular/router';
 
 //theme version
 import { environment } from 'src/environments/environment';
@@ -15,6 +15,9 @@ import { NavItemComponent } from './nav-item/nav-item.component';
 
 // NgScrollbarModule
 import { SharedModule } from 'src/app/views/theme/shared/shared.module';
+import {UserDetails} from "../../../../../../models/UserDatails";
+import {AuthService} from "../../../../../../controllers/services/auth.service";
+import {LoadingService} from "../../../../../../controllers/services/loading.service";
 
 @Component({
   selector: 'app-nav-content',
@@ -25,26 +28,32 @@ import { SharedModule } from 'src/app/views/theme/shared/shared.module';
 })
 export class NavContentComponent implements OnInit {
   private location = inject(Location);
+  isLoading: boolean = false;
+  @Input() public url!: String;
+  @Input() userDetails!: UserDetails;
 
-  // public props
+  logout() {
+    this.authService.logout();
+  }
   NavCollapsedMob = output();
   SubmenuCollapse = output();
 
-  // version
   title = 'ctmPharma - ma Pharmacie connecte';
   currentApplicationVersion = environment.appVersion;
 
   navigations!: NavigationItem[];
   windowWidth: number;
 
-  // Constructor
-  constructor() {
+  constructor(private renderer: Renderer2, private authService: AuthService, private router: Router, private loadingService: LoadingService) {
+    this.loadingService.isLoading$.subscribe((loading) => {
+      this.isLoading = loading;
+    });
     this.navigations = NavigationItems;
     this.windowWidth = window.innerWidth;
   }
 
-  // Life cycle events
   ngOnInit() {
+    this.userDetails = this.userDetails ? this.userDetails : this.authService.getUserDetails();
     if (this.windowWidth < 1025) {
       setTimeout(() => {
         (document.querySelector('.coded-navbar') as HTMLDivElement).classList.add('menupos-static');

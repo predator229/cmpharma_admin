@@ -35,22 +35,18 @@ export class Permission implements IPermission {
     this.createdBy = data.createdBy || 'System';
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
-    console.log('i created permission ok !');
-
   }
 
   isValidModule(): boolean {
     return this.module.trim().length > 0;
   }
 
-  // Méthode pour ajouter une permission
   addPermission(permission: string): void {
     if (!this.permissions.includes(permission)) {
       this.permissions.push(permission);
     }
   }
 
-  // Méthode pour supprimer une permission
   removePermission(permission: string): void {
     const index = this.permissions.indexOf(permission);
     if (index > -1) {

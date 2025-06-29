@@ -31,9 +31,6 @@
                 </div>
                 <a class="list-group-item list-group-item-action">
                   <div class="d-flex">
-                    <div class="flex-shrink-0">
-                      <img src="assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar" />
-                    </div>
                     <div class="flex-grow-1 ms-1">
                       <span class="float-end text-muted">2 min ago</span>
                       <h5>    {{ userDetails ? userDetails.name+' '+userDetails.surname : '' }}</h5>
@@ -93,9 +90,6 @@
                 </a>
                 <a class="list-group-item list-group-item-action">
                   <div class="d-flex">
-                    <div class="flex-shrink-0">
-                      <img src="assets/images/user/avatar-3.jpg" alt="user-image" class="user-avtar" />
-                    </div>
                     <div class="flex-grow-1 ms-1">
                       <span class="float-end text-muted">10 min ago</span>
                       <h5>Joseph William</h5>
@@ -122,7 +116,7 @@
           href="javascript:"
           ngbDropdownToggle
         >
-          <img src="{{ userDetails ? userDetails.photoURL : 'assets/images/user/avatar-2.jpg' }}" alt="{{ userDetails ? userDetails.name+' '+userDetails.surname : '' }}" class="user-avtar" />
+          <img src="{{ userDetails ? userDetails.photoURL : 'assets/images/user/pharmacien.jpg' }}" alt="{{ userDetails ? userDetails.name+' '+userDetails.surname : '' }}" class="user-avtar" />
           <span>
             <i class="ti ti-settings"></i>
           </span>

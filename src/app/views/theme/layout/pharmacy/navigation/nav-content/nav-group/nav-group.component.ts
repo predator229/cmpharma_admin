@@ -7,6 +7,8 @@ import { NavigationItem } from '../../navigation';
 
 import { NavCollapseComponent } from '../nav-collapse/nav-collapse.component';
 import { NavItemComponent } from '../nav-item/nav-item.component';
+import {UserDetails} from "../../../../../../../models/UserDatails";
+import {AuthService} from "../../../../../../../controllers/services/auth.service";
 
 @Component({
   selector: 'app-nav-group',
@@ -20,10 +22,16 @@ export class NavGroupComponent implements OnInit {
 
   // public props
   @Input() item!: NavigationItem;
+  isLoading: boolean = false;
+  @Input() public url!: String;
+  @Input() userDetails!: UserDetails;
+  private authService: AuthService;
 
+  logout() {
+    this.authService.logout();
+  }
   current_url!: string;
 
-  // Life cycle events
   ngOnInit() {
     this.current_url = this.location.path();
     //eslint-disable-next-line

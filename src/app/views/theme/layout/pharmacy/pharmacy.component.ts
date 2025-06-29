@@ -48,7 +48,6 @@ export class PharmacyComponent implements AfterViewInit {
 
   public imLoading: boolean = false;
 
-  // @ViewChild to access the modal in the template
   @ViewChild('userInfoModal') userInfoModal: ElementRef | undefined;
 
   constructor(modalService: NgbModal, authUser: AuthService, private loadingService: LoadingService) {

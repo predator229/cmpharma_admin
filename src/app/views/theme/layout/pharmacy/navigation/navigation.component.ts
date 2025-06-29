@@ -1,11 +1,11 @@
-// Angular import
 import { CommonModule } from '@angular/common';
-import {Component, Input, output} from '@angular/core';
-import { RouterModule } from '@angular/router';
-
-// project import
+import {Component, Input, output, Renderer2} from '@angular/core';
+import {Router, RouterModule} from '@angular/router';
 
 import { NavContentComponent } from './nav-content/nav-content.component';
+import {UserDetails} from "../../../../../models/UserDatails";
+import {AuthService} from "../../../../../controllers/services/auth.service";
+import {LoadingService} from "../../../../../controllers/services/loading.service";
 
 @Component({
   selector: 'app-navigation',
@@ -15,14 +15,27 @@ import { NavContentComponent } from './nav-content/nav-content.component';
   styleUrl: './navigation.component.scss'
 })
 export class NavigationComponent {
-  // public props
   NavCollapsedMob = output();
   SubmenuCollapse = output();
   navCollapsedMob = false;
   windowWidth = window.innerWidth;
   themeMode!: string;
+  isLoading: boolean = false;
   @Input() public url!: String;
+  @Input() userDetails!: UserDetails;
 
+  constructor(private renderer: Renderer2, private authService: AuthService, private router: Router, private loadingService: LoadingService) {
+    this.loadingService.isLoading$.subscribe((loading) => {
+      this.isLoading = loading;
+    });
+  }
+
+  ngOnInit(): void {
+    this.userDetails = this.userDetails ? this.userDetails : this.authService.getUserDetails();
+  }
+  logout() {
+    this.authService.logout();
+  }
   // public method
   navCollapseMob() {
     if (this.windowWidth < 1025) {

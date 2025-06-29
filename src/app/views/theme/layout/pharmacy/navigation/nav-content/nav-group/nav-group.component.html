@@ -1,4 +1,4 @@
-@if (!item.hidden) {
+@if (!item.hidden && userDetails.canAccessNavigationItem?.(item.permissions)) {
   <li class="nav-item coded-menu-caption" [ngClass]="item.classes">
     <label for="{{ item.id }}">{{ item.title }}</label>
   </li>

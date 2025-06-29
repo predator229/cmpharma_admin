@@ -1,8 +1,11 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import {Component, Input, OnInit, inject, Renderer2} from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import {Router, RouterModule} from '@angular/router';
 import { NavigationItem } from '../../navigation';
 import { NavItemComponent } from '../nav-item/nav-item.component';
+import {UserDetails} from "../../../../../../../models/UserDatails";
+import {AuthService} from "../../../../../../../controllers/services/auth.service";
+import {LoadingService} from "../../../../../../../controllers/services/loading.service";
 
 @Component({
   selector: 'app-nav-collapse',
@@ -15,10 +18,18 @@ export class NavCollapseComponent implements OnInit {
   private location = inject(Location);
 
   @Input() item!: NavigationItem;
+  @Input() userDetails!: UserDetails;
+  isLoading: boolean = false;
   windowWidth = window.innerWidth;
   current_url = '';
 
+  constructor(private renderer: Renderer2, private authService: AuthService, private router: Router, private loadingService: LoadingService) {
+    this.loadingService.isLoading$.subscribe((loading) => {
+      this.isLoading = loading;
+    });
+  }
   ngOnInit() {
+    this.userDetails = this.userDetails ? this.userDetails : this.authService.getUserDetails();
     this.current_url = this.location.path();
 
     const baseHref = this.location['_baseHref'] || '';

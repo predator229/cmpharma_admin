@@ -1,5 +1,5 @@
 // Angular import
-import {Component, Renderer2} from '@angular/core';
+import {Component, Input, input, Renderer2} from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from 'src/app/controllers/services/auth.service';
 import { LoadingService } from 'src/app/controllers/services/loading.service';
@@ -14,9 +14,9 @@ import {UserDetails} from "../../../../../../models/UserDatails";
   styleUrls: ['./nav-right.component.scss']
 })
 export class NavRightComponent {
-  setFontFamily!: string; // fontFamily
-  userDetails!: UserDetails;
+  setFontFamily!: string;
   isLoading = false;
+  @Input() userDetails!: UserDetails;
 
   constructor(private renderer: Renderer2, private authService: AuthService, private router: Router, private loadingService: LoadingService) {
     this.loadingService.isLoading$.subscribe((loading) => {
@@ -25,7 +25,7 @@ export class NavRightComponent {
   }
 
   ngOnInit(): void {
-    this.userDetails = this.authService.getUserDetails();
+    this.userDetails = this.userDetails ? this.userDetails : this.authService.getUserDetails();
     if (this.userDetails) {
       this.fontFamily(this.userDetails?.setups?.font_family ?? this.setFontFamily);
     }
