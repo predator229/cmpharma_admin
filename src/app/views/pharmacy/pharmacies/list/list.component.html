@@ -101,12 +101,12 @@
                 <td>{{ pharmacy.phoneNumber }}</td>
                 <td>{{ pharmacy.email }}</td>
                 <td>
-  <!--                <a-->
-  <!--                  [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"-->
-  <!--                  target="_blank"-->
-  <!--                  rel="noopener noreferrer">-->
-  <!--                  📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}-->
-  <!--                </a>-->
+                  <a
+                    [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}
+                  </a>
                 </td>
                 <td>{{ pharmacy.registerDate | date: 'dd/MM/yyyy' }}</td>
                 <td>
@@ -121,8 +121,8 @@
                   <span *ngIf="pharmacy.rating === null">—</span>
                 </td>
                 <td>
-                  <span *ngIf="pharmacy.comentaire !='' || pharmacy.status === 'pending'" style="color: crimson">
-                    {{ pharmacy.comentaire !='' ? pharmacy.comentaire : (pharmacy.status === 'pending' ? "Nous avons besoin d'information complémentaire" : 'pff') }}
+                  <span *ngIf="pharmacy.commentaire !='' || pharmacy.status === 'pending'" style="color: crimson">
+                    {{ pharmacy.commentaire !='' ? pharmacy.commentaire : (pharmacy.status === 'pending' ? "Nous avons besoin d'information complémentaire" : 'pff') }}
                   </span>
                 <td>
                   <div class="action-buttons">

@@ -39,6 +39,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
   paginationStart: number = 0;
   paginationEnd: number = 0;
   private modalService: NgbModal;
+  canIEdit : boolean = false;
 
   regions: string[] = [];
   private detailsModal: any;
@@ -55,7 +56,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
   @ViewChild('addPharmacy') addPharmacy: ElementRef | undefined;
   @ViewChild('showInfo') showInfo: ElementRef | undefined;
   public currentPage: number = 1;
-  private userDetail: UserDetails;
+  userDetail: UserDetails;
 
   constructor(
     modalService: NgbModal,
@@ -122,7 +123,6 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
     this.loadingService.setLoading(true);
     try {
       this.loadingService.setLoading(true);
-
       const token = await this.auth.getRealToken();
       const uid = await this.auth.getUid();
       if (!token) {
@@ -156,7 +156,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
           }
         });
     } catch (error) {
-      this.handleError('Une erreur s\'est produite');
+      this.handleError('Une erreur s\'est produiteee');
       this.loadingService.setLoading(false);
     }
   }

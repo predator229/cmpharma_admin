@@ -1,7 +1,20 @@
-import { WorkingHours } from "./WorkingHours";
-import { Location } from "./Location";
-import { Image } from "./Image.class";
+import {WorkingHours} from "./WorkingHours";
+import {Location} from "./Location";
+import {Image} from "./Image.class";
 import {OpeningHoursClass} from "./OpeningHours.class";
+import {FileClass} from "./File.class";
+
+export interface FileDocument {
+  name: string;
+  file: FileClass;
+}
+
+export interface DocumentsPharmacy {
+  logo?: FileClass,
+  license?: FileClass,
+  idDocument?: FileClass,
+  insurance?: FileClass,
+}
 
 export class PharmacyClass {
   id: string;
@@ -20,15 +33,19 @@ export class PharmacyClass {
   registerDate: Date;
   rating: number | null;
   workingHours: OpeningHoursClass[];
-  comentaire?: string | null;
+  commentaire?: string | null;
 
   createdAt: Date | null;
   updatedAt: Date | null;
 
-  // Champs front uniquement, pas dans la BDD
   totalRevenue?: number;
   orders30days?: number | null;
   revenue30days?: number | null;
+
+  documents?: DocumentsPharmacy | null;
+  city? : string;
+  country?: string;
+  postalCode?: string;
 
   constructor(data: {
     id: string;
@@ -46,13 +63,16 @@ export class PharmacyClass {
     suspensionReason?: string | null;
     registerDate?: Date;
     rating?: number | null;
-    workingHours?: OpeningHoursClass[];
-    comentaire?: string | null;
+    workingHours?: OpeningHoursClass[] | null;
+    commentaire?: string | null; // Fixed typo in constructor parameter
     createdAt?: Date;
     updatedAt?: Date;
     totalRevenue?: number;
     orders30days?: number | null;
     revenue30days?: number | null;
+    documents?: DocumentsPharmacy | null;
+    city?: string;
+    country?: string;
   }) {
     this.id = data.id;
     this.name = data.name;
@@ -69,13 +89,17 @@ export class PharmacyClass {
     this.suspensionReason = data.suspensionReason ?? null;
     this.registerDate = data.registerDate ?? new Date();
     this.rating = data.rating ?? null;
-    this.workingHours = (data.workingHours ?? []).map(w => new OpeningHoursClass(w));
-    this.comentaire = data.comentaire ?? '';
+    this.workingHours = data.workingHours ? data.workingHours.map(w => new OpeningHoursClass(w)) : null;
+    this.commentaire = data.commentaire ?? null; // Fixed typo and default value
     this.createdAt = data.createdAt ? new Date(data.createdAt) : null;
     this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : null;
 
     this.totalRevenue = data.totalRevenue ?? 0;
     this.orders30days = data.orders30days ?? null;
     this.revenue30days = data.revenue30days ?? null;
+
+    this.documents = data.documents ?? null;
+    this.city = data.city ?? null;
+    this.country = data.country ?? null;
   }
 }

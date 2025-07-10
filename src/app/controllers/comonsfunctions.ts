@@ -50,34 +50,18 @@ export class CommonFunctions {
       registerDate: data.registerDate ? new Date(data.registerDate) : new Date(),
       rating: data.rating || null,
       workingHours: data.workingHours ? data.workingHours.map((wh: any) => new OpeningHoursClass(wh)) : [],
-      comentaire: data.commentaire ?? '',
+      commentaire: data.commentaire ?? '',
       createdAt: data.createdAt ? new Date(data.createdAt) : null,
       updatedAt: data.updatedAt ? new Date(data.updatedAt) : null,
       totalRevenue: data.totalRevenue || 0,
       orders30days: data.orders30days || null,
       revenue30days: data.revenue30days || null,
+      documents: data.documents || null,
+      city: data.city || null,
+      country: data.country || null,
     });
   }
 
-
-  /**
-   * Extraire la liste des regions par raport au region specifier dans l'ensemble des pharmacies
-   */
-  // static extractRegions(pharmacies: PharmacyClass[] | null[]): void {
-  //   const uniqueRegions = new Set<string>();
-  //   pharmacies.forEach(pharmacy => {
-  //     if (pharmacy && pharmacy.location && pharmacy.location.latitude) {
-  //       uniqueRegions.add(pharmacy.location.latitude.toString());
-  //     }
-  //   });
-  //   return Array.from(uniqueRegions);
-  // }
-
-  /**
-   * Valide un email
-   * @param email - L'email à valider
-   * @returns true si l'email est valide, false sinon
-   */
   static isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);

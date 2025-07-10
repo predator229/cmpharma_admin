@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, AfterViewInit } from '@angular/core';
+import {Component, Input, Output, EventEmitter, OnInit, AfterViewInit, SimpleChanges} from '@angular/core';
 import * as L from 'leaflet';
 import {NgStyle} from "@angular/common";
 
@@ -11,6 +11,7 @@ import {NgStyle} from "@angular/common";
   styleUrls: ['./map-selector.component.scss']
 })
 export class MapSelectorComponent implements OnInit, AfterViewInit {
+  @Input() mapId: string = 'map-' + Math.random().toString(36).substr(2, 9); // ID par défaut
   @Input() readonly: boolean = false;
   @Input() lat: number | null = null;
   @Input() lng: number | null = null;
@@ -23,13 +24,32 @@ export class MapSelectorComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {}
 
   ngAfterViewInit(): void {
-    this.initializeMap();
+    this.initializeMap(this.mapId);
+  }
+  ngOnChanges(changes: SimpleChanges): void {
+    if (this.map && this.marker && (changes['lat'] || changes['lng'])) {
+      this.updateMapPosition();
+    }
+  }
+  ngOnDestroy(): void {
+    if (this.map) {
+      this.map.remove();
+    }
   }
 
-  private initializeMap(): void {
-    const defaultLatLng = this.lat && this.lng ? [this.lat, this.lng] : [0, 0];
+  private updateMapPosition(): void {
+    if (this.lat && this.lng && this.map && this.marker) {
+      const newLatLng = [this.lat, this.lng] as L.LatLngExpression;
+      this.marker.setLatLng(newLatLng);
+      this.map.setView(newLatLng, this.map.getZoom());
+    }
+  }
 
-    this.map = L.map('map').setView(defaultLatLng as L.LatLngExpression, 13);
+  private initializeMap(containerId: string): void {
+    const defaultLatLng = this.lat && this.lng ? [this.lat, this.lng] : [0, 0];
+    const mapContainer = document.getElementById(containerId);
+
+    this.map = L.map(mapContainer).setView(defaultLatLng as L.LatLngExpression, 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(this.map);

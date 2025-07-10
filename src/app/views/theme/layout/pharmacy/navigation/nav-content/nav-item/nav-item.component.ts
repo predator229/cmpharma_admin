@@ -32,8 +32,6 @@ export class NavItemComponent {
   logout() {
     this.authService.logout();
   }
-
-  // public method
   closeOtherMenu(event: MouseEvent) {
     const ele = event.target as HTMLElement;
     if (ele !== null && ele !== undefined) {
@@ -68,4 +66,11 @@ export class NavItemComponent {
       (document.querySelector('app-navigation.coded-navbar') as HTMLDivElement).classList.remove('mob-open');
     }
   }
+  getCurrentUrlWithoutBase(): string {
+    const currentUrl = this.router.url;
+    const baseUrl = document.querySelector('base')?.getAttribute('href') || '/';
+    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+    return currentUrl.replace(cleanBaseUrl, '');
+  }
+
 }

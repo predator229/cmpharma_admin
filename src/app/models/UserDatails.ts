@@ -193,7 +193,6 @@ export class UserDetails {
     if (!this.allpermissions || this.allpermissions.length === 0) {
       return false;
     }
-    console.log(this.allpermissions);
     return ['pharmacy', 'admin'].some(plateforme => permissions.some(permission => this.allpermissions!.includes(plateforme+'.'+permission) || this.allpermissions!.includes(permission) ));
   }
 }

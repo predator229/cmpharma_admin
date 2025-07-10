@@ -37,5 +37,22 @@ function updateEnvironment(ip) {
   }
 }
 
+function updatePathEnvironment(ip) {
+  const envPath = path.join(__dirname, 'src/environments/environment.ts');
+  let content = fs.readFileSync(envPath, 'utf8');
+
+  const regex = /internalPathUrl:\s*['"`](.*?)['"`]/;
+  const newBaseUrl = `internalPathUrl: 'http://${ip}:5050/'`;
+
+  if (regex.test(content)) {
+    content = content.replace(regex, newBaseUrl);
+    fs.writeFileSync(envPath, content, 'utf8');
+    console.log(`✅ environment.ts mis à jour avec l'IP locale : ${ip}`);
+  } else {
+    console.error('❌ baseUrl non trouvé dans environment.ts');
+  }
+}
+
 const ip = getLocalIp();
 updateEnvironment(ip);
+updatePathEnvironment(ip);
