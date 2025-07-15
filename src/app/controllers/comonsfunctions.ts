@@ -59,6 +59,7 @@ export class CommonFunctions {
       documents: data.documents || null,
       city: data.city || null,
       country: data.country || null,
+      deliveryZone: data.deliveryZone || null,
     });
   }
 

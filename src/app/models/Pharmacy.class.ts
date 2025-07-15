@@ -3,6 +3,9 @@ import {Location} from "./Location";
 import {Image} from "./Image.class";
 import {OpeningHoursClass} from "./OpeningHours.class";
 import {FileClass} from "./File.class";
+import {Country} from "./Country.class";
+import {DeliveryZoneClass} from "./DeliveryZone.class";
+import {ZoneCoordinates} from "./ZoneCoordinates.class";
 
 export interface FileDocument {
   name: string;
@@ -15,6 +18,13 @@ export interface DocumentsPharmacy {
   idDocument?: FileClass,
   insurance?: FileClass,
 }
+
+export interface DeliveryServices {
+  homeDelivery: { type: Boolean, default: true },
+  pickupInStore: { type: Boolean, default: true },
+  expressDelivery: { type: Boolean, default: false },
+  scheduledDelivery: { type: Boolean, default: false }
+};
 
 export class PharmacyClass {
   id: string;
@@ -44,8 +54,11 @@ export class PharmacyClass {
 
   documents?: DocumentsPharmacy | null;
   city? : string;
-  country?: string;
-  postalCode?: string;
+  country?: Country | null;
+
+  deliveryZone?: DeliveryZoneClass | null;
+  cityBounds?: ZoneCoordinates | null;
+  deliveryServices?: DeliveryServices | null;
 
   constructor(data: {
     id: string;
@@ -72,7 +85,10 @@ export class PharmacyClass {
     revenue30days?: number | null;
     documents?: DocumentsPharmacy | null;
     city?: string;
-    country?: string;
+    country?: Country | null;
+    deliveryZone?: DeliveryZoneClass | null;
+    cityBounds?: ZoneCoordinates | null;
+    deliveryServices?: DeliveryServices | null;
   }) {
     this.id = data.id;
     this.name = data.name;
@@ -101,5 +117,9 @@ export class PharmacyClass {
     this.documents = data.documents ?? null;
     this.city = data.city ?? null;
     this.country = data.country ?? null;
+
+    this.deliveryZone = data.deliveryZone ?? null;
+    this.cityBounds = data.cityBounds ?? null;
+    this.deliveryServices = data.deliveryServices ?? null;
   }
 }

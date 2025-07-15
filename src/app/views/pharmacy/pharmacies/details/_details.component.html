@@ -39,6 +39,14 @@
                   <div class="col-md-12">
                     <div class="detail-section">
                       <div class="detail-item">
+                        <span class="detail-label"><i class="fas fa-flag"></i> Pays:</span>
+                        <span class="detail-value">{{ pharmacy.country.name }} {{ pharmacy.country.emoji }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label"><i class="fas fa-location"></i> Ville:</span>
+                        <span class="detail-value">{{ pharmacy.city }}</span>
+                      </div>
+                      <div class="detail-item">
                         <span class="detail-label"><i class="fas fa-map-marker-alt"></i> Adresse:</span>
                         <span class="detail-value">{{ pharmacy.address }}</span>
                       </div>
@@ -93,6 +101,33 @@
                   </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="card mb-4">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-shopping-cart"></i> Zone de livraison</h5>
+                <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit && pharmacy.location">
+                  <button class="btn btn-sm btn-outline-primary" (click)="showEditModalCoordoneeZone()">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="map-container" (click)="showEditOrViewDocument('map', false, null, 'mapzone', 'Zone de livraison')" >
+<!--                  <div *ngIf="!pharmacy.deliveryZone" class="form-step active"> <p class="text-muted">Cliquer sur le bouton + pour configurer votre zone de livraison</p> </div>-->
+                  <app-map-selector
+                    mapId="map8"
+                    [height]="'300px'"
+                    [selectionMode]="'zone'"
+                    [lat]="pharmacy.location?.latitude"
+                    [lng]="pharmacy.location?.longitude"
+                    [deliveryZone]="pharmacy.deliveryZone"
+                    [readonly]="true">
+                  </app-map-selector>
+                </div>
+                <div *ngIf="!pharmacy.location" class="form-step active"> <p class="text-muted">Vous devez d'abord ajouter la localisation de la pharmacie pour configurer la zone de livraison</p> </div>
               </div>
             </div>
           </div>
@@ -200,6 +235,29 @@
           </div>
         <div class="card mb-4">
           <div class="card-header">
+            <h5><i class="fas fa-map-marked-alt"></i> Localisation</h5>
+            <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit">
+              <button class="btn btn-sm btn-outline-primary" (click)="showEditModalCoordonee()">
+                <i class="fas {{ pharmacy.location ? 'fa fa-edit' : 'fa fa-plus-circle' }}"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="map-container" (click)="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null ? showEditOrViewDocument('map', false, null, 'map', 'Localisation de la pharmacie') : false" >
+              <app-map-selector
+                *ngIf="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null"
+                mapId="map1"
+                [readonly]="true"
+                [lat]="pharmacy.location?.latitude"
+                [lng]="pharmacy.location?.longitude"
+                [height]="'300px'"
+                (positionChange)="false">
+              </app-map-selector>
+            </div>
+          </div>
+        </div>
+        <div class="card mb-4">
+          <div class="card-header">
             <h5><i class="fas fa-file-alt"></i> Documents <span style="color:red">*</span> </h5>
           </div>
           <div class="card-body">
@@ -285,31 +343,6 @@
             </div>
           </div>
         </div>
-
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5><i class="fas fa-map-marked-alt"></i> Localisation</h5>
-            <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit">
-              <button class="btn btn-sm btn-outline-primary" (click)="showEditModalCoordonee()">
-                <i class="fas fa-edit"></i>
-              </button>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="map-container">
-              <app-map-selector
-                *ngIf="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null"
-                mapId="map1"
-                [readonly]="true"
-                [lat]="pharmacy.location?.latitude"
-                [lng]="pharmacy.location?.longitude"
-                [height]="'300px'"
-                (positionChange)="false">
-              </app-map-selector>
-            </div>
-          </div>
-        </div>
-
         <div class="card mb-4">
           <div class="card-header">
             <h5><i class="fas fa-history"></i> Historique des actions</h5>
@@ -542,7 +575,51 @@
                   </div>
                 </div>
               </div>
-
+              <div class="mb-3">
+                <!-- Pays -->
+                <div class="col-md-6">
+                  <label for="country" class="form-label">Pays *</label>
+                  <app-select2-ajax
+                    #slectCountryFirstModal
+                    [apiUrl]="baseUrl+'tools/get-countries-list'"
+                    placeholder="Sélectionner votre pays"
+                    formControlName="country"
+                    [countriesListArray]="countriesListArray"
+                    [type]="'country'"
+                    (selected)="onCountrySelected($event, 0)">
+                  </app-select2-ajax>
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('country')?.invalid && pharmacyForm.get('country')?.touched">
+                    <span *ngIf="pharmacyForm.get('country')?.errors?.['required']">Le pays est requis</span>
+                  </div>
+                </div>
+                <!-- Ville -->
+                <div class="col-md-6">
+                  <label for="country" class="form-label">Ville *</label>
+                  <app-select2-ajax *ngIf="pharmacyForm.get('country')?.value != ''"
+                    #slectCityModalGenInfo
+                    [apiUrl]="'https://countriesnow.space/api/v0.1/countries/cities'"
+                    [country]="pharmacyForm.get('country')?.value"
+                    [countriesListArray]="countriesListArray"
+                    [type]="'city'"
+                    [value]="pharmacyForm.get('city')?.value"
+                    placeholder="Sélectionner une ville"
+                    formControlName="city"
+                    (selected)="onCitySelected($event)">
+                  </app-select2-ajax>
+                  <input
+                    *ngIf="pharmacyForm.get('country')?.value == ''"
+                    type="text"
+                    class="form-control"
+                    id="city"
+                    readonly="readonly"
+                    value="Selectionner d'abord un pays"
+                    formControlName="city"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('city')?.invalid && pharmacyForm.get('city')?.touched">
+                    <span *ngIf="pharmacyForm.get('city')?.errors?.['required']">Le pays est requis</span>
+                  </div>
+                </div>
+              </div>
               <!-- Adresse -->
               <div class="mb-3">
                 <label for="address" class="form-label">Adresse complète *</label>
@@ -635,7 +712,6 @@
                   </div>
                 </div>
               </div>
-
               <div class="mb-4">
                 <label for="idDocumentFile" class="form-label">Pièce d'identité *</label>
                 <div class="file-upload-container">
@@ -666,7 +742,6 @@
                   </div>
                 </div>
               </div>
-
               <!-- Attestation d'assurance -->
               <div class="mb-4">
                 <label for="insuranceFile" class="form-label">Attestation d'assurance *</label>
@@ -752,7 +827,6 @@
                   </div>
                 </div>
               </div>
-
               <!-- Commentaires -->
               <div class="mb-3">
                 <label for="comentaire" class="form-label">Commentaires</label>
@@ -764,7 +838,6 @@
                   placeholder="Informations complémentaires, remarques particulières..."
                 ></textarea>
               </div>
-
               <!-- Suspension (si applicable) -->
               <div class="row mb-3" *ngIf="pharmacyForm.get('status')?.value === 'suspended'">
                 <div class="col-md-6">
@@ -793,7 +866,6 @@
         </form>
       </div>
     </div>
-
     <!-- Footer du modal -->
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" (click)="closeModal()">
@@ -827,6 +899,7 @@
             <div class="form-step active">
               <hr>
               <p class="step-subtitle"> Toute modification de ces informations va entrainer une nouvelle verifications et validation par nos administrateur. Pendant le temps de la validation, la pharmacie ne serra pas lister chez nos clients et ne pourra donc pas recevoir de nouvelles commandes ! </p>
+              <p class="step-subtitle"> La modification de l'adresse, de la ville ou du pays, va entrainer la suppression de la zone de livraison, et de la localisation de l'entreprise ! </p>
               <hr>
               <!-- Nom-->
               <div class="row mb-3">
@@ -875,60 +948,47 @@
                   </div>
                 </div>
               </div>
+            </div>
+            <div class="row mb-3">
               <!-- Pays -->
               <div class="col-md-6">
                 <label for="country" class="form-label">Pays *</label>
-                <select
-                  class="form-select"
-                  id="country"
-                  formControlName="country"
-                  [class.is-invalid]="pharmaciesCustomSave.get('country')?.invalid && pharmaciesCustomSave.get('country')?.touched"
-                >
-                  <option value="">Sélectionnez un pays</option>
-                  <option value="france">France</option>
-                </select>
+                <app-select2-ajax
+                  #slectCountryModalGenInfo
+                  [apiUrl]="baseUrl+'tools/get-countries-list'"
+                  placeholder="Sélectionner votre pays"
+                  [type]="'country'"
+                  [countriesListArray]="countriesListArray"
+                  [value]="pharmaciesCustomSave.get('country')?.value"
+                  (selected)="onCountrySelected($event, 1)">
+                </app-select2-ajax>
                 <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('country')?.invalid && pharmaciesCustomSave.get('country')?.touched">
                   Le pays est requis
                 </div>
               </div>
-            </div>
-            <!-- Ville -->
-            <div class="row mb-3">
+              <!-- Ville -->
               <div class="col-md-6">
-                <label for="city" class="form-label">Ville *</label>
-                <div class="position-relative">
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="city"
-                    formControlName="city"
-                    placeholder="Rechercher une ville..."
-                    (input)="onCitySearch($event)"
-                    (focus)="showCityDropdown = true"
-                    (blur)="onCityBlur()"
-                    [class.is-invalid]="pharmaciesCustomSave.get('city')?.invalid && pharmaciesCustomSave.get('city')?.touched"
-                    autocomplete="off"
-                  >
-                  <div class="spinner-border spinner-border-sm position-absolute top-50 end-0 translate-middle-y me-3"
-                       *ngIf="citiesLoading"
-                       style="width: 1rem; height: 1rem;">
-                  </div>
-
-                  <!-- Dropdown des villes -->
-                  <div class="dropdown-menu w-100"
-                       [class.show]="showCityDropdown && cities.length > 0"
-                       style="max-height: 200px; overflow-y: auto;">
-                    <a class="dropdown-item"
-                       *ngFor="let city of cities; trackBy: trackByCity"
-                       (mousedown)="selectCity(city)"
-                       style="cursor: pointer;">
-                      {{city.name}} <small class="text-muted">({{city.postcode}})</small>
-                    </a>
-                    <div class="dropdown-item text-muted" *ngIf="cities.length === 0 && searchTerm.length >= 2">
-                      Aucune ville trouvée
-                    </div>
-                  </div>
-                </div>
+                <label for="country" class="form-label">Ville *</label>
+                <app-select2-ajax
+                  #slectCityModalGenInfo
+                  [apiUrl]="'https://countriesnow.space/api/v0.1/countries/cities'"
+                  [countriesListArray]="countriesListArray"
+                  [country]="pharmaciesCustomSave.get('country')?.value"
+                  [type]="'city'"
+                  placeholder="Sélectionner une ville"
+                  [value]="pharmaciesCustomSave.get('city')?.value"
+                  [style.display]="pharmaciesCustomSave.get('country')?.value ? 'block' : 'none'"
+                  (selected)="onCitySelected($event, 1)">
+                </app-select2-ajax>
+                <input
+                  *ngIf="!pharmaciesCustomSave.get('country')?.value"
+                  type="text"
+                  class="form-control"
+                  id="city"
+                  readonly="readonly"
+                  value="Selectionner d'abord un pays"
+                  formControlName="city"
+                  [class.is-invalid]="pharmaciesCustomSave.get('city')?.invalid && pharmaciesCustomSave.get('city')?.touched">
                 <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('city')?.invalid && pharmaciesCustomSave.get('city')?.touched">
                   La ville est requise
                 </div>
@@ -942,14 +1002,13 @@
                   id="address"
                   rows="2"
                   formControlName="address"
-                  [class.is-invalid]="pharmacyForm.get('address')?.invalid && pharmacyForm.get('address')?.touched"
+                  [class.is-invalid]="pharmaciesCustomSave.get('address')?.invalid && pharmaciesCustomSave.get('address')?.touched"
                 ></textarea>
-                <div class="invalid-feedback" *ngIf="pharmacyForm.get('address')?.invalid && pharmacyForm.get('address')?.touched">
+                <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('address')?.invalid && pharmaciesCustomSave.get('address')?.touched">
                   L'adresse est requise
                 </div>
               </div>
             </div>
-<!--          </div>-->
         </form>
       </div>
     </div>
@@ -1161,7 +1220,7 @@
                     [lat]="pharmacy.location?.latitude"
                     [lng]="pharmacy.location?.longitude"
                     [height]="'300px'"
-                    (positionChange)="onMapChange($event)">
+                    (positionChange)="onMapChange($event, 5)">
                   </app-map-selector>
                 </div>
               </div>
@@ -1190,12 +1249,68 @@
   </div>
 </ng-template>
 
+<!--formCoordonatesZoneInfos-->
+<ng-template #formCoordonatesZoneInfos let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="formCoordonatesZoneInfosModal">Zone de livraison !</h5>
+      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form [formGroup]="pharmaciesCustomSave" (ngSubmit)="onSubmit(7)">
+          <div class="steps-container">
+            <div class="form-step active">
+<!--              <hr>-->
+<!--              <p class="step-subtitle">Les modifications sur la zone de livraison ne seront appliques chez les clients qu'a partir de demain ou si vous n'avez aucune commandes en cours de preparation !</p>-->
+              <hr>
+              <!-- deliveryZone -->
+              <div class="row mb-3">
+                <div class="col-md-12">
+                  <app-map-selector
+                    mapId="map9"
+                    [height]="'600px'"
+                    [selectionMode]="'zone'"
+                    [lat]="pharmacy.location?.latitude"
+                    [lng]="pharmacy.location?.longitude"
+                    [deliveryZone]="pharmacy.deliveryZone"
+                    [readonly]="false"
+                    (zoneChange)="onZoneMapChange($event, 7)">
+                  </app-map-selector>
+
+                </div>
+              </div>
+              <hr>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSubmit(7)"
+        [disabled]="pharmaciesCustomSave.invalid || isSubmitting"
+      >
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="fas fa-save" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les nouveaux coordonees' }}
+      </button>
+    </div>
+  </div>
+</ng-template>
+
 <!--editOrViewDocument-->
 <ng-template #editOrViewDocument let-modal>
   <div class="modal-content">
     <div class="modal-header">
       <h5 class="modal-title" id="editOrViewDocumentModal">
-        {{ pharmaciesCustomSave.get('edit')?.value ? 'Modifier' : '' }} - {{ pharmaciesCustomSave.get('label')?.value ?? 'Document' }}
+        {{ pharmaciesCustomSave.get('edit')?.value ? 'Modifier - ' : '' }}  {{ pharmaciesCustomSave.get('label')?.value ?? 'Document' }}
       </h5>
       <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
     </div>
@@ -1209,7 +1324,6 @@
                 <p> Attention, les fichiers sont automatiquement modifier a la selection du nouveau fichier ! </p>
                 <hr>
               </div>
-
               <div class="row mb-3" *ngIf="pharmaciesCustomSave.get('edit')?.value">
                 <div class="col-md-12">
                   <label class="form-label">
@@ -1230,7 +1344,7 @@
               <hr>
               <div class="row mb-3">
                 <div class="col-md-12">
-                  <div class="pharmacy-full-logo position-relative">
+                  <div class="pharmacy-full-logo position-relative" *ngIf="!['map', 'mapzone' ].includes(pharmaciesCustomSave.get('type')?.value)" >
                     <div
                       *ngIf="pharmaciesCustomSave.get('edit')?.value"
                       class="edit-overlay position-absolute w-100 h-100 d-flex align-items-center justify-content-center"
@@ -1245,7 +1359,7 @@
                     <iframe
                       width="100%"
                       height="800px"
-                      *ngIf="pharmaciesCustomSave.get('type')?.value != 'img'"
+                      *ngIf="pharmaciesCustomSave.get('type')?.value == 'pdf'"
                       [src]="getFilePreviewUrl()"
                       frameborder="0">
                     </iframe>
@@ -1255,6 +1369,29 @@
                       alt="{{ pharmaciesCustomSave.get('label')?.value ?? 'Logo de la pharmacie' }}"
                       class="img-fluid"
                     >
+                  </div>
+                  <div class="map-container" *ngIf="pharmaciesCustomSave.get('type')?.value == 'map'" >
+                    <app-map-selector
+                      *ngIf="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null"
+                      mapId="map6"
+                      [readonly]="true"
+                      [lat]="pharmacy.location?.latitude"
+                      [lng]="pharmacy.location?.longitude"
+                      [height]="'300px'"
+                      (positionChange)="false">
+                    </app-map-selector>
+                  </div>
+                  <div class="map-container" *ngIf="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null && pharmaciesCustomSave.get('type')?.value == 'mapzone'" >
+                    <app-map-selector
+                      mapId="map10"
+                      [height]="'400px'"
+                      [selectionMode]="'zone'"
+                      [lat]="pharmacy.location?.latitude"
+                      [lng]="pharmacy.location?.longitude"
+                      [deliveryZone]="pharmacy.deliveryZone"
+                      [readonly]="true"
+                      >
+                    </app-map-selector>
                   </div>
                 </div>
               </div>

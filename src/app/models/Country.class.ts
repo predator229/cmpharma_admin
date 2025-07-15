@@ -9,6 +9,7 @@ export class Country implements BaseDocument {
   emoji: string;
   code: string;
   dial_code: string;
+  full_name: string;
   createdAt?: Date;
   updatedAt?: Date;
 
@@ -20,5 +21,6 @@ export class Country implements BaseDocument {
     this._id = data._id;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
+    this.full_name = data.emoji+' '+data.name+' ('+data.dial_code+')';
   }
 }

@@ -15,11 +15,16 @@ export class ApiService {
   get(endpoint: string, headers?: HttpHeaders): Observable<unknown> {
     return this.http.get(this.baseUrl + endpoint, { headers });
   }
+  fullUrlGet(endpoint: string, headers?: HttpHeaders): Observable<unknown> {
+    return this.http.get(endpoint, { headers });
+  }
 
   post(endpoint: string, data: unknown, headers?: HttpHeaders): Observable<unknown> {
     return this.http.post(this.baseUrl + endpoint, data, { headers });
   }
-
+  fullUrlPost(endpoint: string, data: unknown, headers?: HttpHeaders): Observable<unknown> {
+    return this.http.post(this.baseUrl + endpoint, data, { headers });
+  }
   put(endpoint: string, data: unknown, headers?: HttpHeaders): Observable<unknown> {
     return this.http.put(this.baseUrl + endpoint, data, { headers });
   }

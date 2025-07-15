@@ -3812,6 +3812,13 @@
   resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-5.1.5.tgz#bba343c504f48e596837415f0558e10b8a0e5f7d"
   integrity sha512-SaCZ3kM5NjOiJqMRYwHpLbTfUC2Dyk1KS3QanNFsUYPGTk70CWVK/J9ueun6zNhw/UkgV7xl8V4ZLQZNRbfnNw==
 
+"@types/jquery@*", "@types/jquery@^3.5.32":
+  version "3.5.32"
+  resolved "https://registry.yarnpkg.com/@types/jquery/-/jquery-3.5.32.tgz#3eb0da20611b92c7c49ebed6163b52a4fdc57def"
+  integrity sha512-b9Xbf4CkMqS02YH8zACqN1xzdxc3cO735Qe5AbSUFmyOiaWAbcpqh9Wna+Uk0vgACvoQHpWDg2rGdHkYPLmCiQ==
+  dependencies:
+    "@types/sizzle" "*"
+
 "@types/json-schema@*", "@types/json-schema@^7.0.15", "@types/json-schema@^7.0.6", "@types/json-schema@^7.0.9":
   version "7.0.15"
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.15.tgz#596a1747233694d50f6ad8a7869fcb6f56cf5841"
@@ -3880,6 +3887,13 @@
   resolved "https://registry.yarnpkg.com/@types/retry/-/retry-0.12.2.tgz#ed279a64fa438bb69f2480eda44937912bb7480a"
   integrity sha512-XISRgDJ2Tc5q4TRqvgJtzsRkFYNJzZrhTdtMoGVBttwzzQJkPnS3WWTFc7kuDRoPtPakl+T+OfdEUjYJj7Jbow==
 
+"@types/select2@^4.0.63":
+  version "4.0.63"
+  resolved "https://registry.yarnpkg.com/@types/select2/-/select2-4.0.63.tgz#6aafe9bf596fc99aff749afe6b0bb6c31aeec2ce"
+  integrity sha512-/DXUfPSj3iVTGlRYRYPCFKKSogAGP/j+Z0fIMXbBiBtmmZj0WH7vnfNuckafq9C43KnqPPQW2TI/Rj/vTSGnQQ==
+  dependencies:
+    "@types/jquery" "*"
+
 "@types/send@*":
   version "0.17.4"
   resolved "https://registry.yarnpkg.com/@types/send/-/send-0.17.4.tgz#6619cd24e7270793702e4e6a4b958a9010cfc57a"
@@ -3903,6 +3917,11 @@
     "@types/http-errors" "*"
     "@types/node" "*"
     "@types/send" "*"
+
+"@types/sizzle@*":
+  version "2.3.9"
+  resolved "https://registry.yarnpkg.com/@types/sizzle/-/sizzle-2.3.9.tgz#d4597dbd4618264c414d7429363e3f50acb66ea2"
+  integrity sha512-xzLEyKB50yqCUPUJkIsrVvoWNfFUbIZI+RspLWt8u+tIW/BetMBZtgV2LY/2o+tYH8dRvQ+eoPf3NdhQCcLE2w==
 
 "@types/sockjs@^0.3.36":
   version "0.3.36"
@@ -7906,6 +7925,11 @@ join-path@^1.1.1:
     url-join "0.0.1"
     valid-url "^1"
 
+jquery@^3.7.1:
+  version "3.7.1"
+  resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.7.1.tgz#083ef98927c9a6a74d05a6af02806566d16274de"
+  integrity sha512-m4avr8yL8kmFN8psrbFFFmB/If14iN5o9nw/NgnnM+kybDJpRsAynV2BsfpTYrTRysYUdADVD7CkUUizgkpLfg==
+
 js-tokens@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"
@@ -8177,6 +8201,11 @@ lazystream@^1.0.0:
   integrity sha512-b94GiNHQNy6JNTrt5w6zNyffMrNkXZb3KTkCZJb2V1xaEGCk093vkZ2jk3tpaeP33/OiXC+WvK9AxUebnf5nbw==
   dependencies:
     readable-stream "^2.0.5"
+
+leaflet-draw@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/leaflet-draw/-/leaflet-draw-1.0.4.tgz#45be92f378ed253e7202fdeda1fcc71885198d46"
+  integrity sha512-rsQ6saQO5ST5Aj6XRFylr5zvarWgzWnrg46zQ1MEOEIHsppdC/8hnN8qMoFvACsPvTioAuysya/TVtog15tyAQ==
 
 leaflet@^1.9.4:
   version "1.9.4"
@@ -8984,6 +9013,28 @@ ng-apexcharts@1.11.0:
   integrity sha512-bzZ2qMYpJJ1V/Yfp9eC5y7BuxrlZx4fc9ev9pNHW8qEs5B0yE5yW25WrLhoGTYsfeFZfiADWeAmZkceEiihpFw==
   dependencies:
     tslib "^2.0.0"
+
+ng-select2-component@^17.2.7:
+  version "17.2.7"
+  resolved "https://registry.yarnpkg.com/ng-select2-component/-/ng-select2-component-17.2.7.tgz#b584d7f39decc67b0c470ea58945ac005dc079f3"
+  integrity sha512-fzyn8uzMpdTlLCYoUtzLqeKN7heAhEQ4Xn2K8giEPoj3z+mBN06xafyxaEF0MEE3ZRlLW/4m90F55o7F76GVNg==
+  dependencies:
+    ngx-infinite-scroll ">=18.0.0 || >=19.0.0 || >=20.0.0"
+    tslib "^2.3.0"
+
+ng-select2@^1.4.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/ng-select2/-/ng-select2-1.4.1.tgz#aba2ad921e680091d4b1384da2cfc54985e5a4b8"
+  integrity sha512-jGhBczoQ3gaUo6QeJ4YT4ZOGSOaFkdyvZil/hlNnB8n008VRStJ2On+hYTXqcOZfGsp/k1v+0tTnP7FAzzyDgQ==
+  dependencies:
+    tslib "^2.0.0"
+
+"ngx-infinite-scroll@>=18.0.0 || >=19.0.0 || >=20.0.0":
+  version "20.0.0"
+  resolved "https://registry.yarnpkg.com/ngx-infinite-scroll/-/ngx-infinite-scroll-20.0.0.tgz#928210affe13bcac1e8836760a936bde78ccd681"
+  integrity sha512-Mh7lg85jeDPzZirxPHjyMagCcC3vbk+yPO5uoXHNkmGer8MrO6vOydOX306qY4QYDyMJ+ngIQgpl5HJXfc590A==
+  dependencies:
+    tslib "^2.3.0"
 
 ngx-scrollbar@16.1.1:
   version "16.1.1"
@@ -10443,6 +10494,11 @@ select-hose@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/select-hose/-/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
   integrity sha512-mEugaLK+YfkijB4fx0e6kImuJdCIt2LxCRcbEYPqRGCs4F2ogyfZU5IAZRdjCP8JPq2AtdNoC/Dux63d9Kiryg==
+
+select2@^4.1.0-rc.0:
+  version "4.1.0-rc.0"
+  resolved "https://registry.yarnpkg.com/select2/-/select2-4.1.0-rc.0.tgz#ba3cd3901dda0155e1c0219ab41b74ba51ea22d8"
+  integrity sha512-Hr9TdhyHCZUtwznEH2CBf7967mEM0idtJ5nMtjvk3Up5tPukOLXbHUNmh10oRfeNIhj+3GD3niu+g6sVK+gK0A==
 
 selfsigned@^2.4.1:
   version "2.4.1"
