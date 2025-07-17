@@ -1,0 +1,63 @@
+<div class="col-md-12">
+  <div class="card-body stats-card">
+    <div class="activity-timeline">
+
+      <div class="timeline-item"  *ngFor="let activity of activites">
+        <div class="timeline-icon"
+             [ngClass]="getActivityClass(activity.type)"
+             [attr.title]="activity.type">
+          <i [class]="getActivityIcon(activity.type)"></i>
+        </div>
+
+        <div class="timeline-content">
+          <div class="timeline-title">
+            <ng-container *ngIf="activity.author && getUserInfo(activity.author); let userInfo">
+              <img [src]="userInfo.img"
+                   [alt]="userInfo.name"
+                   [title]="userInfo.name"
+                   class="timeline-avatar rounded-circle">
+              <span class="author-name">{{ userInfo.name }}</span>
+            </ng-container>
+
+            <ng-container *ngIf="!activity.author || !getUserInfo(activity.author)">
+              <i class="fas fa-user-circle timeline-avatar-icon"></i>
+              <span class="author-name">Système</span>
+            </ng-container>
+
+            <span class="activity-title">{{ activity.title }}</span>
+          </div>
+
+          <div class="timeline-description"
+               *ngIf="activity.description && activity.description.trim().length > 0">
+            {{ truncateDescription(activity.description, 120) }}
+          </div>
+
+          <div class="timeline-footer">
+            <div class="timeline-time">
+              <i class="fas fa-clock"></i>
+              <span>{{ activity.time | date: 'dd/MM/yyyy HH:mm' }}</span>
+              <span class="relative-time">{{ getRelativeTime(activity.time || activity.createdAt) }}</span>
+            </div>
+
+            <div class="timeline-actions">
+              <button type="button"
+                class="btn btn-sm btn-outline-primary"
+                [title]="'Voir les détails de l\'activité'">
+<!--                (click)="onViewDetails(activity)"-->
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center py-4 empty-state"
+           *ngIf="activites.length === 0">
+        <div class="empty-icon">
+          <i class="fas fa-history"></i>
+        </div>
+        <h5 class="empty-title">Aucune activité récente</h5>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,262 @@
+
+<div class="overload" [style.display]="isLoading ? 'flex' : 'none'">
+  <div class="spinner"></div>
+</div>
+<div class="pharmacy-partner">
+  <header class="navbar-wrapper">
+    <div class="container">
+      <nav class="navbar">
+        <div class="navbar-brand">
+          <img src="../../../../assets/images/logo-dark.png" alt="ctmPharma" />
+        </div>
+        <button class="btn-back" (click)="goBack()">
+          <i class="fas fa-arrow-left"></i>
+          Retour à l'accueil
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-content">
+        <h1>Rejoignez notre réseau de pharmacies partenaires</h1>
+        <p>Développez votre activité avec la livraison à domicile et élargissez votre clientèle</p>
+
+        <div class="benefits-list">
+          <div class="benefit-item">
+            <i class="fas fa-chart-line"></i>
+            <h3>Augmentez vos ventes</h3>
+            <p>Touchez de nouveaux clients et développez votre chiffre d'affaires</p>
+          </div>
+          <div class="benefit-item">
+            <i class="fas fa-mobile-alt"></i>
+            <h3>Gestion simplifiée</h3>
+            <p>Interface intuitive pour gérer vos commandes et votre stock</p>
+          </div>
+          <div class="benefit-item">
+            <i class="fas fa-truck"></i>
+            <h3>Livraison assurée</h3>
+            <p>Notre réseau de livreurs prend en charge toutes les livraisons</p>
+          </div>
+          <div class="benefit-item">
+            <i class="fas fa-euro-sign"></i>
+            <h3>Paiements automatisés</h3>
+            <p>Recevez vos paiements automatiquement et en toute sécurité</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="">
+      <div class="form-container">
+        <div class="form-header">
+          <h2>Créer votre compte pharmacie</h2>
+          <p>Rejoignez notre plateforme en quelques minutes</p>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+
+        <form [formGroup]="partnerForm" (ngSubmit)="onSubmit()">
+          <div class="steps-container" *ngIf="!showSuccess">
+            <div class="form-step" [class.active]="currentStep === 1" *ngIf="currentStep === 1">
+              <h3 class="step-title">Informations generales sur la pharmacie</h3>
+              <hr>
+              <p class="step-subtitle">
+                Démarrons ensemble ! Renseignez d'abord les informations de base de votre pharmacie : nom, adresse, coordonnées et horaires d'ouverture. Cette première étape ne prend que 2 minutes et constitue le fondement de votre présence digitale. Nos 12 000+ pharmaciens partenaires ont commencé exactement ici.
+                Commencez par les informations essentielles de votre pharmacie pour créer votre profil professionnel. Ces données permettront à nos utilisateurs de vous identifier facilement et d'accéder rapidement à votre catalogue de medicament. Un profil complet augmente considerablement votre visibilité sur notre plateforme.
+              </p>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="pharmacy_name">Nom de la pharmacie <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="pharmacy_name"
+                    formControlName="pharmacy_name"
+                    class="form-control"
+                    [class.error]="isFieldInvalid('pharmacy_name')"
+                    [class.success]="isFieldValid('pharmacy_name')"
+                    placeholder="Pharmacie Centrale">
+                  <div class="error-message" [class.show]="isFieldInvalid('pharmacy_name')">
+                    {{ getFieldError('pharmacy_name') }}
+                  </div>
+                  <div class="success-message" [class.show]="isFieldValid('pharmacy_name')">
+                    ✓ Valide
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pharmacy_address">Adresse complète <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="pharmacy_address"
+                    formControlName="pharmacy_address"
+                    class="form-control"
+                    [class.error]="isFieldInvalid('pharmacy_address')"
+                    [class.success]="isFieldValid('pharmacy_address')"
+                    placeholder="123 Rue de la Santé, Paris">
+                  <div class="error-message" [class.show]="isFieldInvalid('pharmacy_address')">
+                    {{ getFieldError('pharmacy_address') }}
+                  </div>
+                  <div class="success-message" [class.show]="isFieldValid('pharmacy_address')">
+                    ✓ Valide
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pharmacy_phone">Téléphone de la pharmacie <span class="required">*</span></label>
+                  <input
+                    type="tel"
+                    id="pharmacy_phone"
+                    formControlName="pharmacy_phone"
+                    class="form-control"
+                    [class.error]="isFieldInvalid('pharmacy_phone')"
+                    [class.success]="isFieldValid('pharmacy_phone')"
+                    placeholder="+33612345678">
+                  <div class="error-message" [class.show]="isFieldInvalid('pharmacy_phone')">
+                    {{ getFieldError('pharmacy_phone') }}
+                  </div>
+                  <div class="success-message" [class.show]="isFieldValid('pharmacy_phone')">
+                    ✓ Valide
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pharmacy_email">Email de la pharmacie <span class="required">*</span></label>
+                  <input
+                    type="email"
+                    id="pharmacy_email"
+                    formControlName="pharmacy_email"
+                    class="form-control"
+                    [class.error]="isFieldInvalid('pharmacy_email')"
+                    [class.success]="isFieldValid('pharmacy_email')"
+                    placeholder="contact@pharmacie.fr">
+                  <div class="error-message" [class.show]="isFieldInvalid('pharmacy_email')">
+                    {{ getFieldError('pharmacy_email') }}
+                  </div>
+                  <div class="success-message" [class.show]="isFieldValid('pharmacy_email')">
+                    ✓ Valide
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions">
+                <div></div>
+                <button type="button" class="btn btn-primary" (click)="nextStep()">
+                  Suivant
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+            <div class="form-step" [class.active]="currentStep === 2" *ngIf="currentStep === 2" >
+              <h3 class="step-title">Informations du responsable</h3>
+              <hr>
+              <p class="step-subtitle">
+                Présentons maintenant le visage humain de votre pharmacie ! Renseignez les informations du propriétaire ou responsable : nom, qualifications professionnelles et coordonnées de contact. Cette étape personnalise votre établissement et renforce la confiance de nos utilisateurs. Nos pharmaciens partenaires témoignent que cette transparence augmente significativement leur crédibilité.
+                Ces informations permettent d'établir un lien de confiance direct avec vos futurs clients et de valoriser votre expertise pharmaceutique. Un profil propriétaire complet rassure les patients et facilite les prises de contact pour des conseils spécialisés.
+              </p>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Associer la pharmacie à un compte partenaire existant ?</label>
+                  <div class="form-radio-group">
+                    <div class="form-radio">
+                      <input type="radio" id="ownerExistYes" [value]="true" formControlName="ownerExist">
+                      <label for="ownerExistYes">Oui</label>
+                    </div>
+                    <div class="form-radio">
+                      <input type="radio" id="ownerExistNo" [value]="false" formControlName="ownerExist">
+                      <label for="ownerExistNo">Non</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group" *ngIf="!ownerExist">
+                  <label for="owner_full_name">Nom complet du responsable <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="owner_full_name"
+                    formControlName="owner_full_name"
+                    class="form-control"
+                    [class.error]="isFieldInvalid('owner_full_name')"
+                    [class.success]="isFieldValid('owner_full_name')"
+                    placeholder="Dr Jean Dupont">
+                  <div class="error-message" [class.show]="isFieldInvalid('owner_full_name')">
+                    {{ getFieldError('owner_full_name') }}
+                  </div>
+                  <div class="success-message" [class.show]="isFieldValid('owner_full_name')">
+                    ✓ Valide
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="owner_email">Email du responsable <span class="required">*</span></label>
+                  <input
+                    type="email"
+                    id="owner_email"
+                    formControlName="owner_email"
+                    class="form-control"
+                    [class.error]="isFieldInvalid('owner_email')"
+                    [class.success]="isFieldValid('owner_email')"
+                    placeholder="jean.dupont@pharmacie.fr">
+                  <div class="error-message" [class.show]="isFieldInvalid('owner_email')">
+                    {{ getFieldError('owner_email') }}
+                  </div>
+                  <div class="success-message" [class.show]="isFieldValid('owner_email')">
+                    ✓ Valide
+                  </div>
+                </div>
+                <div class="form-group" *ngIf="!ownerExist">
+                  <label for="owner_phone">Téléphone du responsable <span class="required">*</span></label>
+                  <input
+                    type="tel"
+                    id="owner_phone"
+                    formControlName="owner_phone"
+                    class="form-control"
+                    [class.error]="isFieldInvalid('owner_phone')"
+                    [class.success]="isFieldValid('owner_phone')"
+                    placeholder="+33698765432">
+                  <div class="error-message" [class.show]="isFieldInvalid('owner_phone')">
+                    {{ getFieldError('owner_phone') }}
+                  </div>
+                  <div class="success-message" [class.show]="isFieldValid('owner_phone')">
+                    ✓ Valide
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" (click)="prevStep()">
+                  <i class="fas fa-arrow-left"></i>
+                  Précédent
+                </button>
+                <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+                  <div class="loading-spinner" *ngIf="isSubmitting"></div>
+                  <span>{{ isSubmitting ? 'Création en cours...' : 'Créer mon compte' }}</span>
+                  <i class="fas fa-check" *ngIf="!isSubmitting"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- Success Section -->
+        <div class="success-section" *ngIf="showSuccess">
+          <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <h2>Compte créé avec succès !</h2>
+          <p>
+            Votre demande de partenariat a bien été enregistrée.<br>
+            Vous recevrez un email de confirmation dès que votre compte sera activé par notre équipe.<br><br>
+            <strong>Prochaines étapes :</strong><br>
+            • Vérification de vos informations<br>
+            • Activation de votre compte<br>
+            • Réception de vos identifiants de connexion
+          </p>
+          <button class="btn btn-primary" (click)="goBack()">
+            Retour à l'accueil
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,390 @@
+// activity-timeline.component.scss
+.activity-timeline {
+  padding: 1rem 0;
+  position: relative;
+
+  .timeline-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    opacity: 1;
+    transform: translateX(0);
+    transition: all 0.3s ease;
+
+    // Ligne de connexion entre les éléments
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 1.125rem; // Centre de l'icône (2.25rem / 2)
+      top: 2.5rem;
+      width: 2px;
+      height: calc(100% + 0.5rem);
+      background: linear-gradient(to bottom, #e9ecef 0%, #e9ecef 80%, transparent 100%);
+      z-index: 1;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    // Animation au hover
+    &:hover {
+      transform: translateX(4px);
+
+      .timeline-icon {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+    }
+  }
+
+  .timeline-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 2;
+
+    i {
+      font-size: 1rem;
+    }
+
+    // Types d'activité avec dégradés modernisés
+    &.creation {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+
+      &:hover {
+        background: linear-gradient(135deg, #218838 0%, #1eb68a 100%);
+      }
+    }
+
+    &.modification {
+      background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+
+      &:hover {
+        background: linear-gradient(135deg, #e0a800 0%, #e8690b 100%);
+      }
+    }
+
+    &.suppression {
+      background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+
+      &:hover {
+        background: linear-gradient(135deg, #c82333 0%, #d91a72 100%);
+      }
+    }
+
+    &.validation {
+      background: linear-gradient(135deg, #007bff 0%, #6f42c1 100%);
+
+      &:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #59359a 100%);
+      }
+    }
+
+    &.notification {
+      background: linear-gradient(135deg, #17a2b8 0%, #6610f2 100%);
+
+      &:hover {
+        background: linear-gradient(135deg, #117a8b 0%, #520dc2 100%);
+      }
+    }
+
+    &.admin {
+      background: linear-gradient(135deg, #6f42c1 0%, #495057 100%);
+
+      &:hover {
+        background: linear-gradient(135deg, #59359a 0%, #3d4347 100%);
+      }
+    }
+
+    &.status {
+      background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+    }
+
+    &.order {
+      background: linear-gradient(135deg, #ffc107 0%, #28a745 100%);
+    }
+
+    &.payment {
+      background: linear-gradient(135deg, #28a745 0%, #007bff 100%);
+    }
+
+    &.default {
+      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+
+      &:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #3d4347 100%);
+      }
+    }
+  }
+
+  .timeline-content {
+    flex: 1;
+    min-width: 0; // Pour permettre le text-overflow
+
+    .timeline-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #2c3e50;
+      font-size: 0.9rem;
+
+      .timeline-avatar {
+        width: 1.5rem;
+        height: 1.5rem;
+        object-fit: cover;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
+
+        &:hover {
+          transform: scale(1.1);
+        }
+      }
+
+      .timeline-avatar-icon {
+        font-size: 1.5rem;
+        color: #6c757d;
+      }
+
+      .author-name {
+        font-size: 0.8rem;
+        color: #6c757d;
+        font-weight: 500;
+      }
+
+      .activity-title {
+        font-weight: 600;
+        color: #2c3e50;
+      }
+    }
+
+    .timeline-description {
+      color: #6c757d;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      margin-bottom: 0.5rem;
+      padding-left: 2rem; // Alignement avec le titre
+    }
+
+    .timeline-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-left: 2rem; // Alignement avec le titre
+
+      .timeline-time {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #9ca3af;
+        font-size: 0.75rem;
+        font-weight: 500;
+
+        i {
+          font-size: 0.7rem;
+        }
+
+        .relative-time {
+          color: #6b7280;
+          font-style: italic;
+        }
+      }
+
+      .timeline-actions {
+        .btn {
+          padding: 0.25rem 0.5rem;
+          border: none;
+          background: transparent;
+          color: #6c757d;
+          transition: all 0.2s ease;
+
+          &:hover {
+            color: #007bff;
+            background: rgba(0, 123, 255, 0.1);
+          }
+        }
+      }
+    }
+  }
+
+  // États de chargement et vides
+  .timeline-loading {
+    .timeline-item {
+      &.skeleton {
+        pointer-events: none;
+
+        .skeleton-icon {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: loading 1.5s infinite;
+        }
+
+        .skeleton-title,
+        .skeleton-description,
+        .skeleton-time {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: loading 1.5s infinite;
+          border-radius: 4px;
+          margin-bottom: 0.5rem;
+        }
+
+        .skeleton-title {
+          height: 1rem;
+          width: 70%;
+        }
+
+        .skeleton-description {
+          height: 0.8rem;
+          width: 90%;
+        }
+
+        .skeleton-time {
+          height: 0.7rem;
+          width: 40%;
+        }
+      }
+    }
+  }
+
+  .empty-state,
+  .error-state {
+    .empty-icon,
+    .error-icon {
+      font-size: 3rem;
+      color: #e9ecef;
+      margin-bottom: 1rem;
+    }
+
+    .error-icon {
+      color: #dc3545;
+    }
+
+    .empty-title,
+    .error-title {
+      color: #6c757d;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-description,
+    .error-description {
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  .load-more-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid #007bff;
+    background: transparent;
+    color: #007bff;
+    border-radius: 25px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: #007bff;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+
+    i {
+      margin-right: 0.5rem;
+    }
+  }
+
+  // Animation de chargement
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  // État de chargement global
+  &.loading {
+    .timeline-item:not(.skeleton) {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    .timeline-item {
+      gap: 0.75rem;
+
+      &:not(:last-child)::after {
+        left: 0.875rem;
+      }
+    }
+
+    .timeline-icon {
+      width: 1.75rem;
+      height: 1.75rem;
+      font-size: 0.75rem;
+    }
+
+    .timeline-content {
+      .timeline-title {
+        font-size: 0.85rem;
+        flex-wrap: wrap;
+
+        .timeline-avatar {
+          width: 1.25rem;
+          height: 1.25rem;
+        }
+      }
+
+      .timeline-description {
+        font-size: 0.8rem;
+        padding-left: 1.5rem;
+      }
+
+      .timeline-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding-left: 1.5rem;
+
+        .timeline-time {
+          font-size: 0.7rem;
+        }
+      }
+    }
+  }
+
+  // Animation d'entrée pour les nouveaux éléments
+  .timeline-item {
+    animation: slideIn 0.5s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
