@@ -1,0 +1,394 @@
+<!--<div class="user-management-container">-->
+<!--  <div class="page-header table-responsive">-->
+<!--    <span class="h1-badge info"> </span> &lt;!&ndash; Liste des utilisateurs : {{users.length}} &ndash;&gt;-->
+<!--    <div class="header-actions">-->
+<!--      <div class="search-box">-->
+<!--        <input type="text" class="form-control" placeholder="Rechercher un utilisateur..." [(ngModel)]="searchText" (keyup)="filterUsers()">-->
+<!--        <i class="fas fa-search"></i>-->
+<!--      </div>-->
+<!--      <div class="btn-group">-->
+<!--        <button class="btn btn-primary" (click)="openCreateUserModal()">-->
+<!--          <i class="fas fa-plus"></i> Nouvel utilisateur-->
+<!--        </button>-->
+<!--        <button class="btn btn-outline-primary" style="background-color: #4caf50; color: white" (click)="exportUsersList()">-->
+<!--          <i class="fas fa-download"></i> Exporter-->
+<!--        </button>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </div>-->
+
+<!--  <div>-->
+<!--    <div id="all">-->
+<!--      <div class="user-list-container">-->
+<!--        <div class="user-filters">-->
+<!--          <div class="filter-group">-->
+<!--            <label>Filtrer par rôle:</label>-->
+<!--            <select class="form-select" [(ngModel)]="roleFilter" (change)="filterUsers()">-->
+<!--              <option value="">Tous les rôles</option>-->
+<!--              <option *ngFor="let role of roles" [value]="role">{{role}}</option>-->
+<!--            </select>-->
+<!--          </div>-->
+<!--          <div class="filter-group">-->
+<!--            <label>Filtrer par statut:</label>-->
+<!--            <select class="form-select" [(ngModel)]="statusFilter" (change)="filterUsers()">-->
+<!--              <option value="">Tous les statuts</option>-->
+<!--              <option value="active">Actif</option>-->
+<!--              <option value="inactive">Inactif</option>-->
+<!--              <option value="suspended">Suspendu</option>-->
+<!--              <option value="pending">En attente</option>-->
+<!--            </select>-->
+<!--          </div>-->
+<!--          <div class="filter-group">-->
+<!--            <label>Filtrer par groupe:</label>-->
+<!--            <select class="form-select" [(ngModel)]="groupFilter" (change)="filterUsers()">-->
+<!--              <option value="">Tous les groupes</option>-->
+<!--              <option *ngFor="let group of permissionGroups" [value]="group.id">{{group.name}}</option>-->
+<!--            </select>-->
+<!--          </div>-->
+<!--        </div>-->
+
+<!--        <div class="table-responsive">-->
+<!--          <table class="table table-hover">-->
+<!--            <thead>-->
+<!--            <tr>-->
+<!--              <th>-->
+<!--                <div class="th-content" (click)="sort('firstName')">-->
+<!--                  Nom-->
+<!--                  <i class="fas" [ngClass]="getSortIcon('firstName')"></i>-->
+<!--                </div>-->
+<!--              </th>-->
+<!--              <th>Email</th>-->
+<!--              <th>Téléphone</th>-->
+<!--              <th>-->
+<!--                <div class="th-content" (click)="sort('role')">-->
+<!--                  Rôle-->
+<!--                  <i class="fas" [ngClass]="getSortIcon('role')"></i>-->
+<!--                </div>-->
+<!--              </th>-->
+<!--              <th>Groupe de permissions</th>-->
+<!--              <th>-->
+<!--                <div class="th-content" (click)="sort('createdAt')">-->
+<!--                  Création-->
+<!--                  <i class="fas" [ngClass]="getSortIcon('createdAt')"></i>-->
+<!--                </div>-->
+<!--              </th>-->
+<!--              <th>-->
+<!--                <div class="th-content" (click)="sort('lastLogin')">-->
+<!--                  Dernière connexion-->
+<!--                  <i class="fas" [ngClass]="getSortIcon('lastLogin')"></i>-->
+<!--                </div>-->
+<!--              </th>-->
+<!--              <th>-->
+<!--                <div class="th-content" (click)="sort('status')">-->
+<!--                  Statut-->
+<!--                  <i class="fas" [ngClass]="getSortIcon('status')"></i>-->
+<!--                </div>-->
+<!--              </th>-->
+<!--              <th>Actions</th>-->
+<!--            </tr>-->
+<!--            </thead>-->
+<!--            <tbody>-->
+<!--            <tr *ngFor="let user of filteredUsers">-->
+<!--              <ng-container *ngIf="user">-->
+<!--                <td>-->
+<!--                  <div class="user-info">-->
+<!--                    <img [src]="user.avatar || 'assets/images/default-avatar.png'"-->
+<!--                         alt="Avatar" class="user-avatar">-->
+<!--                    <div class="user-name">-->
+<!--                      <strong>{{ user.firstName }} {{ user.lastName }}</strong>-->
+<!--                      <small class="text-muted d-block">{{ user.username }}</small>-->
+<!--                    </div>-->
+<!--                  </div>-->
+<!--                </td>-->
+<!--                <td>{{ user.email }}</td>-->
+<!--                <td>{{ user.phoneNumber }}</td>-->
+<!--                <td>-->
+<!--                  <span class="role-badge" [ngClass]="user.role">-->
+<!--                    {{ getRoleLabel(user.role) }}-->
+<!--                  </span>-->
+<!--                </td>-->
+<!--                <td>-->
+<!--                  <div class="permission-groups">-->
+<!--                    <span *ngFor="let groupId of user.permissionGroups"-->
+<!--                          class="badge bg-secondary me-1">-->
+<!--                      {{ getGroupName(groupId) }}-->
+<!--                    </span>-->
+<!--                    <span *ngIf="!user.permissionGroups?.length" class="text-muted">-->
+<!--                      Aucun groupe-->
+<!--                    </span>-->
+<!--                  </div>-->
+<!--                </td>-->
+<!--                <td>{{ user.createdAt | date: 'dd/MM/yyyy' }}</td>-->
+<!--                <td>-->
+<!--                  <span *ngIf="user.lastLogin">{{ user.lastLogin | date: 'dd/MM/yyyy HH:mm' }}</span>-->
+<!--                  <span *ngIf="!user.lastLogin" class="text-muted">Jamais connecté</span>-->
+<!--                </td>-->
+<!--                <td>-->
+<!--                  <span class="status-badge" [ngClass]="user.status">-->
+<!--                    {{ getStatusLabel(user.status) }}-->
+<!--                  </span>-->
+<!--                </td>-->
+<!--                <td>-->
+<!--                  <div class="action-buttons">-->
+<!--                    <button class="btn btn-sm btn-outline-primary"-->
+<!--                            (click)="viewUserDetails(user)"-->
+<!--                            title="Voir les détails">-->
+<!--                      <i class="fas fa-eye"></i>-->
+<!--                    </button>-->
+<!--                    <button class="btn btn-sm btn-outline-warning"-->
+<!--                            (click)="editUser(user)"-->
+<!--                            title="Modifier">-->
+<!--                      <i class="fas fa-edit"></i>-->
+<!--                    </button>-->
+<!--                    <button class="btn btn-sm btn-outline-info"-->
+<!--                            (click)="managePermissions(user)"-->
+<!--                            title="Gérer les permissions">-->
+<!--                      <i class="fas fa-key"></i>-->
+<!--                    </button>-->
+<!--                    <button class="btn btn-sm btn-outline-success"-->
+<!--                            *ngIf="user.status === 'inactive'"-->
+<!--                            (click)="activateUser(user)"-->
+<!--                            title="Activer">-->
+<!--                      <i class="fas fa-play"></i>-->
+<!--                    </button>-->
+<!--                    <button class="btn btn-sm btn-outline-warning"-->
+<!--                            *ngIf="user.status === 'active'"-->
+<!--                            (click)="suspendUser(user)"-->
+<!--                            title="Suspendre">-->
+<!--                      <i class="fas fa-pause"></i>-->
+<!--                    </button>-->
+<!--                    <button class="btn btn-sm btn-outline-danger"-->
+<!--                            (click)="deleteUser(user)"-->
+<!--                            title="Supprimer">-->
+<!--                      <i class="fas fa-trash"></i>-->
+<!--                    </button>-->
+<!--                  </div>-->
+<!--                </td>-->
+<!--              </ng-container>-->
+<!--            </tr>-->
+<!--            </tbody>-->
+<!--          </table>-->
+<!--        </div>-->
+
+<!--        &lt;!&ndash; Pagination &ndash;&gt;-->
+<!--        <div class="d-flex justify-content-between align-items-center mt-3" style="margin: 20px">-->
+<!--          <div class="pagination-info">-->
+<!--            Affichage de {{paginationStart + 1}} à {{paginationEnd}} sur {{filteredUsers.length}} utilisateurs-->
+<!--          </div>-->
+<!--          <nav aria-label="Page navigation">-->
+<!--            <ul class="pagination">-->
+<!--              <li class="page-item" [ngClass]="{'disabled': currentPage === 1}">-->
+<!--                <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage - 1)">Précédent</a>-->
+<!--              </li>-->
+<!--              <li class="page-item" *ngFor="let page of getPageNumbers()" [ngClass]="{'active': page === currentPage}">-->
+<!--                <a class="page-link" href="javascript:void(0)" (click)="pageChanged(page)">{{page}}</a>-->
+<!--              </li>-->
+<!--              <li class="page-item" [ngClass]="{'disabled': currentPage === totalPages}">-->
+<!--                <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage + 1)">Suivant</a>-->
+<!--              </li>-->
+<!--            </ul>-->
+<!--          </nav>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </div>-->
+
+<!--  &lt;!&ndash; Modal de détails utilisateur &ndash;&gt;-->
+<!--  <ng-template #userInfoModal let-modal>-->
+<!--    <div class="modal-content">-->
+<!--      <div class="modal-header">-->
+<!--        <h5 class="modal-title">Détails de l'utilisateur</h5>-->
+<!--        <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
+<!--      </div>-->
+<!--      <div class="modal-body" *ngIf="selectedUser">-->
+<!--        <div class="user-details">-->
+<!--          <div class="row">-->
+<!--            <div class="col-md-4">-->
+<!--              <div class="user-avatar-large">-->
+<!--                <img [src]="selectedUser.avatar || 'assets/images/default-avatar.png'" alt="Avatar utilisateur">-->
+<!--              </div>-->
+<!--            </div>-->
+<!--            <div class="col-md-8">-->
+<!--              <h3>{{selectedUser.firstName}} {{selectedUser.lastName}}</h3>-->
+<!--              <p class="user-username">@{{selectedUser.username}}</p>-->
+<!--              <p class="user-email">-->
+<!--                <i class="fas fa-envelope"></i> {{selectedUser.email}}-->
+<!--              </p>-->
+<!--              <p class="user-phone" *ngIf="selectedUser.phoneNumber">-->
+<!--                <i class="fas fa-phone"></i> {{selectedUser.phoneNumber}}-->
+<!--              </p>-->
+<!--              <div class="user-status">-->
+<!--                <span class="status-badge" [ngClass]="selectedUser.status">-->
+<!--                  {{getStatusLabel(selectedUser.status)}}-->
+<!--                </span>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+
+<!--          <div class="row mt-4">-->
+<!--            <div class="col-md-6">-->
+<!--              <div class="detail-section">-->
+<!--                <h5>Informations compte</h5>-->
+<!--                <div class="detail-item">-->
+<!--                  <span class="detail-label">Rôle:</span>-->
+<!--                  <span class="detail-value">-->
+<!--                    <span class="role-badge" [ngClass]="selectedUser.role">-->
+<!--                      {{getRoleLabel(selectedUser.role)}}-->
+<!--                    </span>-->
+<!--                  </span>-->
+<!--                </div>-->
+<!--                <div class="detail-item">-->
+<!--                  <span class="detail-label">Date de création:</span>-->
+<!--                  <span class="detail-value">{{selectedUser.createdAt | date:'dd/MM/yyyy HH:mm'}}</span>-->
+<!--                </div>-->
+<!--                <div class="detail-item">-->
+<!--                  <span class="detail-label">Dernière connexion:</span>-->
+<!--                  <span class="detail-value">-->
+<!--                    {{selectedUser.lastLogin | date:'dd/MM/yyyy HH:mm' || 'Jamais connecté'}}-->
+<!--                  </span>-->
+<!--                </div>-->
+<!--                <div class="detail-item">-->
+<!--                  <span class="detail-label">Dernière mise à jour:</span>-->
+<!--                  <span class="detail-value">{{selectedUser.updatedAt | date:'dd/MM/yyyy HH:mm'}}</span>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--            <div class="col-md-6">-->
+<!--              <div class="detail-section">-->
+<!--                <h5>Groupes de permissions</h5>-->
+<!--                <div class="permission-groups-detail">-->
+<!--                  <div *ngFor="let groupId of selectedUser.permissionGroups" class="group-item">-->
+<!--                    <span class="badge bg-primary me-2">{{ getGroupName(groupId) }}</span>-->
+<!--                    <small class="text-muted">{{ getGroupDescription(groupId) }}</small>-->
+<!--                  </div>-->
+<!--                  <div *ngIf="!selectedUser.permissionGroups?.length" class="text-muted">-->
+<!--                    Aucun groupe de permissions assigné-->
+<!--                  </div>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+
+<!--          <div class="row mt-4">-->
+<!--            <div class="col-md-12">-->
+<!--              <div class="detail-section">-->
+<!--                <h5>Permissions individuelles</h5>-->
+<!--                <div class="permissions-grid">-->
+<!--                  <div *ngFor="let permission of selectedUser.permissions" class="permission-item">-->
+<!--                    <i class="fas fa-check-circle text-success"></i>-->
+<!--                    <span>{{ getPermissionLabel(permission) }}</span>-->
+<!--                  </div>-->
+<!--                  <div *ngIf="!selectedUser.permissions?.length" class="text-muted">-->
+<!--                    Aucune permission individuelle-->
+<!--                  </div>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+
+<!--          <div class="row mt-4">-->
+<!--            <div class="col-md-12">-->
+<!--              <div class="detail-section">-->
+<!--                <h5>Historique des actions</h5>-->
+<!--                <div class="activity-log">-->
+<!--                  <div *ngFor="let activity of selectedUser.activityLog?.slice(0, 5)" class="activity-item">-->
+<!--                    <div class="activity-date">{{ activity.date | date:'dd/MM/yyyy HH:mm' }}</div>-->
+<!--                    <div class="activity-description">{{ activity.action }}</div>-->
+<!--                  </div>-->
+<!--                  <div *ngIf="!selectedUser.activityLog?.length" class="text-muted">-->
+<!--                    Aucune activité enregistrée-->
+<!--                  </div>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--      <div class="modal-footer">-->
+<!--        <div class="action-buttons" *ngIf="selectedUser">-->
+<!--          <button class="btn btn-warning" (click)="editUser(selectedUser)">-->
+<!--            <i class="fas fa-edit"></i> Modifier-->
+<!--          </button>-->
+<!--          <button class="btn btn-info" (click)="managePermissions(selectedUser)">-->
+<!--            <i class="fas fa-key"></i> Gérer permissions-->
+<!--          </button>-->
+<!--          <button class="btn btn-success" *ngIf="selectedUser.status === 'inactive'" (click)="activateUser(selectedUser)">-->
+<!--            <i class="fas fa-play"></i> Activer-->
+<!--          </button>-->
+<!--          <button class="btn btn-warning" *ngIf="selectedUser.status === 'active'" (click)="suspendUser(selectedUser)">-->
+<!--            <i class="fas fa-pause"></i> Suspendre-->
+<!--          </button>-->
+<!--          <button class="btn btn-danger" (click)="deleteUser(selectedUser)">-->
+<!--            <i class="fas fa-trash"></i> Supprimer-->
+<!--          </button>-->
+<!--          <button class="btn btn-secondary" (click)="resetPassword(selectedUser)">-->
+<!--            <i class="fas fa-key"></i> Réinitialiser mot de passe-->
+<!--          </button>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </ng-template>-->
+
+<!--  &lt;!&ndash; Modal de gestion des permissions &ndash;&gt;-->
+<!--  <ng-template #permissionsModal let-modal>-->
+<!--    <div class="modal-content">-->
+<!--      <div class="modal-header">-->
+<!--        <h5 class="modal-title">Gérer les permissions - {{selectedUser?.firstName}} {{selectedUser?.lastName}}</h5>-->
+<!--        <button type="button" (click)="closePermissionsModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
+<!--      </div>-->
+<!--      <div class="modal-body" *ngIf="selectedUser">-->
+<!--        <div class="permissions-management">-->
+<!--          &lt;!&ndash; Groupes de permissions &ndash;&gt;-->
+<!--          <div class="section mb-4">-->
+<!--            <h6>Groupes de permissions</h6>-->
+<!--            <div class="permission-groups-list">-->
+<!--              <div *ngFor="let group of permissionGroups" class="form-check">-->
+<!--                <input class="form-check-input" type="checkbox"-->
+<!--                       [id]="'group-' + group.id"-->
+<!--                       [checked]="isUserInGroup(selectedUser, group.id)"-->
+<!--                       (change)="toggleUserGroup(selectedUser, group.id, $event)">-->
+<!--                <label class="form-check-label" [for]="'group-' + group.id">-->
+<!--                  <strong>{{group.name}}</strong>-->
+<!--                  <small class="text-muted d-block">{{group.description}}</small>-->
+<!--                  <div class="group-permissions">-->
+<!--                    <small *ngFor="let permission of group.permissions" class="badge bg-light text-dark me-1">-->
+<!--                      {{getPermissionLabel(permission)}}-->
+<!--                    </small>-->
+<!--                  </div>-->
+<!--                </label>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+
+<!--          &lt;!&ndash; Permissions individuelles &ndash;&gt;-->
+<!--          <div class="section">-->
+<!--            <h6>Permissions individuelles</h6>-->
+<!--            <div class="individual-permissions">-->
+<!--              <div *ngFor="let category of permissionCategories" class="permission-category">-->
+<!--                <h6 class="category-title">{{category.name}}</h6>-->
+<!--                <div class="permissions-grid">-->
+<!--                  <div *ngFor="let permission of category.permissions" class="form-check">-->
+<!--                    <input class="form-check-input" type="checkbox"-->
+<!--                           [id]="'perm-' + permission.id"-->
+<!--                           [checked]="hasUserPermission(selectedUser, permission.id)"-->
+<!--                           (change)="toggleUserPermission(selectedUser, permission.id, $event)">-->
+<!--                    <label class="form-check-label" [for]="'perm-' + permission.id">-->
+<!--                      {{permission.name}}-->
+<!--                      <small class="text-muted d-block">{{permission.description}}</small>-->
+<!--                    </label>-->
+<!--                  </div>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--      <div class="modal-footer">-->
+<!--        <button class="btn btn-secondary" (click)="closePermissionsModal()">Annuler</button>-->
+<!--        <button class="btn btn-primary" (click)="saveUserPermissions()">-->
+<!--          <i class="fas fa-save"></i> Enregistrer-->
+<!--        </button>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </ng-template>-->
+<!--</div>-->

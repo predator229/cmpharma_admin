@@ -1,0 +1,1392 @@
+<div class="pharmacy-details-container">
+  <div class="page-header" *ngIf="pharmacy">
+    <div class="header-content">
+      <button class="btn btn-outline-secondary" [routerLink]="['/pharmacy/pharmacies/list']">
+        <i class="fas fa-arrow-left"></i> Retour à la liste
+      </button>
+      <h1 *ngIf="pharmacy">{{ pharmacy.name }}</h1>
+      <br>
+      <span *ngIf="pharmacy.status === 'pending'" style="color: crimson">
+        {{ pharmacy.commentaire !='' ? pharmacy.commentaire : (pharmacy.status === 'pending' ? "Nous avons besoin d'information complémentaire" : 'pff') }}
+      </span>
+    </div>
+  </div>
+
+  <div class="loading-spinner" *ngIf="!pharmacy">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p>Chargement des informations...</p>
+  </div>
+
+  <div class="pharmacy-content" *ngIf="pharmacy">
+    <div class="row">
+      <!-- Colonne principale -->
+      <div class="col-md-8">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Informations générales</h5>
+                <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit">
+                  <button class="btn btn-sm btn-outline-primary" (click)="showEditModalInfoGeneral()">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-12">
+                    <div class="detail-section">
+                      <div class="detail-item">
+                        <span class="detail-label"><i class="fas fa-flag"></i> Pays:</span>
+                        <span class="detail-value">{{ pharmacy.country.name }} {{ pharmacy.country.emoji }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label"><i class="fas fa-location"></i> Ville:</span>
+                        <span class="detail-value">{{ pharmacy.city }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label"><i class="fas fa-map-marker-alt"></i> Adresse:</span>
+                        <span class="detail-value">{{ pharmacy.address }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label"><i class="fas fa-phone"></i> Téléphone:</span>
+                        <span class="detail-value">{{ pharmacy.phoneNumber }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label"><i class="fas fa-envelope"></i> Email:</span>
+                        <span class="detail-value">{{ pharmacy.email }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5><i class="fas fa-file-contract"></i> Informations légales</h5>
+                <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit">
+                  <button class="btn btn-sm btn-outline-primary" (click)="opemformLegalsInfos()">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-12">
+                    <div class="detail-section">
+                      <div class="detail-item">
+                        <span class="detail-label">SIRET <span style="color:red">*</span> :</span>
+                        <span style="display: flex; gap: 0.5rem;">{{ pharmacy.siret }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Numéro de license <span style="color:red">*</span> :</span>
+                        <span class="detail-value">{{ pharmacy.licenseNumber }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Date d'inscription:</span>
+                        <span class="detail-value">{{ pharmacy.registerDate | date: 'dd/MM/yyyy' }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Statut:</span>
+                      <span class="detail-value">
+                      <span class="status-badge" [ngClass]="pharmacy.status">
+                        {{ getStatusLabel(pharmacy.status) }}
+                      </span>
+                    </span>
+                    </div>
+                  </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="card mb-4">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-shopping-cart"></i> Zone de livraison</h5>
+                <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit && pharmacy.location">
+                  <button class="btn btn-sm btn-outline-primary" (click)="showEditModalCoordoneeZone()">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="map-container" (click)="showEditOrViewDocument('map', false, null, 'mapzone', 'Zone de livraison')" >
+<!--                  <div *ngIf="!pharmacy.deliveryZone" class="form-step active"> <p class="text-muted">Cliquer sur le bouton + pour configurer votre zone de livraison</p> </div>-->
+                  <app-map-selector
+                    mapId="map8"
+                    [height]="'300px'"
+                    [selectionMode]="'zone'"
+                    [lat]="pharmacy.location?.latitude"
+                    [lng]="pharmacy.location?.longitude"
+                    [deliveryZone]="pharmacy.deliveryZone"
+                    [readonly]="true">
+                  </app-map-selector>
+                </div>
+                <div *ngIf="!pharmacy.location" class="form-step active"> <p class="text-muted">Vous devez d'abord ajouter la localisation de la pharmacie pour configurer la zone de livraison</p> </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="card mb-4">
+            <div class="card-header">
+              <h5><i class="fas fa-chart-line"></i> Performance</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="performance-stat">
+                    <div class="stat-value">{{ pharmacy.orders30days || 0 }}</div>
+                    <div class="stat-label">Commandes <small>(30 derniers jours)</small></div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="performance-stat">
+                    <div class="stat-value">{{ (pharmacy.revenue30days || 0) | currency:'EUR' }}</div>
+                    <div class="stat-label">Revenus <small>(30 derniers jours)</small></div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="performance-stat">
+                    <div class="stat-value">
+                      <i class="fas fa-star"></i> {{ pharmacy.rating?.toFixed(1) || 'N/A' }}
+                    </div>
+                    <div class="stat-label">Note moyenne</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chart-container mt-4">
+                <canvas id="revenueChart"></canvas>
+              </div>
+            </div>
+          </div>
+          </div>
+          <div class="col-md-12">
+            <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5><i class="fas fa-shopping-cart"></i> Commandes récentes</h5>
+              <button class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/orders']" [queryParams]="{pharmacy: pharmacy.id}">
+                Voir toutes les commandes
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Client</th>
+                    <th>Date</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr *ngFor="let order of recentOrders">
+                    <td>{{ order.id }}</td>
+                    <td>{{ order.clientName }}</td>
+                    <td>{{ order.date | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td>{{ order.amount | currency:'EUR' }}</td>
+                    <td>
+                      <span class="status-badge" [ngClass]="getOrderStatusClass(order.status)">
+                        {{ order.status }}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/orders', order.id]">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  </tbody>
+                </table>
+                <div class="text-center py-3" *ngIf="recentOrders.length === 0">
+                  <p class="text-muted">Aucune commande récente</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <!-- Colonne latérale -->
+
+      <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+              <h5><i class="fas fa-image-portrait"></i> Image Principale </h5>
+              <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit">
+                <button class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('logo', true, pharmacy.documents?.logo?.url ? internatPathUrl+pharmacy.documents?.logo?.url : 'assets/images/pharmacy-placeholder.png', 'img', 'Logo principal')">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="pharmacy-logo">
+                <img [src]="pharmacy.documents?.logo?.url ? internatPathUrl+pharmacy.documents?.logo?.url : 'assets/images/pharmacy-placeholder.png'" alt="Logo pharmacie" width="100%" (click)="showEditOrViewDocument('logo', false, pharmacy.documents?.logo?.url ? internatPathUrl+pharmacy.documents?.logo?.url : 'assets/images/pharmacy-placeholder.png', 'img', 'Logo principal')">
+              </div>
+            </div>
+          </div>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-map-marked-alt"></i> Localisation</h5>
+            <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit">
+              <button class="btn btn-sm btn-outline-primary" (click)="showEditModalCoordonee()">
+                <i class="fas {{ pharmacy.location ? 'fa fa-edit' : 'fa fa-plus-circle' }}"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="map-container" (click)="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null ? showEditOrViewDocument('map', false, null, 'map', 'Localisation de la pharmacie') : false" >
+              <app-map-selector
+                *ngIf="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null"
+                mapId="map1"
+                [readonly]="true"
+                [lat]="pharmacy.location?.latitude"
+                [lng]="pharmacy.location?.longitude"
+                [height]="'300px'"
+                (positionChange)="false">
+              </app-map-selector>
+            </div>
+          </div>
+        </div>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-file-alt"></i> Documents <span style="color:red">*</span> </h5>
+          </div>
+          <div class="card-body">
+            <div class="document-list">
+              <div class="document-item" *ngIf="this.pharmacy.documents?.license">
+                <div class="document-icon">
+                  <i class="fas fa-file-pdf"></i>
+                </div>
+                <div class="document-info">
+                  <div class="document-name">license pharmaceutique</div>
+                  <div class="document-actions">
+                    <button class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('license', false, this.internatPathUrl+this.pharmacy.documents?.license?.url.toString(), 'pdf', 'license pharmaceutique')" >
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument('license', this.internatPathUrl+this.pharmacy.documents?.license?.url.toString())">
+                      <i class="fas fa-download"></i>
+                    </button>
+                    <button *ngIf="canIEdit" class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('license', true, this.internatPathUrl+this.pharmacy.documents?.license?.url.toString(), 'pdf', 'license pharmaceutique')" >
+                      <i class="fas fa-file-edit"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="document-item" *ngIf="this.pharmacy.documents?.idDocument">
+                <div class="document-icon">
+                  <i class="fas fa-id-card"></i>
+                </div>
+                <div class="document-info">
+                  <div class="document-name">Pièce d'identité</div>
+                  <div class="document-actions">
+                    <button class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('idDocument', false, this.internatPathUrl+this.pharmacy.documents?.idDocument?.url.toString(), 'pdf', 'Document d\'identite')" >
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument('idDocument',this.internatPathUrl+this.pharmacy.documents?.idDocument?.url.toString())">
+                      <i class="fas fa-download"></i>
+                    </button>
+                    <button *ngIf="canIEdit" class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('idDocument', true, this.internatPathUrl+this.pharmacy.documents?.idDocument?.url.toString(), 'pdf', 'Document d\'identite')" >
+                      <i class="fas fa-file-edit"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="document-item" *ngIf="this.pharmacy.documents?.insurance">
+                <div class="document-icon">
+                  <i class="fas fa-file-contract"></i>
+                </div>
+                <div class="document-info">
+                  <div class="document-name">Attestation d'assurance</div>
+                  <div class="document-actions">
+                    <button class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('license', false, this.internatPathUrl+this.pharmacy.documents?.insurance?.url.toString(), 'pdf', 'Assurance')" >
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument('insurance', this.internatPathUrl+this.pharmacy.documents?.insurance?.url.toString())">
+                      <i class="fas fa-download"></i>
+                    </button>
+                    <button *ngIf="canIEdit" class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('license', true, this.internatPathUrl+this.pharmacy.documents?.insurance?.url.toString(), 'pdf', 'Assurance')" >
+                      <i class="fas fa-file-edit"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-clock"></i> Horaires d'ouverture <span style="color:red">*</span></h5>
+            <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit">
+              <button class="btn btn-sm btn-outline-primary" (click)="openSetHoraire()">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="opening-hours">
+              <div *ngIf="theDayHours != null">
+                <div class="day-hours" *ngFor="let day of theDayHours">
+                  <span class="day" >{{getDayName(day.day-1)}}:</span>
+                  <span class="hours open" *ngIf="day.open">{{day.opening}} - {{day.closing}}</span>
+                  <span class="hours closed" *ngIf="!day.open">Fermé</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card mb-4" style="height: 400px; overflow-y: scroll;">
+          <div class="card-header">
+            <h5><i class="fas fa-clock"></i> Historiques </h5>
+          </div>
+          <div class="row">
+            <app-activity-timeline [activites]="pharmacyActivities" [usersInfo]="usersInfo"></app-activity-timeline>
+            <div class="col-md-12">
+              <div class="text-center py-3" *ngIf="pharmacyActivities.length > 0">
+<!--                <p class="text-muted" routerLink=['/admin/pharmacies', pharmacy.id] >Voir plus...</p>-->
+                <a [routerLink]="['/pharmacy/admin/logs', pharmacy.id]">{{ pharmacy.name }}</a>
+              </div>
+              <div class="text-center py-3" *ngIf="pharmacyActivities.length === 0">
+                <p class="text-muted">Aucune activité récente</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmation de suppression</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Êtes-vous sûr de vouloir supprimer la pharmacie "{{ pharmacy?.name }}" ?</p>
+          <p class="text-danger"><strong>Cette action est irréversible.</strong></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <!--          <button type="button" class="btn btn-danger" (click)="deletePharmacy()">Supprimer</button>-->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de contact -->
+<!--  <div class="modal fade" id="contactModal" tabindex="-1" aria-hidden="true">-->
+<!--    <div class="modal-dialog">-->
+<!--      <div class="modal-content">-->
+<!--        <div class="modal-header">-->
+<!--          <h5 class="modal-title">Contacter la pharmacie</h5>-->
+<!--          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
+<!--        </div>-->
+<!--        <div class="modal-body">-->
+<!--          <form [formGroup]="contactForm">-->
+<!--            <div class="mb-3">-->
+<!--              <label for="subject" class="form-label">Sujet</label>-->
+<!--              <input type="text" class="form-control" id="subject" formControlName="subject">-->
+<!--              <div class="invalid-feedback" *ngIf="contactForm.get('subject')?.invalid && contactForm.get('subject')?.touched">-->
+<!--                Le sujet est requis-->
+<!--              </div>-->
+<!--            </div>-->
+<!--            <div class="mb-3">-->
+<!--              <label for="message" class="form-label">Message</label>-->
+<!--              <textarea class="form-control" id="message" rows="5" formControlName="message"></textarea>-->
+<!--              <div class="invalid-feedback" *ngIf="contactForm.get('message')?.invalid && contactForm.get('message')?.touched">-->
+<!--                Le message est requis et doit contenir au moins 10 caractères-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </form>-->
+<!--        </div>-->
+<!--        <div class="modal-footer">-->
+<!--          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>-->
+<!--          &lt;!&ndash;          <button type="button" class="btn btn-primary" [disabled]="contactForm.invalid" (click)="sendMessage()">Envoyer</button>&ndash;&gt;-->
+<!--        </div>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </div>-->
+
+  <!-- Modal de visualisation de document -->
+<!--  <div class="modal fade" id="documentViewerModal" tabindex="-1" aria-hidden="true">-->
+<!--    <div class="modal-dialog modal-lg">-->
+<!--      <div class="modal-content">-->
+<!--        <div class="modal-header">-->
+<!--          <h5 class="modal-title">{{ currentDocument.title }}</h5>-->
+<!--          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
+<!--        </div>-->
+<!--        <div class="modal-body">-->
+<!--          <div class="document-viewer">-->
+<!--            <iframe [src]="currentDocument.url" width="100%" height="500px"></iframe>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--        <div class="modal-footer">-->
+<!--          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>-->
+<!--          <button type="button" class="btn btn-primary" (click)="downloadDocument(currentDocument.type)">-->
+<!--            <i class="fas fa-download"></i> Télécharger-->
+<!--          </button>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </div>-->
+</div>
+<ng-template #showInfo let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="showInfoModal">Information !</h5>
+      <button type="button"  (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form>
+          <div class="steps-container">
+            <div class="form-step active">
+              <hr>
+              <p class="step-subtitle">
+                {{ msgFormInfo }}
+              </p>
+              <hr>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #formRequiredInfo let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="formRequiredInfoModal">Informations manquantes !</h5>
+      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form [formGroup]="pharmacyForm" (ngSubmit)="onSubmit(1)">
+          <div class="steps-container">
+            <div class="form-step active">
+              <hr>
+              <p class="step-subtitle">{{ msgFormInfo }}</p>
+              <hr>
+
+              <!-- Informations générales -->
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="name" class="form-label">Nom de la pharmacie *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="name"
+                    formControlName="name"
+                    [class.is-invalid]="pharmacyForm.get('name')?.invalid && pharmacyForm.get('name')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('name')?.invalid && pharmacyForm.get('name')?.touched">
+                    Le nom de la pharmacie est requis
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="phoneNumber" class="form-label">Numéro de téléphone *</label>
+                  <input
+                    type="tel"
+                    class="form-control"
+                    id="phoneNumber"
+                    formControlName="phoneNumber"
+                    [class.is-invalid]="pharmacyForm.get('phoneNumber')?.invalid && pharmacyForm.get('phoneNumber')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('phoneNumber')?.invalid && pharmacyForm.get('phoneNumber')?.touched">
+                    Le numéro de téléphone est requis
+                  </div>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="email" class="form-label">Email *</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="email"
+                    formControlName="email"
+                    [class.is-invalid]="pharmacyForm.get('email')?.invalid && pharmacyForm.get('email')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('email')?.invalid && pharmacyForm.get('email')?.touched">
+                    <span *ngIf="pharmacyForm.get('email')?.errors?.['required']">L'email est requis</span>
+                    <span *ngIf="pharmacyForm.get('email')?.errors?.['email']">Format d'email invalide</span>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="licenseNumber" class="form-label">Numéro de license *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="licenseNumber"
+                    formControlName="licenseNumber"
+                    [class.is-invalid]="pharmacyForm.get('licenseNumber')?.invalid && pharmacyForm.get('licenseNumber')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('licenseNumber')?.invalid && pharmacyForm.get('licenseNumber')?.touched">
+                    <span *ngIf="pharmacyForm.get('licenseNumber')?.errors?.['required']">Le numéro de license est requis</span>
+                    <span *ngIf="pharmacyForm.get('licenseNumber')?.errors?.['minlength'] || pharmacyForm.get('licenseNumber')?.errors?.['maxlength']">
+                      Le numéro de license doit contenir entre 8 et 20 caractères
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-12">
+                  <label for="siret" class="form-label">SIRET *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="siret"
+                    formControlName="siret"
+                    [class.is-invalid]="pharmacyForm.get('siret')?.invalid && pharmacyForm.get('siret')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('siret')?.invalid && pharmacyForm.get('siret')?.touched">
+                    <span *ngIf="pharmacyForm.get('siret')?.errors?.['required']">Le numéro SIRET est requis</span>
+                    <span *ngIf="pharmacyForm.get('siret')?.errors?.['minlength'] || pharmacyForm.get('siret')?.errors?.['maxlength']">
+                      Le numéro SIRET doit contenir entre 8 et 20 caractères
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <!-- Pays -->
+                <div class="col-md-6">
+                  <label for="country" class="form-label">Pays *</label>
+                  <app-select2-ajax
+                    #slectCountryFirstModal
+                    [apiUrl]="baseUrl+'tools/get-countries-list'"
+                    placeholder="Sélectionner votre pays"
+                    formControlName="country"
+                    [countriesListArray]="countriesListArray"
+                    [type]="'country'"
+                    (selected)="onCountrySelected($event, 0)">
+                  </app-select2-ajax>
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('country')?.invalid && pharmacyForm.get('country')?.touched">
+                    <span *ngIf="pharmacyForm.get('country')?.errors?.['required']">Le pays est requis</span>
+                  </div>
+                </div>
+                <!-- Ville -->
+                <div class="col-md-6">
+                  <label for="country" class="form-label">Ville *</label>
+                  <app-select2-ajax *ngIf="pharmacyForm.get('country')?.value != ''"
+                    #slectCityModalGenInfo
+                    [apiUrl]="'https://countriesnow.space/api/v0.1/countries/cities'"
+                    [country]="pharmacyForm.get('country')?.value"
+                    [countriesListArray]="countriesListArray"
+                    [type]="'city'"
+                    [value]="pharmacyForm.get('city')?.value"
+                    placeholder="Sélectionner une ville"
+                    formControlName="city"
+                    (selected)="onCitySelected($event)">
+                  </app-select2-ajax>
+                  <input
+                    *ngIf="pharmacyForm.get('country')?.value == ''"
+                    type="text"
+                    class="form-control"
+                    id="city"
+                    readonly="readonly"
+                    value="Selectionner d'abord un pays"
+                    formControlName="city"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('city')?.invalid && pharmacyForm.get('city')?.touched">
+                    <span *ngIf="pharmacyForm.get('city')?.errors?.['required']">Le pays est requis</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Adresse -->
+              <div class="mb-3">
+                <label for="address" class="form-label">Adresse complète *</label>
+                <textarea
+                  class="form-control"
+                  id="address"
+                  rows="2"
+                  formControlName="address"
+                  [class.is-invalid]="pharmacyForm.get('address')?.invalid && pharmacyForm.get('address')?.touched"
+                ></textarea>
+                <div class="invalid-feedback" *ngIf="pharmacyForm.get('address')?.invalid && pharmacyForm.get('address')?.touched">
+                  L'adresse est requise
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <button type="button" class="btn btn-outline-info btn-sm" (click)="toggleLocationFields()">
+                  <i class="fas fa-map-marker-alt"></i>
+                  {{ showLocationFields ? 'Masquer' : 'Ajouter' }} les coordonnées GPS
+                </button>
+              </div>
+
+              <div class="row mb-3" *ngIf="showLocationFields">
+                <div class="col-md-12">
+                  <label for="latitude" class="form-label">Latitude</label>
+                  <app-map-selector
+                    mapId="map2"
+                    [readonly]="false"
+                    [lat]="pharmacyForm.value.latitude"
+                    [lng]="pharmacyForm.value.longitude"
+                    [height]="'300px'"
+                    (positionChange)="onMapChange($event)">
+                  </app-map-selector>
+                </div>
+              </div>
+
+              <hr>
+              <h6 class="mb-3"><i class="fas fa-file-upload"></i> Documents requis *</h6>
+
+              <div class="mb-4">
+                <label for="logoFile" class="form-label">Logo de la pharmacie (optionnel)</label>
+                <div class="file-upload-container">
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="logoFile"
+                    accept="image/jpeg,image/jpg,image/png"
+                    (change)="onFileSelected($event, 'logo')"
+                  >
+                  <small class="form-text text-muted">Formats acceptés: JPG, PNG (max 5MB)</small>
+
+                  <div class="file-preview mt-2" *ngIf="previewUrls.logo">
+                    <div class="preview-item">
+                      <img [src]="previewUrls.logo" alt="Aperçu logo" class="preview-image">
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeFile(1,'logo')">
+                        <i class="fas fa-times"></i> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label for="licenseFile" class="form-label">license pharmaceutique *</label>
+                <div class="file-upload-container">
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="licenseFile"
+                    accept=".pdf,image/jpeg,image/jpg,image/png"
+                    (change)="onFileSelected($event, 'license')"
+                    [class.is-invalid]="pharmacyForm.get('licenseFile')?.invalid && pharmacyForm.get('licenseFile')?.touched"
+                  >
+                  <small class="form-text text-muted">Formats acceptés: PDF, JPG, PNG (max 5MB)</small>
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('licenseFile')?.invalid && pharmacyForm.get('licenseFile')?.touched">
+                    La license pharmaceutique est requise
+                  </div>
+
+                  <div class="file-preview mt-2" *ngIf="selectedFiles.license">
+                    <div class="preview-item">
+                      <div class="file-info">
+                        <i [class]="getFileIcon('license')"></i>
+                        <span class="file-name">{{ selectedFiles.license.name }}</span>
+                        <span class="file-size">({{ (selectedFiles.license.size / 1024 / 1024).toFixed(2) }} MB)</span>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeFile(1,'license')">
+                        <i class="fas fa-times"></i> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-4">
+                <label for="idDocumentFile" class="form-label">Pièce d'identité *</label>
+                <div class="file-upload-container">
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="idDocumentFile"
+                    accept=".pdf,image/jpeg,image/jpg,image/png"
+                    (change)="onFileSelected($event, 'idDocument')"
+                    [class.is-invalid]="pharmacyForm.get('idDocumentFile')?.invalid && pharmacyForm.get('idDocumentFile')?.touched"
+                  >
+                  <small class="form-text text-muted">Formats acceptés: PDF, JPG, PNG (max 5MB)</small>
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('idDocumentFile')?.invalid && pharmacyForm.get('idDocumentFile')?.touched">
+                    La pièce d'identité est requise
+                  </div>
+
+                  <div class="file-preview mt-2" *ngIf="selectedFiles.idDocument">
+                    <div class="preview-item">
+                      <div class="file-info">
+                        <i [class]="getFileIcon('idDocument')"></i>
+                        <span class="file-name">{{ selectedFiles.idDocument.name }}</span>
+                        <span class="file-size">({{ (selectedFiles.idDocument.size / 1024 / 1024).toFixed(2) }} MB)</span>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeFile(1, 'idDocument')">
+                        <i class="fas fa-times"></i> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Attestation d'assurance -->
+              <div class="mb-4">
+                <label for="insuranceFile" class="form-label">Attestation d'assurance *</label>
+                <div class="file-upload-container">
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="insuranceFile"
+                    accept=".pdf,image/jpeg,image/jpg,image/png"
+                    (change)="onFileSelected($event, 'insurance')"
+                    [class.is-invalid]="pharmacyForm.get('insuranceFile')?.invalid && pharmacyForm.get('insuranceFile')?.touched"
+                  >
+                  <small class="form-text text-muted">Formats acceptés: PDF, JPG, PNG (max 5MB)</small>
+                  <div class="invalid-feedback" *ngIf="pharmacyForm.get('insuranceFile')?.invalid && pharmacyForm.get('insuranceFile')?.touched">
+                    L'attestation d'assurance est requise
+                  </div>
+
+                  <!-- Fichier sélectionné -->
+                  <div class="file-preview mt-2" *ngIf="selectedFiles.insurance">
+                    <div class="preview-item">
+                      <div class="file-info">
+                        <i [class]="getFileIcon('insurance')"></i>
+                        <span class="file-name">{{ selectedFiles.insurance.name }}</span>
+                        <span class="file-size">({{ (selectedFiles.insurance.size / 1024 / 1024).toFixed(2) }} MB)</span>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeFile(1, 'insurance')">
+                        <i class="fas fa-times"></i> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <hr>
+
+              <!-- Horaires d'ouverture -->
+              <div class="mb-3">
+                <label class="form-label"><i class="fas fa-clock"></i> Horaires d'ouverture *</label>
+                <div formArrayName="workingHours">
+                  <div
+                    *ngFor="let hourControl of workingHoursFormArray.controls; let i = index"
+                    [formGroupName]="i"
+                    class="row mb-2 align-items-center working-hours-row"
+                  >
+                    <div class="col-md-2">
+                      <label class="form-label small fw-bold">{{ getDayName(i) }}</label>
+                    </div>
+                    <div class="col-md-2">
+                      <div class="form-check">
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          formControlName="open"
+                          [id]="'open-' + i"
+                        >
+                        <label class="form-check-label small" [for]="'open-' + i">
+                          Ouvert
+                        </label>
+                      </div>
+                    </div>
+                    <div class="col-md-4" *ngIf="hourControl.get('open')?.value">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">De</span>
+                        <input
+                          type="time"
+                          class="form-control"
+                          formControlName="opening"
+                          placeholder="Ouverture"
+                        >
+                      </div>
+                    </div>
+                    <div class="col-md-4" *ngIf="hourControl.get('open')?.value">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">À</span>
+                        <input
+                          type="time"
+                          class="form-control"
+                          formControlName="closing"
+                          placeholder="Fermeture"
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Commentaires -->
+              <div class="mb-3">
+                <label for="comentaire" class="form-label">Commentaires</label>
+                <textarea
+                  class="form-control"
+                  id="comentaire"
+                  rows="3"
+                  formControlName="comentaire"
+                  placeholder="Informations complémentaires, remarques particulières..."
+                ></textarea>
+              </div>
+              <!-- Suspension (si applicable) -->
+              <div class="row mb-3" *ngIf="pharmacyForm.get('status')?.value === 'suspended'">
+                <div class="col-md-6">
+                  <label for="suspensionDate" class="form-label">Date de suspension</label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="suspensionDate"
+                    formControlName="suspensionDate"
+                  >
+                </div>
+
+                <div class="col-md-6">
+                  <label for="suspensionReason" class="form-label">Raison de la suspension</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="suspensionReason"
+                    formControlName="suspensionReason"
+                    placeholder="Motif de la suspension"
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- Footer du modal -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSubmit(1)"
+        [disabled]="pharmacyForm.invalid || isSubmitting"
+      >
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="fas fa-save" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les informations' }}
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!--formGeneralInfos-->
+<ng-template #formGeneralInfos let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="formGeneralInfosModal"> Informations generales !</h5>
+      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form [formGroup]="pharmaciesCustomSave" (ngSubmit)="onSubmit(2)">
+          <div class="steps-container">
+            <div class="form-step active">
+              <hr>
+              <p class="step-subtitle"> Toute modification de ces informations va entrainer une nouvelle verifications et validation par nos administrateur. Pendant le temps de la validation, la pharmacie ne serra pas lister chez nos clients et ne pourra donc pas recevoir de nouvelles commandes ! </p>
+              <p class="step-subtitle"> La modification de l'adresse, de la ville ou du pays, va entrainer la suppression de la zone de livraison, et de la localisation de l'entreprise ! </p>
+              <hr>
+              <!-- Nom-->
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="name" class="form-label">Nom de la pharmacie *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="name"
+                    formControlName="name"
+                    [class.is-invalid]="pharmaciesCustomSave.get('name')?.invalid && pharmacyForm.get('name')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('name')?.invalid && pharmaciesCustomSave.get('name')?.touched">
+                    Le nom de la pharmacie est requis
+                  </div>
+                </div>
+                <!-- Email -->
+                <div class="col-md-6">
+                  <label for="phoneNumber" class="form-label">Numéro de téléphone *</label>
+                  <input
+                    type="tel"
+                    class="form-control"
+                    id="phoneNumber"
+                    formControlName="phoneNumber"
+                    [class.is-invalid]="pharmaciesCustomSave.get('phoneNumber')?.invalid && pharmacyForm.get('phoneNumber')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('phoneNumber')?.invalid && pharmaciesCustomSave.get('phoneNumber')?.touched">
+                    Le numéro de téléphone est requis
+                  </div>
+                </div>
+              </div>
+              <!-- Numero de telephone -->
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="email" class="form-label">Email *</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="email"
+                    formControlName="email"
+                    [class.is-invalid]="pharmaciesCustomSave.get('email')?.invalid && pharmaciesCustomSave.get('email')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('email')?.invalid && pharmaciesCustomSave.get('email')?.touched">
+                    <span *ngIf="pharmaciesCustomSave.get('email')?.errors?.['required']">L'email est requis</span>
+                    <span *ngIf="pharmaciesCustomSave.get('email')?.errors?.['email']">Format d'email invalide</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <!-- Pays -->
+              <div class="col-md-6">
+                <label for="country" class="form-label">Pays *</label>
+                <app-select2-ajax
+                  #slectCountryModalGenInfo
+                  [apiUrl]="baseUrl+'tools/get-countries-list'"
+                  placeholder="Sélectionner votre pays"
+                  [type]="'country'"
+                  [countriesListArray]="countriesListArray"
+                  [value]="pharmaciesCustomSave.get('country')?.value"
+                  (selected)="onCountrySelected($event, 1)">
+                </app-select2-ajax>
+                <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('country')?.invalid && pharmaciesCustomSave.get('country')?.touched">
+                  Le pays est requis
+                </div>
+              </div>
+              <!-- Ville -->
+              <div class="col-md-6">
+                <label for="country" class="form-label">Ville *</label>
+                <app-select2-ajax
+                  #slectCityModalGenInfo
+                  [apiUrl]="'https://countriesnow.space/api/v0.1/countries/cities'"
+                  [countriesListArray]="countriesListArray"
+                  [country]="pharmaciesCustomSave.get('country')?.value"
+                  [type]="'city'"
+                  placeholder="Sélectionner une ville"
+                  [value]="pharmaciesCustomSave.get('city')?.value"
+                  [style.display]="pharmaciesCustomSave.get('country')?.value ? 'block' : 'none'"
+                  (selected)="onCitySelected($event, 1)">
+                </app-select2-ajax>
+                <input
+                  *ngIf="!pharmaciesCustomSave.get('country')?.value"
+                  type="text"
+                  class="form-control"
+                  id="city"
+                  readonly="readonly"
+                  value="Selectionner d'abord un pays"
+                  formControlName="city"
+                  [class.is-invalid]="pharmaciesCustomSave.get('city')?.invalid && pharmaciesCustomSave.get('city')?.touched">
+                <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('city')?.invalid && pharmaciesCustomSave.get('city')?.touched">
+                  La ville est requise
+                </div>
+              </div>
+            </div>
+            <!-- Adresse -->
+              <div class="mb-3">
+                <label for="address" class="form-label">Adresse complète *</label>
+                <textarea
+                  class="form-control"
+                  id="address"
+                  rows="2"
+                  formControlName="address"
+                  [class.is-invalid]="pharmaciesCustomSave.get('address')?.invalid && pharmaciesCustomSave.get('address')?.touched"
+                ></textarea>
+                <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('address')?.invalid && pharmaciesCustomSave.get('address')?.touched">
+                  L'adresse est requise
+                </div>
+              </div>
+            </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSubmit(2)"
+        [disabled]="pharmaciesCustomSave.invalid || isSubmitting"
+      >
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="fas fa-save" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les informations generales' }}
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!--formLegalsInfos edit-->
+<ng-template #formLegalsInfos let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="formLegalsInfosModal">Informations Legales !</h5>
+      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form [formGroup]="pharmaciesCustomSave" (ngSubmit)="onSubmit(3)">
+          <div class="steps-container">
+            <div class="form-step active">
+              <hr>
+              <p class="step-subtitle"> Toute modification de ces informations va entrainer une nouvelle verifications et validation par nos administrateur. Pendant le temps de la validation, la pharmacie ne serra pas lister chez nos clients et ne pourra donc pas recevoir de nouvelles commandes ! </p>
+              <hr>
+              <!--license number-->
+              <div class="row mb-3">
+                <div class="col-md-12">
+                  <label for="licenseNumber" class="form-label">Numéro de license *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="licenseNumber"
+                    formControlName="licenseNumber"
+                    [class.is-invalid]="pharmaciesCustomSave.get('licenseNumber')?.invalid && pharmaciesCustomSave.get('licenseNumber')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('licenseNumber')?.invalid && pharmaciesCustomSave.get('licenseNumber')?.touched">
+                    <span *ngIf="pharmaciesCustomSave.get('licenseNumber')?.errors?.['required']">Le numéro de license est requis</span>
+                    <span *ngIf="pharmaciesCustomSave.get('licenseNumber')?.errors?.['minlength'] || pharmaciesCustomSave.get('licenseNumber')?.errors?.['maxlength']">
+                      Le numéro de license doit contenir entre 8 et 20 caractères
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <!--Siret-->
+              <div class="row mb-3">
+                <div class="col-md-12">
+                  <label for="siret" class="form-label">SIRET *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="siret"
+                    formControlName="siret"
+                    [class.is-invalid]="pharmaciesCustomSave.get('siret')?.invalid && pharmaciesCustomSave.get('siret')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="pharmaciesCustomSave.get('siret')?.invalid && pharmaciesCustomSave.get('siret')?.touched">
+                    <span *ngIf="pharmaciesCustomSave.get('siret')?.errors?.['required']">Le numéro SIRET est requis</span>
+                    <span *ngIf="pharmaciesCustomSave.get('siret')?.errors?.['minlength'] || pharmaciesCustomSave.get('siret')?.errors?.['maxlength']">
+                      Le numéro SIRET doit contenir entre 8 et 20 caractères
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSubmit(3)"
+        [disabled]="pharmaciesCustomSave.invalid || isSubmitting"
+      >
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="fas fa-save" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les nouveles informations legales' }}
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!--formHorrairesInfos edit-->
+<ng-template #formHorrairesInfos let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="formHorrairesInfosModal">Horraires d'ouvertures !</h5>
+      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form [formGroup]="pharmaciesCustomSave" (ngSubmit)="onSubmit(4)">
+          <div class="steps-container">
+            <div class="form-step active">
+              <hr>
+              <p class="step-subtitle">Les modifications sur les horraires d'ouvertures ne seront appliques chez le clients qu'a partir de demain ou si vous n'avez aucune commandes en cours de preparation !</p>
+              <hr>
+              <!-- Horaires d'ouverture -->
+              <div class="mb-3">
+                <label class="form-label"><i class="fas fa-clock"></i> Horaires d'ouverture *</label>
+                <div formArrayName="workingHours">
+                  <div  *ngFor="let hourControl of theDayHours" [formGroupName]="hourControl.day" class="row mb-2 align-items-center working-hours-row">
+                    <div class="col-md-2">
+                      <label class="form-label small fw-bold">{{ getDayName(hourControl.day -1) }}</label>
+                    </div>
+                    <div class="col-md-2">
+                      <div class="form-check">
+                        <input
+                          class="form-check-input" type="checkbox" (click)="hourControl.open = !hourControl.open; changeOpeningHour(hourControl)" [checked]="hourControl.open"  formControlName="open"  [id]="'open-' + hourControl.day"
+                        >
+                        <label class="form-check-label small" [for]="'open-' + hourControl.day">
+                          Ouvert
+                        </label>
+                      </div>
+                    </div>
+                    <div class="col-md-4" *ngIf="hourControl.open">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">De</span>
+                        <input
+                          #openingInputPharmacieDetail
+                          type="time"
+                          [value]="hourControl.opening"
+                          class="form-control"
+                          formControlName="opening"
+                          (keyup)="hourControl.opening = openingInputPharmacieDetail.value; changeOpeningHour(hourControl)"
+                          placeholder="Ouverture"
+                        >
+                      </div>
+                    </div>
+                    <div class="col-md-4" *ngIf="hourControl.open">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">À</span>
+                        <input
+                          #closingInputPharmacieDetail
+                          type="time"
+                          [value]="hourControl.closing"
+                          class="form-control"
+                          formControlName="closing"
+                          (keyup)="hourControl.closing = closingInputPharmacieDetail.value; changeOpeningHour(hourControl)"
+                          placeholder="Fermeture"
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSubmit(4)"
+        [disabled]="pharmaciesCustomSave.invalid || isSubmitting"
+      >
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="fas fa-save" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les nouvels horaires' }}
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!--formCoordonatesInfos-->
+<ng-template #formCoordonatesInfos let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="formCoordonatesInfosModal">Coordonnées !</h5>
+      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form [formGroup]="pharmaciesCustomSave" (ngSubmit)="onSubmit(5)">
+          <div class="steps-container">
+            <div class="form-step active">
+              <hr>
+              <p class="step-subtitle">Les modifications sur les coordonees ne seront appliques chez les clients qu'a partir de demain ou si vous n'avez aucune commandes en cours de preparation !</p>
+              <hr>
+              <!-- Coordonees -->
+              <div class="row mb-3">
+                <div class="col-md-12">
+                  <app-map-selector
+                    mapId="map3"
+                    [readonly]="false"
+                    [lat]="pharmacy.location?.latitude"
+                    [lng]="pharmacy.location?.longitude"
+                    [height]="'300px'"
+                    (positionChange)="onMapChange($event, 5)">
+                  </app-map-selector>
+                </div>
+              </div>
+              <hr>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSubmit(5)"
+        [disabled]="pharmaciesCustomSave.invalid || isSubmitting"
+      >
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="fas fa-save" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les nouveaux coordonees' }}
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!--formCoordonatesZoneInfos-->
+<ng-template #formCoordonatesZoneInfos let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="formCoordonatesZoneInfosModal">Zone de livraison !</h5>
+      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form [formGroup]="pharmaciesCustomSave" (ngSubmit)="onSubmit(7)">
+          <div class="steps-container">
+            <div class="form-step active">
+<!--              <hr>-->
+<!--              <p class="step-subtitle">Les modifications sur la zone de livraison ne seront appliques chez les clients qu'a partir de demain ou si vous n'avez aucune commandes en cours de preparation !</p>-->
+              <hr>
+              <!-- deliveryZone -->
+              <div class="row mb-3">
+                <div class="col-md-12">
+                  <app-map-selector
+                    mapId="map9"
+                    [height]="'600px'"
+                    [selectionMode]="'zone'"
+                    [lat]="pharmacy.location?.latitude"
+                    [lng]="pharmacy.location?.longitude"
+                    [deliveryZone]="pharmacy.deliveryZone"
+                    [readonly]="false"
+                    (zoneChange)="onZoneMapChange($event, 7)">
+                  </app-map-selector>
+
+                </div>
+              </div>
+              <hr>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSubmit(7)"
+        [disabled]="pharmaciesCustomSave.invalid || isSubmitting"
+      >
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="fas fa-save" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les nouveaux coordonees' }}
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!--editOrViewDocument-->
+<ng-template #editOrViewDocument let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="editOrViewDocumentModal">
+        {{ pharmaciesCustomSave.get('edit')?.value ? 'Modifier - ' : '' }}  {{ pharmaciesCustomSave.get('label')?.value ?? 'Document' }}
+      </h5>
+      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form [formGroup]="pharmaciesCustomSave">
+          <div class="steps-container">
+            <div class="form-step active">
+              <div class="row mb-3" *ngIf="pharmaciesCustomSave.get('edit')?.value">
+                <hr>
+                <p> Attention, les fichiers sont automatiquement modifier a la selection du nouveau fichier ! </p>
+                <hr>
+              </div>
+              <div class="row mb-3" *ngIf="pharmaciesCustomSave.get('edit')?.value">
+                <div class="col-md-12">
+                  <label class="form-label">
+                    <i class="fas fa-upload"></i> Remplacer le fichier
+                  </label>
+                  <input
+                    type="file"
+                    class="form-control"
+                    [formControlName]="pharmaciesCustomSave.get('nameFile')?.value"
+                    [accept]="getAcceptedFileTypes()"
+                    (change)="onFileSelected($event, pharmaciesCustomSave.get('nameFile')?.value, 1)"
+                  >
+                  <small class="text-muted">
+                    Formats acceptés: {{ getAcceptedFileTypes() }}
+                  </small>
+                </div>
+              </div>
+              <hr>
+              <div class="row mb-3">
+                <div class="col-md-12">
+                  <div class="pharmacy-full-logo position-relative" *ngIf="!['map', 'mapzone' ].includes(pharmaciesCustomSave.get('type')?.value)" >
+                    <div
+                      *ngIf="pharmaciesCustomSave.get('edit')?.value"
+                      class="edit-overlay position-absolute w-100 h-100 d-flex align-items-center justify-content-center"
+                      style="background: rgba(0,0,0,0.3); z-index: 10; cursor: pointer;"
+                      (click)="triggerFileUpload()"
+                    >
+                      <div class="text-center text-white">
+                        <i class="fas fa-edit fa-3x mb-2"></i>
+                        <p>Cliquer pour modifier</p>
+                      </div>
+                    </div>
+                    <iframe
+                      width="100%"
+                      height="800px"
+                      *ngIf="pharmaciesCustomSave.get('type')?.value == 'pdf'"
+                      [src]="getFilePreviewUrl()"
+                      frameborder="0">
+                    </iframe>
+                    <img
+                      *ngIf="pharmaciesCustomSave.get('type')?.value == 'img'"
+                      [src]="getFilePreviewUrl()"
+                      alt="{{ pharmaciesCustomSave.get('label')?.value ?? 'Logo de la pharmacie' }}"
+                      class="img-fluid"
+                    >
+                  </div>
+                  <div class="map-container" *ngIf="pharmaciesCustomSave.get('type')?.value == 'map'" >
+                    <app-map-selector
+                      *ngIf="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null"
+                      mapId="map6"
+                      [readonly]="true"
+                      [lat]="pharmacy.location?.latitude"
+                      [lng]="pharmacy.location?.longitude"
+                      [height]="'300px'"
+                      (positionChange)="false">
+                    </app-map-selector>
+                  </div>
+                  <div class="map-container" *ngIf="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null && pharmaciesCustomSave.get('type')?.value == 'mapzone'" >
+                    <app-map-selector
+                      mapId="map10"
+                      [height]="'400px'"
+                      [selectionMode]="'zone'"
+                      [lat]="pharmacy.location?.latitude"
+                      [lng]="pharmacy.location?.longitude"
+                      [deliveryZone]="pharmacy.deliveryZone"
+                      [readonly]="true"
+                      >
+                    </app-map-selector>
+                  </div>
+                </div>
+              </div>
+              <hr>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</ng-template>

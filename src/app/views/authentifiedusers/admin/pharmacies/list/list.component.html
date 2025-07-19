@@ -1,0 +1,544 @@
+<div class="pharmacy-management-container">
+  <div class="page-header table-responsive">
+    <span class="h1-badge danger"> </span>
+    <div class="header-actions">
+      <div class="search-box">
+        <input type="text" class="form-control" placeholder="Rechercher une pharmacie..." [(ngModel)]="searchText" (keyup)="filterPharmacies()">
+        <i class="fas fa-search"></i>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" style="margin-right: 5px;" (click)="openCreateModal()">
+          <i class="fas fa-plus"></i> Ajouter une pharmacie
+        </button>
+        <button class="btn btn-outline-primary" style="background-color: #4caf50; color: white" (click)="exportPharmaciesList()">
+          <i class="fas fa-download" ></i> Exporter
+        </button>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div id="all">
+      <div class="pharmacy-list-container" >
+        <div class="pharmacy-filters">
+          <div class="filter-group">
+            <label>Filtrer par région:</label>
+            <select class="form-select" [(ngModel)]="regionFilter" (change)="filterPharmacies()">
+              <option value="">Toutes les régions</option>
+              <option *ngFor="let region of regions" [value]="region">{{region}}</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Filtrer par statut:</label>
+            <select class="form-select" [(ngModel)]="statusFilter" (change)="filterPharmacies()">
+              <option value="">Tous les statuts</option>
+              <option value="active">Actif</option>
+              <option value="pending">En attente</option>
+              <option value="suspended">Suspendu</option>
+              <option value="inactive">Inactif</option>
+              <option value="deleted">Supprimé</option>
+              <option value="rejected">Inscription Rejeté</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+            <tr>
+              <th>
+                <div class="th-content" (click)="sort('name')">
+                  Nom
+                  <i class="fas" [ngClass]="getSortIcon('name')"></i>
+                </div>
+              </th>
+              <th>Adresse</th>
+              <th>SIRET</th>
+              <th>Téléphone</th>
+              <th>Email</th>
+              <th>Coordonnées</th>
+              <th>
+                <div class="th-content" (click)="sort('registerDate')">
+                  Inscription
+                  <i class="fas" [ngClass]="getSortIcon('registerDate')"></i>
+                </div>
+              </th>
+              <th>
+                <div class="th-content" (click)="sort('status')">
+                  Statut
+                  <i class="fas" [ngClass]="getSortIcon('status')"></i>
+                </div>
+              </th>
+              <th>
+                <div class="th-content" (click)="sort('orders30days')">
+                  Cmds 30j
+                  <i class="fas" [ngClass]="getSortIcon('orders30days')"></i>
+                </div>
+              </th>
+              <th>
+                <div class="th-content" (click)="sort('revenue30days')">
+                  CA 30j (€)
+                  <i class="fas" [ngClass]="getSortIcon('revenue30days')"></i>
+                </div>
+              </th>
+              <th>
+                <div class="th-content" (click)="sort('rating')">
+                  Note
+                  <i class="fas" [ngClass]="getSortIcon('rating')"></i>
+                </div>
+              </th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let pharmacy of filteredPharmacies">
+              <ng-container *ngIf="pharmacy">
+                <td>
+                <a [routerLink]="['/admin/pharmacies', pharmacy.id]">{{ pharmacy.name }}</a>
+                </td>
+                <td>{{ pharmacy.address }}</td>
+                <td>{{ pharmacy.siret }}</td>
+                <td>{{ pharmacy.phoneNumber }}</td>
+                <td>{{ pharmacy.email }}</td>
+                <td>
+  <!--                <a-->
+  <!--                  [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"-->
+  <!--                  target="_blank"-->
+  <!--                  rel="noopener noreferrer">-->
+  <!--                  📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}-->
+  <!--                </a>-->
+                </td>
+                <td>{{ pharmacy.registerDate | date: 'dd/MM/yyyy' }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="pharmacy.status">
+                    {{ getStatusLabel(pharmacy.status) }}
+                  </span>
+                </td>
+                <td>{{ pharmacy.orders30days ?? 0 }}</td>
+                <td>{{ pharmacy.revenue30days?.toFixed(2) ?? '0.00' }}</td>
+                <td>
+                  <span *ngIf="pharmacy.rating !== null">{{ pharmacy.rating.toFixed(1) }}/5</span>
+                  <span *ngIf="pharmacy.rating === null">—</span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="btn btn-sm btn-outline-primary" (click)="viewPharmacyDetails(pharmacy)">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" *ngIf="pharmacy.status === 'pending'" (click)="approvePharmacy(pharmacy)">
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" *ngIf="pharmacy.status === 'active'" (click)="suspendPharmacy(pharmacy)">
+                      <i class="fas fa-pause"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" *ngIf="pharmacy.status === 'suspended'" (click)="activatePharmacy(pharmacy)">
+                      <i class="fas fa-play"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="deletePharmacy(pharmacy)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-3" style="margin: 20px">
+          <div class="pagination-info">
+            Affichage de {{paginationStart + 1}} à {{paginationEnd}} sur {{filteredPharmacies.length}} pharmacies
+          </div>
+          <nav aria-label="Page navigation">
+            <ul class="pagination">
+              <li class="page-item" [ngClass]="{'disabled': currentPage === 1}">
+                <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage - 1)">Précédent</a>
+              </li>
+              <li class="page-item" *ngFor="let page of getPageNumbers()" [ngClass]="{'active': page === currentPage}">
+                <a class="page-link" href="javascript:void(0)" (click)="pageChanged(page)">{{page}}</a>
+              </li>
+              <li class="page-item" [ngClass]="{'disabled': currentPage === totalPages}">
+                <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage + 1)">Suivant</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #userInfoModal let-modal>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="pharmacyDetailsModalLabel">Détails de la pharmacie</h5>
+        <button type="button"  (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" *ngIf="selectedPharmacy">
+        <div class="pharmacy-details">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="pharmacy-logo">
+                <img [src]="selectedPharmacy.logoUrl || 'assets/images/pharmacy-placeholder.png'" alt="Logo pharmacie">
+              </div>
+            </div>
+            <div class="col-md-8">
+              <h3>{{selectedPharmacy.name}}</h3>
+              <p class="pharmacy-address">
+                <i class="fas fa-map-marker-alt"></i> {{selectedPharmacy.address}}
+              </p>
+              <p class="pharmacy-contact">
+                <i class="fas fa-phone"></i> {{selectedPharmacy.phoneNumber}}
+              </p>
+              <p class="pharmacy-email">
+                <i class="fas fa-envelope"></i> {{selectedPharmacy.email}}
+              </p>
+              <div class="pharmacy-status">
+                  <span class="status-badge" [ngClass]="selectedPharmacy.status">
+                    {{getStatusLabel(selectedPharmacy.status)}}
+                  </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-4">
+            <div class="col-md-6">
+              <div class="detail-section">
+                <h5>Informations légales</h5>
+                <div class="detail-item">
+                  <span class="detail-label">Numéro de licence:</span>
+                  <span class="detail-value">{{selectedPharmacy.licenseNumber}}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">SIRET:</span>
+                  <span class="detail-value">{{selectedPharmacy.siret}}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Date d'inscription:</span>
+                  <span class="detail-value">{{selectedPharmacy.registerDate | date:'dd/MM/yyyy'}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="detail-section">
+                <h5>Performance</h5>
+                <div class="detail-item">
+                  <span class="detail-label">Commandes (30j):</span>
+                  <span class="detail-value">{{selectedPharmacy.orders30days || 0}}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Revenus (30j):</span>
+                  <span class="detail-value">{{selectedPharmacy.revenue30days | currency:'EUR'}}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Note client:</span>
+                  <span class="detail-value">
+                      <i class="fas fa-star"></i> {{selectedPharmacy.rating || 'N/A'}}
+                    </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-4">
+            <div class="col-md-12">
+              <div class="detail-section">
+                <h5>Horaires d'ouverture</h5>
+                <div class="opening-hours">
+                  <div class="day-hours" *ngFor="let day of selectedPharmacy.workingHours">
+                    <span class="day">{{day.getDayName()}}:</span>
+                    <span class="hours open" *ngIf="day.open">{{day.opening}} - {{day.closing}}</span>
+                    <span class="hours closed" *ngIf="!day.open">Fermé</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-4">
+            <div class="col-md-12">
+              <div class="detail-section">
+                <h5>Emplacement</h5>
+                <div class="pharmacy-map">
+                  <div class="map-container">
+                    <!--                      <google-map-->
+                    <!--                        [center]="{lat: selectedPharmacy.location.latitude, lng: selectedPharmacy.location.longitude}"-->
+                    <!--                        [zoom]="15"-->
+                    <!--                        width="100%"-->
+                    <!--                        height="400px">-->
+                    <!--                        <map-marker-->
+                    <!--                          [position]="{lat: selectedPharmacy.location.latitude, lng: selectedPharmacy.location.longitude}"-->
+                    <!--                          [title]="selectedPharmacy.name">-->
+                    <!--                        </map-marker>-->
+                    <!--                      </google-map>-->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documents section -->
+          <div class="row mt-4">
+            <div class="col-md-12">
+              <div class="detail-section">
+                <h5>Documents</h5>
+                <div class="document-grid">
+                  <div class="document-item">
+                    <div class="document-icon">
+                      <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div class="document-info">
+                      <div class="document-name">Licence pharmaceutique</div>
+                      <div class="document-actions">
+                        <button class="btn btn-sm btn-outline-primary" (click)="viewDocument(selectedPharmacy.id, 'license')">
+                          <i class="fas fa-eye"></i> Voir
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument(selectedPharmacy.id, 'license')">
+                          <i class="fas fa-download"></i> Télécharger
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="document-item">
+                    <div class="document-icon">
+                      <i class="fas fa-id-card"></i>
+                    </div>
+                    <div class="document-info">
+                      <div class="document-name">Pièce d'identité</div>
+                      <div class="document-actions">
+                        <button class="btn btn-sm btn-outline-primary" (click)="viewDocument(selectedPharmacy.id, 'id')">
+                          <i class="fas fa-eye"></i> Voir
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument(selectedPharmacy.id, 'id')">
+                          <i class="fas fa-download"></i> Télécharger
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="document-item">
+                    <div class="document-icon">
+                      <i class="fas fa-file-contract"></i>
+                    </div>
+                    <div class="document-info">
+                      <div class="document-name">Attestation d'assurance</div>
+                      <div class="document-actions">
+                        <button class="btn btn-sm btn-outline-primary" (click)="viewDocument(selectedPharmacy.id, 'insurance')">
+                          <i class="fas fa-eye"></i> Voir
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument(selectedPharmacy.id, 'insurance')">
+                          <i class="fas fa-download"></i> Télécharger
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="action-buttons" *ngIf="selectedPharmacy">
+          <button class="btn btn-success" *ngIf="selectedPharmacy.status === 'pending'" (click)="approvePharmacy(selectedPharmacy)">
+            <i class="fas fa-check"></i> Approuver
+          </button>
+          <button class="btn btn-warning" *ngIf="selectedPharmacy.status === 'active'" (click)="suspendPharmacy(selectedPharmacy)">
+            <i class="fas fa-pause"></i> Suspendre
+          </button>
+          <button class="btn btn-success" *ngIf="selectedPharmacy.status === 'suspended'" (click)="activatePharmacy(selectedPharmacy)">
+            <i class="fas fa-play"></i> Réactiver
+          </button>
+          <button class="btn btn-danger" (click)="deletePharmacy(selectedPharmacy)">
+            <i class="fas fa-trash"></i> Supprimer
+          </button>
+          <button class="btn btn-info" (click)="contactPharmacy(selectedPharmacy)">
+            <i class="fas fa-envelope"></i> Contacter
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+  <ng-template #addPharmacy let-modal>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addPharmacyModal">Nouvelle pharmacie</h5>
+        <button type="button"  (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="pharmacy-details">
+          <form [formGroup]="partnerForm" (ngSubmit)="onSubmit()">
+            <div class="steps-container">
+              <div class="form-step" [class.active]="currentStep === 1" *ngIf="currentStep === 1">
+                <h3 class="step-title">Informations generales sur la pharmacie</h3>
+                <hr>
+                <p class="step-subtitle">
+                  Démarrons ensemble ! Renseignez d'abord les informations de generales de la pharmacie : nom, adresse ....
+                </p>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="pharmacy_name">Nom de la pharmacie <span class="required">*</span></label>
+                    <input
+                      type="text"
+                      id="pharmacy_name"
+                      formControlName="pharmacy_name"
+                      class="form-control"
+                      [class.error]="isFieldInvalid('pharmacy_name')"
+                      [class.success]="isFieldValid('pharmacy_name')"
+                      placeholder="Pharmacie Centrale">
+                    <div class="error-message" [class.show]="isFieldInvalid('pharmacy_name')">
+                      {{ getFieldError('pharmacy_name') }}
+                    </div>
+                    <div class="success-message" [class.show]="isFieldValid('pharmacy_name')">
+                      ✓ Valide
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="pharmacy_address">Adresse complète <span class="required">*</span></label>
+                    <input
+                      type="text"
+                      id="pharmacy_address"
+                      formControlName="pharmacy_address"
+                      class="form-control"
+                      [class.error]="isFieldInvalid('pharmacy_address')"
+                      [class.success]="isFieldValid('pharmacy_address')"
+                      placeholder="123 Rue de la Santé, Paris">
+                    <div class="error-message" [class.show]="isFieldInvalid('pharmacy_address')">
+                      {{ getFieldError('pharmacy_address') }}
+                    </div>
+                    <div class="success-message" [class.show]="isFieldValid('pharmacy_address')">
+                      ✓ Valide
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="pharmacy_phone">Téléphone de la pharmacie <span class="required">*</span></label>
+                    <input
+                      type="tel"
+                      id="pharmacy_phone"
+                      formControlName="pharmacy_phone"
+                      class="form-control"
+                      [class.error]="isFieldInvalid('pharmacy_phone')"
+                      [class.success]="isFieldValid('pharmacy_phone')"
+                      placeholder="+33612345678">
+                    <div class="error-message" [class.show]="isFieldInvalid('pharmacy_phone')">
+                      {{ getFieldError('pharmacy_phone') }}
+                    </div>
+                    <div class="success-message" [class.show]="isFieldValid('pharmacy_phone')">
+                      ✓ Valide
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="pharmacy_email">Email de la pharmacie <span class="required">*</span></label>
+                    <input
+                      type="email"
+                      id="pharmacy_email"
+                      formControlName="pharmacy_email"
+                      class="form-control"
+                      [class.error]="isFieldInvalid('pharmacy_email')"
+                      [class.success]="isFieldValid('pharmacy_email')"
+                      placeholder="contact@pharmacie.fr">
+                    <div class="error-message" [class.show]="isFieldInvalid('pharmacy_email')">
+                      {{ getFieldError('pharmacy_email') }}
+                    </div>
+                    <div class="success-message" [class.show]="isFieldValid('pharmacy_email')">
+                      ✓ Valide
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <div></div>
+                  <button type="button" class="btn btn-primary" (click)="nextStep()">
+                    Suivant
+                    <i class="fas fa-arrow-right"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="form-step" [class.active]="currentStep === 2" *ngIf="currentStep === 2" >
+                <h3 class="step-title">Informations du responsable</h3>
+                <hr>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Associer la pharmacie à un compte partenaire existant ?</label>
+                    <div class="form-radio-group">
+                      <div class="form-radio">
+                        <input type="radio" id="ownerExistYes" [value]="true" formControlName="ownerExist">
+                        <label for="ownerExistYes">Oui</label>
+                      </div>
+                      <div class="form-radio">
+                        <input type="radio" id="ownerExistNo" [value]="false" formControlName="ownerExist">
+                        <label for="ownerExistNo">Non</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group" *ngIf="!ownerExist">
+                    <label for="owner_full_name">Nom complet du responsable <span class="required">*</span></label>
+                    <input
+                      type="text"
+                      id="owner_full_name"
+                      formControlName="owner_full_name"
+                      class="form-control"
+                      [class.error]="isFieldInvalid('owner_full_name')"
+                      [class.success]="isFieldValid('owner_full_name')"
+                      placeholder="Dr Jean Dupont">
+                    <div class="error-message" [class.show]="isFieldInvalid('owner_full_name')">
+                      {{ getFieldError('owner_full_name') }}
+                    </div>
+                    <div class="success-message" [class.show]="isFieldValid('owner_full_name')">
+                      ✓ Valide
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="owner_email">Email du responsable <span class="required">*</span></label>
+                    <input
+                      type="email"
+                      id="owner_email"
+                      formControlName="owner_email"
+                      class="form-control"
+                      [class.error]="isFieldInvalid('owner_email')"
+                      [class.success]="isFieldValid('owner_email')"
+                      placeholder="jean.dupont@pharmacie.fr">
+                    <div class="error-message" [class.show]="isFieldInvalid('owner_email')">
+                      {{ getFieldError('owner_email') }}
+                    </div>
+                    <div class="success-message" [class.show]="isFieldValid('owner_email')">
+                      ✓ Valide
+                    </div>
+                  </div>
+                  <div class="form-group" *ngIf="!ownerExist">
+                    <label for="owner_phone">Téléphone du responsable <span class="required">*</span></label>
+                    <input
+                      type="tel"
+                      id="owner_phone"
+                      formControlName="owner_phone"
+                      class="form-control"
+                      [class.error]="isFieldInvalid('owner_phone')"
+                      [class.success]="isFieldValid('owner_phone')"
+                      placeholder="+33698765432">
+                    <div class="error-message" [class.show]="isFieldInvalid('owner_phone')">
+                      {{ getFieldError('owner_phone') }}
+                    </div>
+                    <div class="success-message" [class.show]="isFieldValid('owner_phone')">
+                      ✓ Valide
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="button" class="btn btn-secondary" (click)="prevStep()">
+                    <i class="fas fa-arrow-left"></i>
+                    Précédent
+                  </button>
+                  <button type="submit" class="btn btn-outline-primary" [disabled]="isSubmitting">
+                    <div class="loading-spinner" *ngIf="isSubmitting"></div>
+                    <span>{{ isSubmitting ? 'Création en cours...' : 'Créer le compte' }}</span>
+                    <i class="fas fa-check" *ngIf="!isSubmitting"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+</div>
