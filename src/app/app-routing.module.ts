@@ -7,7 +7,6 @@ import { AuthGuard } from './controllers/guards/auth.guard';
 import { GroupGuard } from './controllers/guards/group.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
 import {GroupCode} from "./models/Group.class";
-import {PharmacyLogsComponent} from "./views/authentifiedusers/pharmacy/settings/logs/logs.component";
 
 const routes: Routes = [{
     path: 'admin',
