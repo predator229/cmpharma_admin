@@ -108,3 +108,4 @@ dist
 #angular catch file
 .angular
 .vscode/
+.DS_Store
