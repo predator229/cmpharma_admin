@@ -5,7 +5,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 // Auth
-import { AuthModule } from './views/NotAuthentifiiedUsers/login/login.module';
+import { AuthModule } from './views/notauthentifiedusers/login/login.module';
 
 // Gardiens de route
 import { AuthGuard } from './controllers/guards/auth.guard';
