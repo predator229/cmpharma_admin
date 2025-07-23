@@ -51,39 +51,34 @@
                   <i class="fas" [ngClass]="getSortIcon('name')"></i>
                 </div>
               </th>
-              <th>Adresse</th>
+              <th style="width: 20%">Adresse</th>
               <th>SIRET</th>
               <th>Téléphone</th>
               <th>Email</th>
               <th>Coordonnées</th>
               <th>
                 <div class="th-content" (click)="sort('registerDate')">
-                  Inscription
-                  <i class="fas" [ngClass]="getSortIcon('registerDate')"></i>
+                  Inscription <i class="fas" [ngClass]="getSortIcon('registerDate')"></i>
                 </div>
               </th>
               <th>
                 <div class="th-content" (click)="sort('status')">
-                  Statut
-                  <i class="fas" [ngClass]="getSortIcon('status')"></i>
+                  Statut <i class="fas" [ngClass]="getSortIcon('status')"></i>
                 </div>
               </th>
               <th>
                 <div class="th-content" (click)="sort('orders30days')">
-                  Cmds 30j
-                  <i class="fas" [ngClass]="getSortIcon('orders30days')"></i>
+                  Cmds 30j <i class="fas" [ngClass]="getSortIcon('orders30days')"></i>
                 </div>
               </th>
               <th>
                 <div class="th-content" (click)="sort('revenue30days')">
-                  CA 30j (€)
-                  <i class="fas" [ngClass]="getSortIcon('revenue30days')"></i>
+                  CA 30j (€) <i class="fas" [ngClass]="getSortIcon('revenue30days')"></i>
                 </div>
               </th>
               <th>
                 <div class="th-content" (click)="sort('rating')">
-                  Note
-                  <i class="fas" [ngClass]="getSortIcon('rating')"></i>
+                  Note <i class="fas" [ngClass]="getSortIcon('rating')"></i>
                 </div>
               </th>
               <th>Actions</th>
@@ -95,17 +90,30 @@
                 <td>
                 <a [routerLink]="['/admin/pharmacies', pharmacy.id]">{{ pharmacy.name }}</a>
                 </td>
-                <td>{{ pharmacy.address }}</td>
+                <td>
+                  <p *ngIf="pharmacy.country != null">
+                    <span>
+                      {{ this.countriesListArray[pharmacy.country.toString()].name }}
+                      {{ this.countriesListArray[pharmacy.country.toString()].emoji }}
+                    </span>
+                  </p>
+                  <p *ngIf="pharmacy.city">
+                    <i class="fas fa-city"></i> {{ pharmacy.city }}
+                  </p>
+                  <p *ngIf="pharmacy.address">
+                    <i class="fas fa-map-marker-alt"></i> {{ pharmacy.address }}
+                  </p>
+                </td>
                 <td>{{ pharmacy.siret }}</td>
                 <td>{{ pharmacy.phoneNumber }}</td>
                 <td>{{ pharmacy.email }}</td>
                 <td>
-  <!--                <a-->
-  <!--                  [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"-->
-  <!--                  target="_blank"-->
-  <!--                  rel="noopener noreferrer">-->
-  <!--                  📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}-->
-  <!--                </a>-->
+                  <a *ngIf="pharmacy.location"
+                    [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    📍 {{ pharmacy.location.latitude }}, {{ pharmacy.location.longitude }}
+                  </a>
                 </td>
                 <td>{{ pharmacy.registerDate | date: 'dd/MM/yyyy' }}</td>
                 <td>
@@ -391,7 +399,38 @@
                       ✓ Valide
                     </div>
                   </div>
-
+                  <div class="form-group">
+                    <label for="country" class="form-label">Pays *</label>
+                    <app-select2-ajax
+                      #slectCountryFirstModal
+                      [apiUrl]="baseUrl+'tools/get-countries-list'"
+                      placeholder="Sélectionner votre pays"
+                      formControlName="country"
+                      [countriesListArray]="countriesListArray"
+                      [type]="'country'"
+                      (selected)="onCountrySelected($event, 0)">
+                    </app-select2-ajax>
+                    <div class="invalid-feedback" *ngIf="partnerForm.get('country')?.invalid && partnerForm.get('country')?.touched">
+                      <span *ngIf="partnerForm.get('country')?.errors?.['required']">Le pays est requis</span>
+                    </div>
+                  </div>
+                    <!-- Ville -->
+                  <div class="form-group">
+                    <label for="country" class="form-label">Ville *</label>
+                    <app-select2-ajax *ngIf="partnerForm.get('country')?.value != ''" #slectCityModalGenInfo [apiUrl]="'https://countriesnow.space/api/v0.1/countries/cities'" [country]="partnerForm.get('country')?.value" [countriesListArray]="countriesListArray" [type]="'city'" [value]="partnerForm.get('city')?.value" placeholder="Sélectionner une ville" formControlName="city" (selected)="onCitySelected($event)"></app-select2-ajax>
+                    <input
+                      *ngIf="partnerForm.get('country')?.value == ''"
+                      type="text"
+                      class="form-control"
+                      id="city"
+                      readonly="readonly"
+                      value="Selectionner d'abord un pays"
+                      formControlName="city"
+                    >
+                    <div class="invalid-feedback" *ngIf="partnerForm.get('city')?.invalid && partnerForm.get('city')?.touched">
+                      <span *ngIf="partnerForm.get('city')?.errors?.['required']">Le pays est requis</span>
+                    </div>
+                  </div>
                   <div class="form-group">
                     <label for="pharmacy_address">Adresse complète <span class="required">*</span></label>
                     <input
@@ -419,7 +458,8 @@
                       class="form-control"
                       [class.error]="isFieldInvalid('pharmacy_phone')"
                       [class.success]="isFieldValid('pharmacy_phone')"
-                      placeholder="+33612345678">
+                      [disabled]="IsDisabledTel"
+                      placeholder="+33.......">
                     <div class="error-message" [class.show]="isFieldInvalid('pharmacy_phone')">
                       {{ getFieldError('pharmacy_phone') }}
                     </div>

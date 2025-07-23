@@ -4,6 +4,10 @@ import {SetupBase} from "./SetupBase";
 import {Permission} from "./Permission.class";
 import {OpeningHoursClass} from "./OpeningHours.class";
 import {Group} from "./Group.class";
+import {HttpHeaders} from "@angular/common/http";
+import {catchError, map} from "rxjs/operators";
+import Swal from "sweetalert2";
+import {of} from "rxjs";
 
 export class UserDetails {
   groups: Group[];
@@ -21,7 +25,7 @@ export class UserDetails {
   setups?: SetupBase;
   pharmaciesManaged: string[];
   isActivated: boolean;
-  onlyShowListPharm?: boolean;
+  onlyShowListPharm?: string[];
   lastLogin: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -45,7 +49,7 @@ export class UserDetails {
     permissions?: Permission[] | [String];
     isActivated?: boolean;
     lastLogin?: Date | null;
-    onlyShowListPharm?: boolean;
+    onlyShowListPharm?: string[] | null;
     createdAt: Date;
     updatedAt: Date;
     allpermissions?: string[];
@@ -65,7 +69,7 @@ export class UserDetails {
     this.phone = data.phone || '';
     this.pharmaciesManaged = data.pharmaciesManaged || [];
     this.isActivated = data.isActivated !== undefined ? data.isActivated : true;
-    this.onlyShowListPharm = data.onlyShowListPharm || false;
+    this.onlyShowListPharm = data.onlyShowListPharm || [];
     this.lastLogin = data.lastLogin || null;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
@@ -89,7 +93,7 @@ export class UserDetails {
       setups: data.user.setups ?? null,
       pharmaciesManaged: data.user.pharmaciesManaged,
       groups: data.user.groups ? data.user.groups.map((group: any) => new Group(group)) : [],
-      onlyShowListPharm: data?.onlyShowListPharm || false,
+      onlyShowListPharm: data?.onlyShowListPharm || [],
       isActivated: data.user.isActivated,
       lastLogin: data.user.lastLogin,
       createdAt: new Date(data.user.createdAt),
@@ -97,7 +101,7 @@ export class UserDetails {
     });
   }
 
-  loadAllPermissions(): void {
+  loadAllPermissions(idPharmacy: string|null = null): void {
     const allPermissionsSet = new Set<string>();
     this.groups
       .filter(group => group.isGroupActive())
@@ -108,10 +112,16 @@ export class UserDetails {
           });
         });
       });
-    this.allpermissions = this.onlyShowListPharm ? ['pharmacies.view'] : Array.from(allPermissionsSet).sort();
+    this.allpermissions = this.onlyShowListPharm && (idPharmacy == null || this.onlyShowListPharm.includes(idPharmacy) ) ? ['pharmacies.view'] : Array.from(allPermissionsSet).sort();
+    if (idPharmacy != null) {
+      console.log(this.allpermissions);
+    }
   }
 
-  hasPermission(permission: string): boolean {
+  hasPermission(permission: string, idPharmacy: string|null = null): boolean {
+    if (idPharmacy) {
+      this.loadAllPermissions(idPharmacy);
+    }
     return this.allpermissions?.includes(permission) || false;
   }
 

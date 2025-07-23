@@ -1,0 +1,133 @@
+<div class="chat-toggle-button"
+     [class.has-unread]="unreadCount > 0"
+     (click)="toggleChat()"
+     [attr.title]="'Discussion avec les administrateurs'">
+  <i class="fas fa-comments"></i>
+  <span class="unread-badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+</div>
+
+<!-- Interface du chat -->
+<div class="chat-container" [class.open]="isChatOpen">
+  <!-- En-tête du chat -->
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <h5>
+        <i class="fas fa-user-shield"></i>
+        Discussion avec {{ userType == 'pharmacy' ? 'les administrateurs' : 'la pharmacie'  }}
+      </h5>
+      <span class="online-indicator"
+            [class.online]="true"
+            [title]="'Administrateur en ligne'">
+        <i class="fas fa-circle"></i>
+      </span>
+    </div>
+    <button class="chat-close-btn" (click)="toggleChat()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+
+  <!-- Messages -->
+  <div class="chat-messages" #messagesContainer>
+    <div class="loading-messages" *ngIf="isLoading">
+      <div class="spinner-border spinner-border-sm" role="status"></div>
+      <span>Chargement des messages...</span>
+    </div>
+
+    <div class="message-wrapper"
+         *ngFor="let message of messages;"
+         [class.own-message]="(userType == 'admin' && message.senderType === 'admin') || (userType == 'pharmacy' && message.senderType === 'pharmacy')"
+         [class.admin-message]="(userType == 'pharmacy' && message.senderType === 'admin') || (userType == 'admin' && message.senderType === 'pharmacy')">
+
+      <div class="message-bubble">
+        <div class="message-header" *ngIf="message.senderId != currentUser.id">
+          <div class="sender-avatar">
+            <img *ngIf="getUserInfo(message.senderId)?.avatar; else defaultAvatar"
+                 [src]="getUserInfo(message.senderId)?.avatar"
+                 [alt]="message.senderName">
+            <ng-template #defaultAvatar>
+              <i class="fas fa-user-shield"></i>
+            </ng-template>
+          </div>
+          <span class="sender-name">{{ message.senderName }}</span>
+        </div>
+
+        <div class="message-content">
+          <p>{{ message.message }}</p>
+
+          <!-- Pièces jointes -->
+          <div class="message-attachments" *ngIf="message.attachments && message.attachments.length > 0">
+            <div class="attachment" *ngFor="let attachment of message.attachments">
+              <i class="fas" [class.fa-file-pdf]="attachment.type === 'document'"
+                 [class.fa-image]="attachment.type === 'image'"></i>
+              <span>{{ attachment.name }}</span>
+              <button class="btn btn-sm btn-outline-primary" >
+<!--                (click)="downloadAttachment(attachment)"-->
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="message-time">
+          {{ formatMessageTime(message.createdAt) }}
+          <i class="fas fa-check" *ngIf="message.seen && message.senderId === currentUser.id"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicateur de frappe -->
+    <div class="typing-indicator" *ngIf="isTyping">
+      <div class="typing-bubble">
+        <div class="typing-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <small>Un administrateur est en train d'écrire...</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zone de saisie -->
+  <div class="chat-input-area">
+    <form [formGroup]="messageForm" (ngSubmit)="sendMessage()" class="message-form">
+      <div class="input-group">
+        <button type="button"
+                class="btn btn-outline-secondary attachment-btn"
+                (click)="fileInput.click()"
+                title="Joindre un fichier">
+          <i class="fas fa-paperclip"></i>
+        </button>
+
+        <textarea class="form-control message-input"
+                  formControlName="message"
+                  placeholder="Tapez votre message..."
+                  rows="1"
+                  (keypress)="onKeyPress($event)"
+                  maxlength="1000"></textarea>
+
+        <button type="submit"
+                class="btn btn-primary send-btn"
+                [disabled]="!messageForm.valid || isLoading">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+
+      <input type="file"
+             #fileInput
+             (change)="onFileSelected($event)"
+             accept="image/*,.pdf,.doc,.docx"
+             style="display: none;">
+
+      <div class="character-count" *ngIf="messageForm.get('message')?.value?.length > 800">
+        {{ messageForm.get('message')?.value?.length || 0 }}/1000
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Overlay pour fermer le chat sur mobile -->
+<div class="chat-overlay"
+     *ngIf="isChatOpen"
+     (click)="toggleChat()"></div>

@@ -18,6 +18,8 @@ import {MapSelectorComponent} from "../../../sharedComponents/map-selector/map-s
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {environment} from "../../../../../../environments/environment";
 import {OpeningHoursClass} from "../../../../../models/OpeningHours.class";
+import {AdminChatComponent} from "../../../sharedComponents/minichat/minichat.component";
+import {UserDetails} from "../../../../../models/UserDatails";
 
 declare var bootstrap: any;
 declare var google: any;
@@ -25,7 +27,7 @@ declare var google: any;
 @Component({
   selector: 'app-pharmacy-detail',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterModule, ReactiveFormsModule, ActivityTimelineComponent, MapSelectorComponent],
+  imports: [CommonModule, SharedModule, RouterModule, ReactiveFormsModule, ActivityTimelineComponent, MapSelectorComponent, AdminChatComponent],
   templateUrl: './details.component.html',
   styleUrls: ['./details.component.scss']
 })
@@ -64,7 +66,7 @@ export class PharmacyDetailComponent implements OnInit, OnDestroy {
   private documentViewerModal: any;
   private revenueChart: Chart | null = null;
   private map: any = null;
-
+  userDetail: UserDetails;
 
   @ViewChild('editOrViewDocument') editOrViewDocument: ElementRef | undefined;
 
@@ -121,7 +123,7 @@ export class PharmacyDetailComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(loaded => {
         if (loaded && this.auth.getUserDetails()) {
-          // Reload data if needed after auth is loaded
+          this.userDetail = this.auth.getUserDetails();
           if (this.pharmacy) {
             this.loadPharmacyDetails(this.pharmacy.id);
           }

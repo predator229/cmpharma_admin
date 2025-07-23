@@ -11,6 +11,7 @@
       </span>
     </div>
   </div>
+  <div class="card mb-4"></div>
 
   <div class="loading-spinner" *ngIf="!pharmacy">
     <div class="spinner-border text-primary" role="status">
@@ -216,7 +217,6 @@
         </div>
       </div>
       <!-- Colonne latérale -->
-
       <div class="col-md-4">
         <div class="card mb-4">
             <div class="card-header">
@@ -360,8 +360,15 @@
             </div>
           </div>
         </div>
+      </div >
+      <div class="col-md-4" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit">
       </div>
     </div>
+    <app-mini-chat *ngIf="canIEdit"
+      [pharmacy]="pharmacy"
+      [currentUser]="userDetail"
+      [userType]="'pharmacy'">
+    </app-mini-chat>
   </div>
 
   <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
@@ -468,7 +475,7 @@
   <div class="modal-content">
     <div class="modal-header">
       <h5 class="modal-title" id="formRequiredInfoModal">Informations manquantes !</h5>
-      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!--      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
     </div>
     <div class="modal-body">
       <div class="pharmacy-details">
@@ -562,48 +569,48 @@
                   </div>
                 </div>
               </div>
-              <div class="mb-3">
+              <div class="row mb-3">
                 <!-- Pays -->
                 <div class="col-md-6">
                   <label for="country" class="form-label">Pays *</label>
                   <app-select2-ajax
-                    #slectCountryFirstModal
+                    #slectCountryModalGenInfo
                     [apiUrl]="baseUrl+'tools/get-countries-list'"
                     placeholder="Sélectionner votre pays"
-                    formControlName="country"
-                    [countriesListArray]="countriesListArray"
                     [type]="'country'"
-                    (selected)="onCountrySelected($event, 0)">
+                    [countriesListArray]="countriesListArray"
+                    [value]="pharmacyForm.get('country')?.value"
+                    (selected)="onCountrySelected($event, 1)">
                   </app-select2-ajax>
                   <div class="invalid-feedback" *ngIf="pharmacyForm.get('country')?.invalid && pharmacyForm.get('country')?.touched">
-                    <span *ngIf="pharmacyForm.get('country')?.errors?.['required']">Le pays est requis</span>
+                    Le pays est requis
                   </div>
                 </div>
                 <!-- Ville -->
                 <div class="col-md-6">
                   <label for="country" class="form-label">Ville *</label>
-                  <app-select2-ajax *ngIf="pharmacyForm.get('country')?.value != ''"
+                  <app-select2-ajax
                     #slectCityModalGenInfo
                     [apiUrl]="'https://countriesnow.space/api/v0.1/countries/cities'"
-                    [country]="pharmacyForm.get('country')?.value"
                     [countriesListArray]="countriesListArray"
+                    [country]="pharmacyForm.get('country')?.value"
                     [type]="'city'"
-                    [value]="pharmacyForm.get('city')?.value"
                     placeholder="Sélectionner une ville"
-                    formControlName="city"
-                    (selected)="onCitySelected($event)">
+                    [value]="pharmacyForm.get('city')?.value"
+                    [style.display]="pharmacyForm.get('country')?.value ? 'block' : 'none'"
+                    (selected)="onCitySelected($event, 1)">
                   </app-select2-ajax>
                   <input
-                    *ngIf="pharmacyForm.get('country')?.value == ''"
+                    *ngIf="!pharmacyForm.get('country')?.value"
                     type="text"
                     class="form-control"
                     id="city"
                     readonly="readonly"
                     value="Selectionner d'abord un pays"
                     formControlName="city"
-                  >
+                    [class.is-invalid]="pharmacyForm.get('city')?.invalid && pharmacyForm.get('city')?.touched">
                   <div class="invalid-feedback" *ngIf="pharmacyForm.get('city')?.invalid && pharmacyForm.get('city')?.touched">
-                    <span *ngIf="pharmacyForm.get('city')?.errors?.['required']">Le pays est requis</span>
+                    La ville est requise
                   </div>
                 </div>
               </div>
@@ -768,45 +775,44 @@
               <div class="mb-3">
                 <label class="form-label"><i class="fas fa-clock"></i> Horaires d'ouverture *</label>
                 <div formArrayName="workingHours">
-                  <div
-                    *ngFor="let hourControl of workingHoursFormArray.controls; let i = index"
-                    [formGroupName]="i"
-                    class="row mb-2 align-items-center working-hours-row"
-                  >
+                  <div  *ngFor="let hourControl of theDayHours" [formGroupName]="hourControl.day" class="row mb-2 align-items-center working-hours-row">
                     <div class="col-md-2">
-                      <label class="form-label small fw-bold">{{ getDayName(i) }}</label>
+                      <label class="form-label small fw-bold">{{ getDayName(hourControl.day -1) }}</label>
                     </div>
                     <div class="col-md-2">
                       <div class="form-check">
                         <input
-                          class="form-check-input"
-                          type="checkbox"
-                          formControlName="open"
-                          [id]="'open-' + i"
+                          class="form-check-input" type="checkbox" (click)="hourControl.open = !hourControl.open; changeOpeningHour(hourControl)" [checked]="hourControl.open"  formControlName="open"  [id]="'open-' + hourControl.day"
                         >
-                        <label class="form-check-label small" [for]="'open-' + i">
+                        <label class="form-check-label small" [for]="'open-' + hourControl.day">
                           Ouvert
                         </label>
                       </div>
                     </div>
-                    <div class="col-md-4" *ngIf="hourControl.get('open')?.value">
+                    <div class="col-md-4" *ngIf="hourControl.open">
                       <div class="input-group input-group-sm">
                         <span class="input-group-text">De</span>
                         <input
+                          #openingInputPharmacieDetail
                           type="time"
+                          [value]="hourControl.opening"
                           class="form-control"
                           formControlName="opening"
+                          (keyup)="hourControl.opening = openingInputPharmacieDetail.value; changeOpeningHour(hourControl)"
                           placeholder="Ouverture"
                         >
                       </div>
                     </div>
-                    <div class="col-md-4" *ngIf="hourControl.get('open')?.value">
+                    <div class="col-md-4" *ngIf="hourControl.open">
                       <div class="input-group input-group-sm">
                         <span class="input-group-text">À</span>
                         <input
+                          #closingInputPharmacieDetail
                           type="time"
+                          [value]="hourControl.closing"
                           class="form-control"
                           formControlName="closing"
+                          (keyup)="hourControl.closing = closingInputPharmacieDetail.value; changeOpeningHour(hourControl)"
                           placeholder="Fermeture"
                         >
                       </div>
@@ -855,9 +861,9 @@
     </div>
     <!-- Footer du modal -->
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" (click)="closeModal()">
-        <i class="fas fa-times"></i> Annuler
-      </button>
+<!--      <button type="button" class="btn btn-secondary" (click)="closeModal()">-->
+<!--        <i class="fas fa-times"></i> Annuler-->
+<!--      </button>-->
       <button
         type="button"
         class="btn btn-primary"

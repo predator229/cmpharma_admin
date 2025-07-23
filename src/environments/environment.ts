@@ -4,5 +4,6 @@ export const environment = {
   appVersion: packageInfo.version,
   production: false,
   baseUrl: 'http://192.168.100.87:5050/admin/api/',
-  internalPathUrl: 'http://192.168.100.87:5050/'
+  internalPathUrl: 'http://192.168.100.87:5050/',
+  socketUrl: 'http://192.168.100.87:5050/admin/websocket',
 };

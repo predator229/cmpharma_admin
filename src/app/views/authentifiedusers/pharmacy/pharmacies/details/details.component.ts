@@ -25,6 +25,7 @@ import {ZoneCoordinates} from "../../../../../models/ZoneCoordinates.class";
 import {DeliveryZoneClass} from "../../../../../models/DeliveryZone.class";
 import {ActivityTimelineComponent} from "../../../sharedComponents/activity-timeline/activity-timeline.component";
 import {ActivityLoged} from "../../../../../models/Activity.class";
+import {AdminChatComponent} from "../../../sharedComponents/minichat/minichat.component";
 
 declare var bootstrap: any;
 declare var google: any;
@@ -32,7 +33,7 @@ declare var google: any;
 @Component({
   selector: 'app-pharmacy-detail-pharmacies',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterModule, ReactiveFormsModule, MapSelectorComponent, Select2AjaxComponent, ActivityTimelineComponent],
+  imports: [CommonModule, SharedModule, RouterModule, ReactiveFormsModule, MapSelectorComponent, Select2AjaxComponent, ActivityTimelineComponent, AdminChatComponent],
   templateUrl: './_details.component.html',
   styleUrls: ['./_details.component.scss']
 })
@@ -44,6 +45,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
   baseUrl = environment.baseUrl;
   isLoading = false;
   canIEdit: boolean = false;
+  openMiniChat: boolean = false;
   recentOrders: any[] = [];
   pharmacyActivities: ActivityLoged[] = [];
   commonsFunction: CommonFunctions;
@@ -132,7 +134,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
 
       if (pharmacyId) {
         await this.loadPharmacyDetails(pharmacyId);
-        this.canIEdit = this.userDetail.hasPermission('pharmacies.edit');
+        this.canIEdit = this.userDetail.hasPermission('pharmacies.edit', pharmacyId);
 
         this.pharmacyForm = this.createFormInfoPharmacy();
         this.initializeWorkingHours();
@@ -174,8 +176,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
           this.closeModal();
         })
         .catch(error => {
-          console.log(error);
-          this.handleError(error.Error ?? 'Erreur lors de la sauvegarde des données');
+          this.handleError(error.message ?? 'Erreur lors de la sauvegarde des données');
         })
         .finally(() => {
           this.isSubmitting = false;
@@ -533,12 +534,12 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
         .subscribe({
           next: (response: any) => {
             const errorM = response?.message ?? (response?.errorMessage ?? 'Erreur lors de la sauvegarde des données');
-            console.log(errorM);
-            if (!response || typeof response.error === 'undefined'){
-              reject(new Error( errorM ));
+            if (!response || typeof response.error === 'undefined' || response.error){
+              reject( new Error(errorM) );
+              reject(errorM);
             }else{
               if (response.error){
-                reject(new Error( errorM));
+                reject( new Error(errorM) );
               }else{
                 this.showSuccess(response.message ?? "Modification effectuee avec succes!");
                 this.loadPharmacyDetails(pharmacy.id);
@@ -547,7 +548,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
             }
           },
           error: (error) => {
-            console.log(error);
             reject(error);
           }
         });
@@ -678,9 +678,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
                 }, 500);
               }
               this.loadPharmacyDataIntoForm();
-
               if (this.pharmacy.status === "pending") { this.openFormInfo(); }
-
             } else {
               this.router.navigate(['/pharmacy/pharmacies']);
               this.handleError('Pharmacie non trouvée');

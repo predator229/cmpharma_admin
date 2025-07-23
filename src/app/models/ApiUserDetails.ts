@@ -24,6 +24,6 @@ export interface ApiUserDetails{
   updatedAt: Date;
   setups?: SetupBase,
   },
-  onlyShowListPharm? : boolean;
+  onlyShowListPharm? : string[] | null;
   message:string,
 }

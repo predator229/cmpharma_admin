@@ -112,7 +112,7 @@
                 <h5><i class="fas fa-shopping-cart"></i> Zone de livraison</h5>
               </div>
               <div class="card-body">
-                <div class="map-container" (click)="showEditOrViewDocument('map', false, null, 'mapzone', 'Zone de livraison')" >
+                <div class="map-container" *ngIf="pharmacy.location && pharmacy.deliveryZone" (click)="showEditOrViewDocument('map', false, null, 'mapzone', 'Zone de livraison')" >
                   <!--                  <div *ngIf="!pharmacy.deliveryZone" class="form-step active"> <p class="text-muted">Cliquer sur le bouton + pour configurer votre zone de livraison</p> </div>-->
                   <app-map-selector
                     mapId="map8"
@@ -213,7 +213,6 @@
         </div>
       </div>
       <!-- Colonne latérale -->
-
       <div class="col-md-4">
         <div class="card mb-4">
           <div class="card-header">
@@ -334,6 +333,322 @@
           </div>
         </div>
       </div>
+      <div class="pharmacy-content" *ngIf="pharmacy">
+        <div class="row">
+          <!-- Colonne principale -->
+          <div class="col-md-8">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Informations générales</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-12">
+                        <div class="detail-section">
+                          <div class="detail-item">
+                            <span class="detail-label"><i class="fas fa-flag"></i> Pays:</span>
+                            <span class="detail-value">{{ pharmacy.country.name }} {{ pharmacy.country.emoji }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label"><i class="fas fa-location"></i> Ville:</span>
+                            <span class="detail-value">{{ pharmacy.city }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label"><i class="fas fa-map-marker-alt"></i> Adresse:</span>
+                            <span class="detail-value">{{ pharmacy.address }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label"><i class="fas fa-phone"></i> Téléphone:</span>
+                            <span class="detail-value">{{ pharmacy.phoneNumber }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label"><i class="fas fa-envelope"></i> Email:</span>
+                            <span class="detail-value">{{ pharmacy.email }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h5><i class="fas fa-file-contract"></i> Informations légales</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-12">
+                        <div class="detail-section">
+                          <div class="detail-item">
+                            <span class="detail-label">SIRET <span style="color:red">*</span> :</span>
+                            <span style="display: flex; gap: 0.5rem;">{{ pharmacy.siret }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Numéro de license <span style="color:red">*</span> :</span>
+                            <span class="detail-value">{{ pharmacy.licenseNumber }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Date d'inscription:</span>
+                            <span class="detail-value">{{ pharmacy.registerDate | date: 'dd/MM/yyyy' }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Statut:</span>
+                            <span class="detail-value">
+                      <span class="status-badge" [ngClass]="pharmacy.status">
+                        {{ getStatusLabel(pharmacy.status) }}
+                      </span>
+                    </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="card mb-4">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-shopping-cart"></i> Zone de livraison</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="map-container" (click)="showEditOrViewDocument('map', false, null, 'mapzone', 'Zone de livraison')" >
+                      <!--                  <div *ngIf="!pharmacy.deliveryZone" class="form-step active"> <p class="text-muted">Cliquer sur le bouton + pour configurer votre zone de livraison</p> </div>-->
+                      <app-map-selector
+                        mapId="map88"
+                        [height]="'300px'"
+                        [selectionMode]="'zone'"
+                        [lat]="pharmacy.location?.latitude"
+                        [lng]="pharmacy.location?.longitude"
+                        [deliveryZone]="pharmacy.deliveryZone"
+                        [readonly]="true">
+                      </app-map-selector>
+                    </div>
+                    <div *ngIf="!pharmacy.location" class="form-step active"> <p class="text-muted">Vous devez d'abord ajouter la localisation de la pharmacie pour configurer la zone de livraison</p> </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h5><i class="fas fa-chart-line"></i> Performance</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="performance-stat">
+                          <div class="stat-value">{{ pharmacy.orders30days || 0 }}</div>
+                          <div class="stat-label">Commandes <small>(30 derniers jours)</small></div>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="performance-stat">
+                          <div class="stat-value">{{ (pharmacy.revenue30days || 0) | currency:'EUR' }}</div>
+                          <div class="stat-label">Revenus <small>(30 derniers jours)</small></div>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="performance-stat">
+                          <div class="stat-value">
+                            <i class="fas fa-star"></i> {{ pharmacy.rating?.toFixed(1) || 'N/A' }}
+                          </div>
+                          <div class="stat-label">Note moyenne</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="chart-container mt-4">
+                      <canvas id="revenueChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="card mb-4">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-shopping-cart"></i> Commandes récentes</h5>
+                    <button class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/orders']" [queryParams]="{pharmacy: pharmacy.id}">
+                      Voir toutes les commandes
+                    </button>
+                  </div>
+                  <div class="card-body">
+                    <div class="table-responsive">
+                      <table class="table">
+                        <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Client</th>
+                          <th>Date</th>
+                          <th>Montant</th>
+                          <th>Statut</th>
+                          <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr *ngFor="let order of recentOrders">
+                          <td>{{ order.id }}</td>
+                          <td>{{ order.clientName }}</td>
+                          <td>{{ order.date | date: 'dd/MM/yyyy HH:mm' }}</td>
+                          <td>{{ order.amount | currency:'EUR' }}</td>
+                          <td>
+                      <span class="status-badge" [ngClass]="getOrderStatusClass(order.status)">
+                        {{ order.status }}
+                      </span>
+                          </td>
+                          <td>
+                            <button class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/orders', order.id]">
+                              <i class="fas fa-eye"></i>
+                            </button>
+                          </td>
+                        </tr>
+                        </tbody>
+                      </table>
+                      <div class="text-center py-3" *ngIf="recentOrders.length === 0">
+                        <p class="text-muted">Aucune commande récente</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Colonne latérale -->
+          <div class="col-md-4">
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5><i class="fas fa-image-portrait"></i> Image Principale </h5>
+                <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending'">
+                  <button class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('logo', true, pharmacy.documents?.logo?.url ? internatPathUrl+pharmacy.documents?.logo?.url : 'assets/images/pharmacy-placeholder.png', 'img', 'Logo principal')">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="pharmacy-logo">
+                  <img [src]="pharmacy.documents?.logo?.url ? internatPathUrl+pharmacy.documents?.logo?.url : 'assets/images/pharmacy-placeholder.png'" alt="Logo pharmacie" width="100%" (click)="showEditOrViewDocument('logo', false, pharmacy.documents?.logo?.url ? internatPathUrl+pharmacy.documents?.logo?.url : 'assets/images/pharmacy-placeholder.png', 'img', 'Logo principal')">
+                </div>
+              </div>
+            </div>
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5><i class="fas fa-map-marked-alt"></i> Localisation</h5>
+              </div>
+              <div class="card-body">
+                <div class="map-container" (click)="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null ? showEditOrViewDocument('map', false, null, 'map', 'Localisation de la pharmacie') : false" >
+                  <app-map-selector
+                    *ngIf="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null"
+                    mapId="map1"
+                    [readonly]="true"
+                    [lat]="pharmacy.location?.latitude"
+                    [lng]="pharmacy.location?.longitude"
+                    [height]="'300px'"
+                    (positionChange)="false">
+                  </app-map-selector>
+                </div>
+              </div>
+            </div>
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5><i class="fas fa-file-alt"></i> Documents <span style="color:red">*</span> </h5>
+              </div>
+              <div class="card-body">
+                <div class="document-list">
+                  <div class="document-item" *ngIf="this.pharmacy.documents?.license">
+                    <div class="document-icon">
+                      <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div class="document-info">
+                      <div class="document-name">license pharmaceutique</div>
+                      <div class="document-actions">
+                        <button class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('license', false, this.internatPathUrl+this.pharmacy.documents?.license?.url.toString(), 'pdf', 'license pharmaceutique')" >
+                          <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument('license', this.internatPathUrl+this.pharmacy.documents?.license?.url.toString())">
+                          <i class="fas fa-download"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="document-item" *ngIf="this.pharmacy.documents?.idDocument">
+                    <div class="document-icon">
+                      <i class="fas fa-id-card"></i>
+                    </div>
+                    <div class="document-info">
+                      <div class="document-name">Pièce d'identité</div>
+                      <div class="document-actions">
+                        <button class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('idDocument', false, this.internatPathUrl+this.pharmacy.documents?.idDocument?.url.toString(), 'pdf', 'Document d\'identite')" >
+                          <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument('idDocument',this.internatPathUrl+this.pharmacy.documents?.idDocument?.url.toString())">
+                          <i class="fas fa-download"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="document-item" *ngIf="this.pharmacy.documents?.insurance">
+                    <div class="document-icon">
+                      <i class="fas fa-file-contract"></i>
+                    </div>
+                    <div class="document-info">
+                      <div class="document-name">Attestation d'assurance</div>
+                      <div class="document-actions">
+                        <button class="btn btn-sm btn-outline-primary" (click)="showEditOrViewDocument('license', false, this.internatPathUrl+this.pharmacy.documents?.insurance?.url.toString(), 'pdf', 'Assurance')" >
+                          <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument('insurance', this.internatPathUrl+this.pharmacy.documents?.insurance?.url.toString())">
+                          <i class="fas fa-download"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5><i class="fas fa-clock"></i> Horaires d'ouverture <span style="color:red">*</span></h5>
+              </div>
+              <div class="card-body">
+                <div class="opening-hours">
+                  <div *ngIf="theDayHours != null">
+                    <div class="day-hours" *ngFor="let day of theDayHours">
+                      <span class="day" >{{getDayName(day.day-1)}}:</span>
+                      <span class="hours open" *ngIf="day.open">{{day.opening}} - {{day.closing}}</span>
+                      <span class="hours closed" *ngIf="!day.open">Fermé</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card mb-4" style="height: 400px; overflow-y: scroll;">
+              <div class="card-header">
+                <h5><i class="fas fa-clock"></i> Historiques </h5>
+              </div>
+              <div class="row">
+                <app-activity-timeline [activites]="pharmacyActivities" [usersInfo]="usersInfo"></app-activity-timeline>
+                <div class="col-md-12">
+                  <div class="text-center py-3" *ngIf="pharmacyActivities.length > 0">
+                    <!--                <p class="text-muted" routerLink=['/admin/pharmacies', pharmacy.id] >Voir plus...</p>-->
+                    <a [routerLink]="['/pharmacy/admin/logs', pharmacy.id]">{{ pharmacy.name }}</a>
+                  </div>
+                  <div class="text-center py-3" *ngIf="pharmacyActivities.length === 0">
+                    <p class="text-muted">Aucune activité récente</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div >
+          <div class="col-md-4" *ngIf="pharmacy && pharmacy.status !== 'pending'">
+          </div>
+        </div>
+        <app-mini-chat
+           [pharmacy]="pharmacy"
+           [currentUser]="userDetail"
+           [userType]="'admin'">
+        </app-mini-chat>
+      </div>
     </div>
   </div>
 
@@ -402,7 +717,7 @@
         </div>
         <div class="modal-body">
           <div class="document-viewer">
-            <iframe [src]="currentDocument.url" width="100%" height="500px"></iframe>
+            <iframe *ngIf="currentDocument.url" [src]="currentDocument.url" width="100%" height="500px"></iframe>
           </div>
         </div>
         <div class="modal-footer">
@@ -483,7 +798,7 @@
                   <div class="map-container" *ngIf="pharmaciesCustomSave.get('type')?.value == 'map'" >
                     <app-map-selector
                       *ngIf="pharmacy.location != null && pharmacy.location.latitude != null && pharmacy.location.longitude != null"
-                      mapId="map6"
+                      mapId="map66"
                       [readonly]="true"
                       [lat]="pharmacy.location?.latitude"
                       [lng]="pharmacy.location?.longitude"

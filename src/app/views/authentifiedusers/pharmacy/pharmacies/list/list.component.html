@@ -96,12 +96,25 @@
                 <td>
                 <a [routerLink]="['/pharmacy/pharmacies', pharmacy.id]">{{ pharmacy.name }}</a>
                 </td>
-                <td>{{ pharmacy.address }}</td>
+                <td>
+                  <p *ngIf="pharmacy.country != null">
+                    <span>
+                      {{ this.countriesListArray[pharmacy.country.toString()].name }}
+                      {{ this.countriesListArray[pharmacy.country.toString()].emoji }}
+                    </span>
+                  </p>
+                  <p *ngIf="pharmacy.city">
+                    <i class="fas fa-city"></i> {{ pharmacy.city }}
+                  </p>
+                  <p *ngIf="pharmacy.address">
+                    <i class="fas fa-map-marker-alt"></i> {{ pharmacy.address }}
+                  </p>
+                </td>
                 <td>{{ pharmacy.siret }}</td>
                 <td>{{ pharmacy.phoneNumber }}</td>
                 <td>{{ pharmacy.email }}</td>
                 <td>
-                  <a
+                  <a *ngIf="pharmacy.location"
                     [href]="'https://www.google.com/maps?q=' + pharmacy.location.latitude + ',' + pharmacy.location.longitude"
                     target="_blank"
                     rel="noopener noreferrer">
@@ -126,9 +139,7 @@
                   </span>
                 <td>
                   <div class="action-buttons">
-                    <button class="btn btn-sm btn-outline-primary" (click)="viewPharmacyDetails(pharmacy)">
-                      <i class="fas fa-eye"></i>
-                    </button>
+                    —
                   </div>
                 </td>
               </ng-container>
@@ -367,7 +378,37 @@
                       ✓ Valide
                     </div>
                   </div>
-
+                  <div class="form-group">
+                    <label for="country" class="form-label">Pays *</label>
+                    <app-select2-ajax
+                      #slectCountryFirstModal
+                      [apiUrl]="baseUrl+'tools/get-countries-list'"
+                      placeholder="Sélectionner votre pays"
+                      formControlName="country"
+                      [countriesListArray]="countriesListArray"
+                      [type]="'country'"
+                      (selected)="onCountrySelected($event, 0)">
+                    </app-select2-ajax>
+                    <div class="invalid-feedback" *ngIf="partnerForm.get('country')?.invalid && partnerForm.get('country')?.touched">
+                      <span *ngIf="partnerForm.get('country')?.errors?.['required']">Le pays est requis</span>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="country" class="form-label">Ville *</label>
+                    <app-select2-ajax *ngIf="partnerForm.get('country')?.value != ''" #slectCityModalGenInfo [apiUrl]="'https://countriesnow.space/api/v0.1/countries/cities'" [country]="partnerForm.get('country')?.value" [countriesListArray]="countriesListArray" [type]="'city'" [value]="partnerForm.get('city')?.value" placeholder="Sélectionner une ville" formControlName="city" (selected)="onCitySelected($event)"></app-select2-ajax>
+                    <input
+                      *ngIf="partnerForm.get('country')?.value == ''"
+                      type="text"
+                      class="form-control"
+                      id="city"
+                      readonly="readonly"
+                      value="Selectionner d'abord un pays"
+                      formControlName="city"
+                    >
+                    <div class="invalid-feedback" *ngIf="partnerForm.get('city')?.invalid && partnerForm.get('city')?.touched">
+                      <span *ngIf="partnerForm.get('city')?.errors?.['required']">Le pays est requis</span>
+                    </div>
+                  </div>
                   <div class="form-group">
                     <label for="pharmacy_address">Adresse complète <span class="required">*</span></label>
                     <input
@@ -385,7 +426,6 @@
                       ✓ Valide
                     </div>
                   </div>
-
                   <div class="form-group">
                     <label for="pharmacy_phone">Téléphone de la pharmacie <span class="required">*</span></label>
                     <input
@@ -403,7 +443,6 @@
                       ✓ Valide
                     </div>
                   </div>
-
                   <div class="form-group">
                     <label for="pharmacy_email">Email de la pharmacie <span class="required">*</span></label>
                     <input

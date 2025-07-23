@@ -14,11 +14,14 @@ import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import { GoogleMapsModule } from '@angular/google-maps';
 import {CommonFunctions} from "../../../../../controllers/comonsfunctions";
 import {UserDetails} from "../../../../../models/UserDatails";
+import {Select2AjaxComponent} from "../../../sharedComponents/select2-ajax/select2-ajax.component";
+import {Country} from "../../../../../models/Country.class";
+import {environment} from "../../../../../../environments/environment";
 
 @Component({
   selector: 'app-pharmacy-list-pharmacies',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterModule, FormsModule, GoogleMapsModule],
+  imports: [CommonModule, SharedModule, RouterModule, FormsModule, GoogleMapsModule, Select2AjaxComponent],
   templateUrl: './list.component.html',
   styleUrls: ['./list.component.scss']
 })
@@ -57,19 +60,17 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
   @ViewChild('showInfo') showInfo: ElementRef | undefined;
   public currentPage: number = 1;
   userDetail: UserDetails;
+  IsDisabledTel = false;
+  startingPhoneNumber :string = '';
+  countriesListArray: { [id: string]: Country } | null;
+  baseUrl = environment.baseUrl;
 
-  constructor(
-    modalService: NgbModal,
-    private auth: AuthService,
-    private router: Router,
-    private apiService: ApiService,
-    private loadingService: LoadingService,
-    private fb: FormBuilder,
-) {
+  constructor(modalService: NgbModal, private auth: AuthService, private router: Router, private apiService: ApiService, private loadingService: LoadingService, private fb: FormBuilder,) {
     this.loadingService.isLoading$.subscribe((loading) => {
       this.isLoading = loading;
     });
     this.modalService = modalService;
+    this.initializecountriesListArray();
     this.partnerForm = this.createForm();
   }
 
@@ -89,30 +90,49 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
   }
   createForm(): FormGroup {
     const commonFields = {
-      pharmacy_name: ['', [
-        Validators.required,
-        Validators.minLength(3),
-        Validators.maxLength(100)
-      ]],
-      pharmacy_address: ['', [
-        Validators.required,
-        Validators.minLength(10),
-        Validators.maxLength(200)
-      ]],
-      pharmacy_phone: ['', [
-        Validators.required,
-        Validators.pattern(/^\+33[0-9]{9}$/)
-      ]],
-      pharmacy_email: ['', [
-        Validators.required,
-        Validators.email
-      ]],
-      // owner_email: ['', [
-      //   Validators.required,
-      //   Validators.email
-      // ]]
+      pharmacy_name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+      pharmacy_address: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(200)]],
+      pharmacy_phone: ['', [Validators.required]],
+      pharmacy_email: ['', [Validators.required, Validators.email]],
+      country: ['', [Validators.required]],
+      city: ['', [Validators.required]],
     };
     return this.fb.group(commonFields);
+  }
+  private async initializecountriesListArray(): Promise<void> {
+    this.loadingService.setLoading(true);
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      if (!token) {this.handleError('Vous n\'êtes pas autorisé à accéder à cette ressource');
+        return;
+      }
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('tools/get-countries-list', {uid}, headers)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: async (response: any) => {
+            if (response && response.data) {
+              this.countriesListArray = response.data;
+            }
+            this.loadingService.setLoading(false);
+          },
+          error: (error) => {
+            this.handleError('Erreur lors du chargement de la liste des pays');
+            this.loadingService.setLoading(false);
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.loadingService.setLoading(false);
+    }
   }
 
   ngOnDestroy(): void {
@@ -142,7 +162,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
           next: (response: any) => {
             if (response && response.data) {
               this.pharmacies = response.data.map((item: any) => CommonFunctions.mapToPharmacy(item));
-              // this.extractRegions();
+              this.extractRegions();
               this.filterPharmacies();
             } else {
               this.pharmacies = [];
@@ -610,7 +630,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
     }
   }
   validateCurrentStep(): boolean {
-    const fieldsToValidate = ['pharmacy_name', 'pharmacy_address', 'pharmacy_phone', 'pharmacy_email'];
+    const fieldsToValidate = ['pharmacy_name', 'pharmacy_address', 'pharmacy_phone', 'pharmacy_email', 'country', 'city'];
     let isValid = true;
     fieldsToValidate.forEach(fieldName => {
       const control = this.partnerForm.get(fieldName);
@@ -636,13 +656,14 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
         pharmacy_phone: this.partnerForm.value.pharmacy_phone,
         pharmacy_email: this.partnerForm.value.pharmacy_email,
         owner_email: this.userDetail.email,
+        country: this.partnerForm.value.country,
+        city: this.partnerForm.value.city,
         uid: await this.auth.getUid(),
       };
 
       try {
         this.loadingService.setLoading(true);
         const headers = new HttpHeaders({
-          // 'Authorization': `Bearer ${token}`,
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         });
@@ -705,6 +726,14 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
   }
   isFieldValid(fieldName: string): boolean {
     const control = this.partnerForm.get(fieldName);
+    if (['pharmacy_phone','owner_phone'].includes(fieldName)) {
+      const startingPhoneNumber = this.startingPhoneNumber;
+      if (this.partnerForm.value) {
+        const pattern = new RegExp(`^\\+${startingPhoneNumber}[0-9]{9}$`);
+        return pattern.test(this.partnerForm.value);
+      }
+      return false;
+    }
     return control ? control.valid && control.touched : false;
   }
   isFieldInvalid(fieldName: string): boolean {
@@ -714,5 +743,26 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
     }
     return control ? control.invalid && control.touched : false;
   }
-
+  onCitySelected(city: string, type: number = 0) {
+    this.partnerForm.patchValue({city: city});
+  }
+  onCountrySelected(countryCode: string, type: number = 0): void {
+    const selectedCountry = this.countriesListArray?.[countryCode];
+    if (!selectedCountry) {
+      this.handleError("Le pays n'a pas été retrouvé");
+      return;
+    }
+    const currentCountry = this.partnerForm.get('country')?.value;
+    if (currentCountry !== selectedCountry._id) {
+      this.partnerForm.patchValue({city: ''});
+      this.partnerForm.patchValue({country: selectedCountry._id});
+      this.startingPhoneNumber = selectedCountry.dial_code;
+    }
+    this.IsDisabledTel = true;
+  }
+  private extractRegions() {
+    this.pharmacies.forEach(pharmacy => {
+      if (pharmacy.city && !this.regions.includes(pharmacy.city)) { this.regions.push(pharmacy.city); }
+    });
+  }
 }

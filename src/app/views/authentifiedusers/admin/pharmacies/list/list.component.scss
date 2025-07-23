@@ -21,7 +21,11 @@ $font-large: 1.25rem;  // ~20px
 .pharmacy-management-container {
   padding: 1.25rem;
 }
+.select2-container--open {
+  z-index: 9999999 !important;
+  position: absolute;   /* évite les overflow:hidden */
 
+}
 .page-header {
   display: flex;
   justify-content: space-between;

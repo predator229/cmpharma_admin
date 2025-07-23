@@ -21,38 +21,36 @@ function getLocalIp() {
   return '127.0.0.1';
 }
 
-function updateEnvironment(ip) {
+function updateEnvironmentFile(ip) {
   const envPath = path.join(__dirname, 'src/environments/environment.ts');
   let content = fs.readFileSync(envPath, 'utf8');
 
-  const regex = /baseUrl:\s*['"`](.*?)['"`]/;
-  const newBaseUrl = `baseUrl: 'http://${ip}:5050/admin/api/'`;
+  const replacements = {
+    baseUrl: `http://${ip}:5050/admin/api/`,
+    socketUrl: `http://${ip}:5050/admin/websocket`,
+    internalPathUrl: `http://${ip}:5050/`
+  };
 
-  if (regex.test(content)) {
-    content = content.replace(regex, newBaseUrl);
-    fs.writeFileSync(envPath, content, 'utf8');
-    console.log(`✅ environment.ts mis à jour avec l'IP locale : ${ip}`);
-  } else {
-    console.error('❌ baseUrl non trouvé dans environment.ts');
+  let updated = false;
+
+  for (const [key, newValue] of Object.entries(replacements)) {
+    const regex = new RegExp(`${key}:\\s*['"\`](.*?)['"\`]`);
+    if (regex.test(content)) {
+      content = content.replace(regex, `${key}: '${newValue}'`);
+      console.log(`✅ ${key} mis à jour : ${newValue}`);
+      updated = true;
+    } else {
+      console.warn(`⚠️ ${key} non trouvé dans environment.ts`);
+    }
   }
-}
 
-function updatePathEnvironment(ip) {
-  const envPath = path.join(__dirname, 'src/environments/environment.ts');
-  let content = fs.readFileSync(envPath, 'utf8');
-
-  const regex = /internalPathUrl:\s*['"`](.*?)['"`]/;
-  const newBaseUrl = `internalPathUrl: 'http://${ip}:5050/'`;
-
-  if (regex.test(content)) {
-    content = content.replace(regex, newBaseUrl);
+  if (updated) {
     fs.writeFileSync(envPath, content, 'utf8');
     console.log(`✅ environment.ts mis à jour avec l'IP locale : ${ip}`);
   } else {
-    console.error('❌ baseUrl non trouvé dans environment.ts');
+    console.error('❌ Aucun champ mis à jour dans environment.ts');
   }
 }
 
 const ip = getLocalIp();
-updateEnvironment(ip);
-updatePathEnvironment(ip);
+updateEnvironmentFile(ip);
