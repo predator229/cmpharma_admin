@@ -19,6 +19,8 @@ import {CommonModule} from "@angular/common";
 import {SharedModule} from "../../../theme/shared/shared.module";
 import {MiniChatService} from "../../../../controllers/services/minichat.service";
 import {AuthService} from "../../../../controllers/services/auth.service";
+import {HttpHeaders} from "@angular/common/http";
+import {ApiService} from "../../../../controllers/services/api.service";
 
 interface AdminUser {
   id: string;
@@ -47,9 +49,8 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   isChatOpen = false;
   isLoading = false;
   isConnected = false;
-  isTyping = false;
+  previewDoc: string;
   unreadCount = 0;
-  typingUsers: {userId: string, userName: string}[] = [];
   errorMessage = '';
 
   messages: MiniChatMessage[] = [];
@@ -58,12 +59,14 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   private destroy$ = new Subject<void>();
   private shouldScrollToBottom = false;
   private typingTimeout: any;
+  selectedFiles: File;
 
   constructor(
     private fb: FormBuilder,
     private chatService: MiniChatService,
     private authService: AuthService,
-    private changeDetectorRef: ChangeDetectorRef
+    private changeDetectorRef: ChangeDetectorRef,
+    // private apiService : ApiService
   ) {
     this.messageForm = this.fb.group({
       message: ['', [Validators.required, Validators.maxLength(1000)]]
@@ -74,7 +77,7 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.isLoading = true;
     await this.connectToChat();
     this.loadOnlineAdmins();
-    this.setupFormTypingIndicator();
+    // this.setupFormTypingIndicator();
 
   }
 
@@ -87,7 +90,7 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         return;
       }
 
-      this.chatService.connect(token);
+      this.chatService.connect(token, this.pharmacy.id);
 
       // État de la connexion
       this.chatService.getConnectionStatus()
@@ -97,11 +100,6 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
           console.log(`🔗 État connexion: ${isConnected}`);
 
           if (isConnected && this.pharmacy?.id) {
-            // Rejoindre la room de la pharmacie
-            this.chatService.joinPharmacyChat(this.pharmacy.id);
-            console.log(`✅ Rejoint le chat de la pharmacie ${this.pharmacy.id}`);
-
-            // Charger l'historique des messages
             await this.loadChatHistory();
           }
 
@@ -109,23 +107,18 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
           this.changeDetectorRef.detectChanges();
         });
 
-      // Réception des nouveaux messages
       this.chatService.getMessages()
         .pipe(takeUntil(this.destroy$))
         .subscribe((message: MiniChatMessage) => {
-          console.log('📩 Nouveau message reçu:', message);
-
-          // Éviter les doublons
-          const existingMessage = this.messages.find(m =>
-            m.createdAt === message.createdAt &&
-            m.senderId === message.senderId &&
-            m.message === message.message
-          );
+          const existingMessage = this.messages.find(m => {
+            return m.createdAt === message.createdAt &&
+              m.senderId === message.senderId &&
+              m.message === message.message;
+          });
 
           if (!existingMessage) {
             this.messages.push(message);
 
-            // Incrémenter le compteur si le chat n'est pas ouvert et que ce n'est pas notre message
             if (message.senderId !== this.currentUser.id && !this.isChatOpen) {
               this.unreadCount++;
             }
@@ -136,12 +129,12 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         });
 
       // Suivi des utilisateurs qui tapent
-      this.chatService.getTypingUsers()
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(typingUsers => {
-          this.typingUsers = typingUsers.filter(user => user.userId !== this.currentUser.id);
-          this.changeDetectorRef.detectChanges();
-        });
+      // this.chatService.getTypingUsers()
+      //   .pipe(takeUntil(this.destroy$))
+      //   .subscribe(typingUsers => {
+      //     this.isTyping = typingUsers;
+      //     this.changeDetectorRef.detectChanges();
+      //   });
 
       // Gestion des erreurs
       this.chatService.getErrors()
@@ -193,7 +186,9 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   sendMessage() {
     if (this.messageForm.valid && this.messageForm.value.message.trim()) {
       const messageText = this.messageForm.value.message.trim();
-
+      // if (this.selectedFiles) {
+      //   await this.uploadFiles();
+      // }
       const newMessage: MiniChatMessage = {
         senderId: this.currentUser.id ?? '',
         senderName: this.currentUser.name ?? '',
@@ -209,40 +204,44 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         updatedAt: new Date(),
       };
 
-      // this.messages.push(newMessage);
       this.messageForm.reset();
 
-      // Envoyer le message via API
-      this.chatService.sendMessage(this.pharmacy.id, newMessage);
-      this.shouldScrollToBottom = true;
+      // Envoyer le message via le service (qui l'ajoutera automatiquement à la liste)
+      const success = this.chatService.sendMessage(this.pharmacy.id, newMessage);
 
+      if (success) {
+        this.shouldScrollToBottom = true;
+      } else {
+        // En cas d'erreur, afficher un message
+        this.errorMessage = 'Impossible d\'envoyer le message';
+      }
     }
   }
 
-  onFileSelected(event: any) {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-
-      // Validation du fichier
-      if (file.size > 10 * 1024 * 1024) { // 10MB max
-        alert('Le fichier est trop volumineux (max 10MB)');
-        return;
-      }
-
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/msword'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Type de fichier non autorisé');
-        return;
-      }
-
-      // Ici, vous uploaderiez le fichier et créeriez le message avec l'attachment
-      console.log('Fichier sélectionné:', file);
-
-      // Reset de l'input
-      this.fileInput.nativeElement.value = '';
-    }
-  }
+  // onFileSelected(event: any) {
+  //   const files = event.target.files;
+  //   if (files && files.length > 0) {
+  //     const file = files[0];
+  //
+  //     // Validation du fichier
+  //     if (file.size > 10 * 1024 * 1024) { // 10MB max
+  //       alert('Le fichier est trop volumineux (max 10MB)');
+  //       return;
+  //     }
+  //
+  //     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/msword'];
+  //     if (!allowedTypes.includes(file.type)) {
+  //       alert('Type de fichier non autorisé');
+  //       return;
+  //     }
+  //
+  //     // Ici, vous uploaderiez le fichier et créeriez le message avec l'attachment
+  //     console.log('Fichier sélectionné:', file);
+  //
+  //     // Reset de l'input
+  //     this.fileInput.nativeElement.value = '';
+  //   }
+  // }
 
   markAllAsRead() {
     this.messages.forEach(message => {
@@ -253,7 +252,7 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.unreadCount = 0;
 
     // Marquer comme lu côté serveur
-    // this.chatService.markAsRead(this.pharmacyId);
+    this.chatService.markAsRead(this.pharmacy.id);
   }
 
   scrollToBottom() {
@@ -309,25 +308,27 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       console.error('❌ Erreur lors du chargement de l\'historique:', error);
     }
   }
-  setupFormTypingIndicator() {
-    this.messageForm.get('message')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(value => {
-        if (value && value.trim() && this.isConnected) {
-          if (!this.isTyping) {
-            this.isTyping = true;
-            this.chatService.setTyping(this.pharmacy.id, true);
-          }
 
-          // Reset du timeout
-          clearTimeout(this.typingTimeout);
-          this.typingTimeout = setTimeout(() => {
-            this.isTyping = false;
-            this.chatService.setTyping(this.pharmacy.id, false);
-          }, 2000);
-        }
-      });
-  }
+  // setupFormTypingIndicator() {
+  //   this.messageForm.get('message')?.valueChanges
+  //     .pipe(takeUntil(this.destroy$))
+  //     .subscribe(value => {
+  //       if (value && value.trim() && this.isConnected) {
+  //         if (!this.isTyping) {
+  //           this.isTyping = true;
+  //           this.chatService.setTyping(this.pharmacy.id, true, this.userType);
+  //         }
+  //
+  //         // Reset du timeout
+  //         clearTimeout(this.typingTimeout);
+  //         this.typingTimeout = setTimeout(() => {
+  //           this.imTyping = false;
+  //           this.chatService.setTyping(this.pharmacy.id, false, this.userType);
+  //         }, 2000);
+  //       }
+  //     });
+  // }
+
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
@@ -341,11 +342,154 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  getFileTypeLabel(mimeType: string): string {
+    const types: { [key: string]: string } = {
+      'image/jpeg': 'JPEG',
+      'image/png': 'PNG',
+      'image/gif': 'GIF',
+      'application/pdf': 'PDF',
+      'application/msword': 'DOC',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX'
+    };
+
+    return types[mimeType] || 'Fichier';
+  }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validation du type de fichier
+    if (!this.isValidFileType(file)) {
+      alert('Type de fichier non autorisé. Formats acceptés: PDF, DOC, DOCX, JPG, PNG');
+      this.resetFileInput();
+      return;
+    }
+
+    // Validation de la taille (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Le fichier est trop volumineux. Taille maximum: 5MB');
+      this.resetFileInput();
+      return;
+    }
+
+    // Stocker le fichier
+    this.selectedFiles = file;
+
+    // Créer une prévisualisation pour les images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.previewDoc = e.target.result;
+        this.changeDetectorRef.detectChanges();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Pour les autres types de fichiers, pas de prévisualisation
+      this.previewDoc = '';
+    }
+  }
+
+  private isValidFileType(file: File): boolean {
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    return allowedTypes.includes(file.type);
+  }
+
+  removeFile(): void {
+    delete this.selectedFiles;
+    delete this.previewDoc;
+    this.resetFileInput();
+  }
+
+  private resetFileInput(): void {
+    if (this.fileInput && this.fileInput.nativeElement) {
+      this.fileInput.nativeElement.value = '';
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const mockEvent = {
+        target: {
+          files: [files[0]]
+        }
+      };
+      this.onFileSelected(mockEvent);
+    }
+  }
+  // private async uploadFiles(): Promise<{[key: string]: string}> {
+  //   const uploadedFiles: {[key: string]: string} = {};
+  //   const token = await this.authService.getRealToken();
+  //   const uid = await this.authService.getUid();
+  //
+  //   if (!token) {
+  //     throw new Error('Token d\'authentification manquant');
+  //   }
+  //
+  //   const headers = new HttpHeaders({
+  //     'Authorization': `Bearer ${token}`
+  //   });
+  //
+  //   for (const [fileType, file] of Object.entries(this.selectedFiles)) {
+  //     if (file) {
+  //       const formData = new FormData();
+  //       formData.append('file', file);
+  //       formData.append('type_', 'atachment');
+  //       formData.append('pharmacyId', this.pharmacy.id || '');
+  //       formData.append('uid', uid);
+  //
+  //       try {
+  //         const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-document', formData, headers).toPromise();
+  //         if (response && response.success) {
+  //           uploadedFiles[fileType] = response.data.fileId;
+  //         }
+  //       } catch (error) {
+  //         throw new Error(`Erreur lors de l'upload du fichier ${fileType}`);
+  //       }
+  //     }
+  //   }
+  //   // if (type) {
+  //   //   await this.loadPharmacyDetails(this.pharmacy.id);
+  //   //   this.closeModal();
+  //   // }
+  //   return uploadedFiles;
+  // }
+
   ngAfterViewChecked() {
     if (this.shouldScrollToBottom) {
       this.scrollToBottom();
       this.shouldScrollToBottom = false;
     }
   }
-
 }

@@ -15,7 +15,7 @@ export class MiniChatService {
   private socket: Socket | null = null;
   private messagesSubject = new Subject<MiniChatMessage>();
   private connectionStatusSubject = new BehaviorSubject<boolean>(false);
-  private typingUsersSubject = new BehaviorSubject<{userId: string, userName: string}[]>([]);
+  private typingUsersSubject = new Subject<boolean>();
   private unreadCountSubject = new BehaviorSubject<number>(0);
   private errorSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
@@ -24,70 +24,124 @@ export class MiniChatService {
   private readonly API_BASE_SOCKET = environment.socketUrl;
 
   private currentPharmacyId: string | null = null;
+  private currentUserId: string | null = null; // AJOUT: pour identifier l'utilisateur actuel
 
   constructor(private apiService: ApiService, private http: HttpClient, private auth: AuthService) {}
 
   /**
    * Connexion au namespace admin via Socket.IO
    */
-  connect(token: string): void {
-    if (this.socket?.connected) { return; }
+  connect(token: string, pharmacyId:string): void {
+    if (this.socket?.connected) {
+      console.log('⚠️ Socket déjà connecté');
+      return;
+    }
 
+    console.log('🔄 Tentative de connexion au socket...', `${this.API_BASE_SOCKET}/admin/websocket`);
+
+    // CORRECTION 1: Connexion au bon namespace
     this.socket = io(`${this.API_BASE_SOCKET}`, {
       auth: { token: token },
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionDelay: 1000,
+      timeout: 20000
     });
 
-    this.socket.on('connect', () => {
-      console.log('✅ Socket connecté');
+    this.currentUserId = this.auth.getUid();
+
+    this.socket.on('connect', async () => {
+      console.log('✅ Socket connecté au namespace admin');
       this.connectionStatusSubject.next(true);
     });
+
+    this.socket.on('you are connected', () => {
+      console.log('heheheheheheh');
+      this.join(pharmacyId);
+    })
 
     this.socket.on('disconnect', (reason) => {
       console.log('🔌 Socket déconnecté:', reason);
       this.connectionStatusSubject.next(false);
+      this.currentPharmacyId = null;
+      this.typingUsersSubject.next(false);
+    });
+
+    // CORRECTION 2: Ajouter l'écoute de la confirmation de join
+    this.socket.on('join', (data: { pharmacyId: string, roomName: string, timestamp: Date }) => {
+      console.log('✅ Rejoint avec succès la conversation:', data);
+      this.currentPharmacyId = data.pharmacyId;
+    });
+
+    this.socket.on('left_pharmacy_chat', (data: { pharmacyId: string, timestamp: Date }) => {
+      console.log('👋 Quitté la conversation:', data);
+      if (this.currentPharmacyId === data.pharmacyId) {
+        this.currentPharmacyId = null;
+      }
     });
 
     // Écouter les nouveaux messages
-    this.socket.on('new_message', (data: {message: any}) => {
+    this.socket.on('new_message', (data: {message: any, pharmacyId: string}) => {
       console.log('📩 Nouveau message reçu:', data);
       const message = new MiniChatMessage(data.message);
       this.messagesSubject.next(message);
-      this.updateUnreadCount();
-    });
-
-    // Écouter les utilisateurs en train de taper
-    this.socket.on('user_typing', (data: { userId: string, userName: string, pharmacyId: string, isTyping: boolean }) => {
       if (data.pharmacyId === this.currentPharmacyId) {
-        const currentTyping = this.typingUsersSubject.value;
-        if (data.isTyping) {
-          const exists = currentTyping.find(u => u.userId === data.userId);
-          if (!exists) {
-            this.typingUsersSubject.next([...currentTyping, {userId: data.userId, userName: data.userName}]);
-          }
-        } else {
-          this.typingUsersSubject.next(currentTyping.filter(u => u.userId !== data.userId));
+        if (message.senderId !== this.currentUserId) {
+          this.updateUnreadCount();
         }
       }
     });
 
-    // Écouter la confirmation de lecture
-    this.socket.on('messages_read', (data: { pharmacyId: string, userId: string }) => {
+    // Écouter les utilisateurs en train de taper
+    this.socket.on('user_typing', (data: { userId: string, userName: string, pharmacyId: string, isTyping: boolean, userType: string }) => {
+      console.log('⌨️ Utilisateur en train de taper:', data);
+
+      // if (data.pharmacyId === this.currentPharmacyId && data.userType !== 'admin') {
+      //   const currentTyping = this.typingUsersSubject.value;
+      //   if (data.isTyping) {
+      //     const exists = currentTyping.find(u => u.userId === data.userId);
+      //     if (!exists) {
+            this.typingUsersSubject.next(true);
+      //     }
+      //   } else {
+      //     this.typingUsersSubject.next(currentTyping.filter(u => u.userId !== data.userId));
+      //   }
+      // }
+    });
+
+    this.socket.on('user_joined', (data: { userId: string, userName: string, userType: string, pharmacyId: string, timestamp: Date }) => {
+      console.log('👤 Utilisateur rejoint:', data);
+    });
+
+    this.socket.on('user_left', (data: { userId: string, userName: string, userType: string, pharmacyId: string, timestamp: Date }) => {
+      console.log('👋 Utilisateur parti:', data);
+    });
+
+    this.socket.on('messages_read', (data: { pharmacyId: string, userId: string, readCount: number }) => {
+      console.log('✅ Messages marqués comme lus:', data);
       if (data.pharmacyId === this.currentPharmacyId) {
         this.unreadCountSubject.next(0);
       }
     });
 
-    // Écouter les messages supprimés
-    this.socket.on('message_deleted', (data: { messageId: string, pharmacyId: string, deletedBy: string }) => {
-      // Vous pouvez émettre un événement pour mettre à jour l'interface
-      console.log('🗑️ Message supprimé:', data);
+    this.socket.on('marked_as_read', (data: { pharmacyId: string, readCount: number }) => {
+      console.log('✅ Confirmation marquage comme lu:', data);
     });
 
-    // Écouter les erreurs
+    this.socket.on('message_deleted', (data: { messageId: string, pharmacyId: string, deletedBy: string }) => {
+      console.log('🗑️ Message supprimé:', data);
+      // Émettre un événement pour mettre à jour l'interface
+    });
+
+    this.socket.on('message_deleted_confirm', (data: { messageId: string, pharmacyId: string }) => {
+      console.log('✅ Confirmation suppression message:', data);
+    });
+
+    this.socket.on('message_sent', (data: { messageId: string, timestamp: Date }) => {
+      console.log('✅ Message envoyé avec succès:', data);
+    });
+
     this.socket.on('error', (error: {message: string}) => {
       console.error('❌ Erreur socket:', error);
       this.errorSubject.next(error.message);
@@ -97,36 +151,41 @@ export class MiniChatService {
       console.error('❌ Erreur de connexion Socket.IO:', error);
       this.errorSubject.next('Erreur de connexion au chat');
     });
+
+    setTimeout(() => {
+      if (!this.socket?.connected) {
+        console.error('❌ Timeout de connexion socket');
+        this.errorSubject.next('Timeout de connexion au chat');
+      }
+    }, 10000);
   }
 
   disconnect(): void {
     if (this.socket) {
+      console.log('🔌 Déconnexion du socket...');
+
+      if (this.currentPharmacyId) {
+        this.leavePharmacyChat(this.currentPharmacyId);
+      }
+
       this.socket.disconnect();
       this.socket = null;
       this.connectionStatusSubject.next(false);
       this.currentPharmacyId = null;
-      this.typingUsersSubject.next([]);
+      this.currentUserId = null;
+      this.typingUsersSubject.next(false);
     }
-  }
-
-  joinPharmacyChat(pharmacyId: string): void {
-    if (!this.socket?.connected) {
-      console.warn('⚠️ Socket non connecté, impossible de rejoindre le chat');
-      return;
-    }
-
-    this.currentPharmacyId = pharmacyId;
-    this.socket.emit('join_pharmacy_chat', { pharmacyId });
-    console.log(`🏪 Tentative de rejoindre le chat de la pharmacie: ${pharmacyId}`);
   }
 
   leavePharmacyChat(pharmacyId: string): void {
-    if (this.socket?.connected) {
+    if (this.socket?.connected && pharmacyId) {
+      console.log(`👋 Quitter le chat de la pharmacie: ${pharmacyId}`);
       this.socket.emit('leave_pharmacy_chat', { pharmacyId });
+
       if (this.currentPharmacyId === pharmacyId) {
         this.currentPharmacyId = null;
       }
-      this.typingUsersSubject.next([]);
+      this.typingUsersSubject.next(false);
     }
   }
 
@@ -135,7 +194,10 @@ export class MiniChatService {
       const token = await this.auth.getRealToken();
       const uid = await this.auth.getUid();
 
-      if (!token || !uid) return null;
+      if (!token || !uid) {
+        console.error('❌ Token ou UID manquant');
+        return null;
+      }
 
       const headers = new HttpHeaders({
         'Authorization': `Bearer ${token}`,
@@ -143,13 +205,17 @@ export class MiniChatService {
         'Content-Type': 'application/json'
       });
 
+      console.log('📜 Récupération de l\'historique pour:', pharmacyId);
+
       const response: any = await firstValueFrom(
         this.apiService.post('chat/pharmacy/messages', { uid, pharmacyId }, headers)
       );
 
       if (response && !response.error && response.data) {
+        console.log(`✅ ${response.data.length} messages récupérés`);
         return response.data.map((msg: any) => new MiniChatMessage(msg));
       } else {
+        console.log('📭 Aucun message trouvé');
         return [];
       }
 
@@ -166,23 +232,54 @@ export class MiniChatService {
       return false;
     }
 
+    if (!pharmacyId) {
+      console.error('❌ pharmacyId manquant pour l\'envoi du message');
+      this.errorSubject.next('ID de pharmacie manquant');
+      return false;
+    }
+
     const payload = {
       pharmacyId: pharmacyId,
-      message: {
-        senderId: newMessage.senderId,
-        senderName: newMessage.senderName,
-        senderType: newMessage.senderType,
-        message: newMessage.message,
-        attachments: newMessage.attachments || []
-      }
+      message: newMessage
     };
 
-    console.log('📤 Envoi du message:', payload);
+    // this.messagesSubject.next(newMessage);
+
     this.socket.emit('send_message', payload);
     return true;
   }
 
-  getMessages(): Observable<MiniChatMessage> {
+  join(pharmacyId: string): boolean {
+    if (!this.socket?.connected) {
+      console.error('❌ Socket non connecté, impossible de se connecter');
+      this.errorSubject.next('Connexion au chat perdue');
+      return false;
+    }
+
+    if (!pharmacyId) {
+      console.error('❌ pharmacyId manquant pour la connection');
+      this.errorSubject.next('ID de pharmacie manquant');
+      return false;
+    }
+
+    const payload = {
+      pharmacyId: pharmacyId,
+    };
+
+    this.socket.emit('je_rejoins_la_phamacie_conv', payload);
+    return true;
+  }
+
+  isConnected(): boolean {
+    return this.socket?.connected || false;
+  }
+
+  getCurrentPharmacyId(): string | null {
+    return this.currentPharmacyId;
+  }
+
+  // Observables
+  getMessages(){
     return this.messagesSubject.asObservable();
   }
 
@@ -190,7 +287,7 @@ export class MiniChatService {
     return this.connectionStatusSubject.asObservable();
   }
 
-  getTypingUsers(): Observable<{userId: string, userName: string}[]> {
+  getTypingUsers(): Observable<boolean> {
     return this.typingUsersSubject.asObservable();
   }
 
@@ -202,14 +299,15 @@ export class MiniChatService {
     return this.errorSubject.asObservable();
   }
 
-  setTyping(pharmacyId: string, isTyping: boolean): void {
-    if (this.socket?.connected) {
-      this.socket.emit('typing', { pharmacyId, isTyping });
+  setTyping(pharmacyId: string, isTyping: boolean, userType: string): void {
+    if (this.socket?.connected && pharmacyId) {
+      this.socket.emit('typing', { pharmacyId, isTyping, userType });
     }
   }
 
   markAsRead(pharmacyId: string): void {
-    if (this.socket?.connected) {
+    if (this.socket?.connected && pharmacyId) {
+      console.log('✅ Marquage comme lu pour:', pharmacyId);
       this.socket.emit('mark_as_read', { pharmacyId });
     }
   }
@@ -244,6 +342,7 @@ export class MiniChatService {
    */
   deleteMessage(pharmacyId: string, messageId: string): Observable<void> {
     if (this.socket?.connected) {
+      console.log('🗑️ Suppression du message:', messageId);
       this.socket.emit('delete_message', { pharmacyId, messageId });
     }
 
@@ -261,6 +360,7 @@ export class MiniChatService {
   }
 
   ngOnDestroy(): void {
+    console.log('🧹 Nettoyage du service MiniChat');
     this.disconnect();
     this.destroy$.next();
     this.destroy$.complete();

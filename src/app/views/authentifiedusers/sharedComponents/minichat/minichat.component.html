@@ -26,7 +26,6 @@
     </button>
   </div>
 
-
   <!-- Messages -->
   <div class="chat-messages" #messagesContainer>
     <div class="loading-messages" *ngIf="isLoading">
@@ -36,20 +35,22 @@
 
     <div class="message-wrapper"
          *ngFor="let message of messages;"
-         [class.own-message]="(userType == 'admin' && message.senderType === 'admin') || (userType == 'pharmacy' && message.senderType === 'pharmacy')"
-         [class.admin-message]="(userType == 'pharmacy' && message.senderType === 'admin') || (userType == 'admin' && message.senderType === 'pharmacy')">
+         [class.own-message]="(currentUser.id == message.senderId)"
+         [class.admin-message]="(currentUser.id != message.senderId)">
 
-      <div class="message-bubble">
-        <div class="message-header" *ngIf="message.senderId != currentUser.id">
+      <div class="message-bubble" (click)="message.showMoreInfo = !message.showMoreInfo">
+        <div class="message-header" *ngIf="(message.senderId != currentUser.id || message.showMoreInfo)">
           <div class="sender-avatar">
-            <img *ngIf="getUserInfo(message.senderId)?.avatar; else defaultAvatar"
-                 [src]="getUserInfo(message.senderId)?.avatar"
+            <img *ngIf="currentUser.id == message.senderId; else defaultAvatar"
+                 [src]="currentUser.photoURL"
                  [alt]="message.senderName">
             <ng-template #defaultAvatar>
               <i class="fas fa-user-shield"></i>
             </ng-template>
           </div>
-          <span class="sender-name">{{ message.senderName }}</span>
+          <span class="sender-name" [style.color]="currentUser.id == message.senderId ? 'white' : ''">
+            {{ currentUser.id == message.senderId ? 'Vous' : message.senderName }}
+          </span>
         </div>
 
         <div class="message-content">
@@ -61,30 +62,17 @@
               <i class="fas" [class.fa-file-pdf]="attachment.type === 'document'"
                  [class.fa-image]="attachment.type === 'image'"></i>
               <span>{{ attachment.name }}</span>
-              <button class="btn btn-sm btn-outline-primary" >
-<!--                (click)="downloadAttachment(attachment)"-->
+              <button class="btn btn-sm btn-outline-primary">
                 <i class="fas fa-download"></i>
               </button>
             </div>
           </div>
         </div>
 
-        <div class="message-time">
+        <div class="message-time" *ngIf="message.showMoreInfo">
           {{ formatMessageTime(message.createdAt) }}
           <i class="fas fa-check" *ngIf="message.seen && message.senderId === currentUser.id"></i>
         </div>
-      </div>
-    </div>
-
-    <!-- Indicateur de frappe -->
-    <div class="typing-indicator" *ngIf="isTyping">
-      <div class="typing-bubble">
-        <div class="typing-dots">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-        <small>Un administrateur est en train d'écrire...</small>
       </div>
     </div>
   </div>
@@ -92,6 +80,60 @@
   <!-- Zone de saisie -->
   <div class="chat-input-area">
     <form [formGroup]="messageForm" (ngSubmit)="sendMessage()" class="message-form">
+
+      <!-- Prévisualisation du fichier sélectionné -->
+      <div class="file-preview" *ngIf="selectedFiles">
+        <div class="preview-item">
+
+          <!-- Prévisualisation image ou icône -->
+          <div *ngIf="selectedFiles && previewDoc && selectedFiles.type.startsWith('image/'); else fileIcon">
+            <img [src]="previewDoc"
+                 [alt]="selectedFiles.name"
+                 class="preview-image">
+          </div>
+
+          <ng-template #fileIcon>
+            <div class="preview-icon"
+                 [class.pdf]="selectedFiles.type === 'application/pdf'"
+                 [class.doc]="selectedFiles.type.includes('document') || selectedFiles.type.includes('word')">
+              <i class="fas"
+                 [class.fa-file-pdf]="selectedFiles.type === 'application/pdf'"
+                 [class.fa-file-word]="selectedFiles.type.includes('document') || selectedFiles.type.includes('word')"
+                 [class.fa-file]="!selectedFiles.type.includes('pdf') && !selectedFiles.type.includes('document') && !selectedFiles.type.includes('word')"></i>
+            </div>
+          </ng-template>
+
+          <!-- Informations du fichier -->
+          <div class="file-info">
+            <div class="file-name" [title]="selectedFiles.name">{{ selectedFiles.name }}</div>
+            <div class="file-size" *ngIf="selectedFiles.size">{{ (selectedFiles.size / 1024 / 1024).toFixed(2) }} MB</div>
+            <div class="file-type">{{ selectedFiles.type || 'Fichier' }}</div>
+          </div>
+
+          <!-- Bouton de suppression -->
+          <button type="button"
+                  class="remove-file-btn"
+                  (click)="removeFile()"
+                  [title]="'Supprimer ' + selectedFiles.name">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Zone de drop (quand aucun fichier sélectionné) -->
+      <div class="drop-zone"
+           *ngIf="!selectedFiles"
+           (click)="fileInput.click()"
+           style="display: none;">
+        <div class="drop-zone-text">
+          <i class="fas fa-cloud-upload-alt"></i>
+          Cliquez pour sélectionner un fichier
+        </div>
+        <div class="drop-zone-subtext">
+          Images, PDF, DOC acceptés (max 5MB)
+        </div>
+      </div>
+
       <div class="input-group">
         <button type="button"
                 class="btn btn-outline-secondary attachment-btn"

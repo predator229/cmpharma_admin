@@ -45,7 +45,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
   baseUrl = environment.baseUrl;
   isLoading = false;
   canIEdit: boolean = false;
-  openMiniChat: boolean = false;
   recentOrders: any[] = [];
   pharmacyActivities: ActivityLoged[] = [];
   commonsFunction: CommonFunctions;
@@ -365,7 +364,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
           form.patchValue({ latitude, longitude });
         },
         (error) => {
-          console.error('Erreur de géolocalisation :', error.message);
         },
         {
           enableHighAccuracy: true,
@@ -374,7 +372,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       );
       this.theDayHoursPrevSubmit = this.theDayHours;
     } else {
-      console.warn('La géolocalisation n’est pas supportée par ce navigateur.');
     }
     return form;
   }
@@ -458,7 +455,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       idDocument: ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'pdf', 'doc', 'docx'],
       insurance: ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'pdf', 'doc', 'docx']
     };
-    console.log(fileType);
     return allowedTypes[fileType as keyof typeof allowedTypes]?.includes(file.type) || false;
   }
   private showSuccess(message: string): void {
@@ -498,7 +494,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
             uploadedFiles[fileType] = response.data.fileId;
           }
         } catch (error) {
-          console.error(`Erreur lors de l'upload du fichier ${fileType}:`, error);
           throw new Error(`Erreur lors de l'upload du fichier ${fileType}`);
         }
       }
@@ -588,7 +583,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.recentOrders = [];
-          console.error('Error loading recent orders', error);
         }
       });
   }
@@ -614,7 +608,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.recentOrders = [];
-          console.error('Error loading workings hours', error);
         }
       });
   }
@@ -641,7 +634,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.pharmacyActivities = [];
-          console.error('Error loading pharmacy activities', error);
         }
       });
   }
@@ -820,7 +812,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
           form.patchValue({ latitude, longitude });
         },
         (error) => {
-          console.error('Erreur de géolocalisation :', error.message);
         },
         {
           enableHighAccuracy: true,
@@ -1002,11 +993,9 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
           }, 100);
         })
         .catch(error => {
-          console.error('Erreur lors du téléchargement:', error);
           this.handleError('Erreur lors du téléchargement du document');
         });
     } catch (error) {
-      console.error('Erreur lors du téléchargement:', error);
       this.handleError('Erreur lors du téléchargement du document');
     }
   }

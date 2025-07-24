@@ -15,6 +15,7 @@ export class MiniChatMessage {
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  showMoreInfo? : boolean;
 
   constructor(data: Partial<MiniChatMessage>) {
     this._id = data._id;
@@ -32,5 +33,6 @@ export class MiniChatMessage {
     this.deletedAt = data.deletedAt;
     this.createdAt = data.createdAt || new Date();
     this.updatedAt = data.updatedAt || new Date();
+    this.showMoreInfo = data.showMoreInfo || false;
   }
 }
