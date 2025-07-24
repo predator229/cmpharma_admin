@@ -1,4 +1,4 @@
-import {ChatAttaschment} from "./ChatAttaschment.class";
+import {FileClass} from "./File.class";
 
 export class MiniChatMessage {
   _id?: string;
@@ -7,7 +7,7 @@ export class MiniChatMessage {
   senderType: 'admin' | 'pharmacy';
   message: string;
   for: string;
-  attachments?: ChatAttaschment[] | null;
+  attachments?: FileClass | null;
   isActivated:boolean;
   isDeleted: boolean;
   seen: boolean;

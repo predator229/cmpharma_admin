@@ -21,6 +21,9 @@ import {MiniChatService} from "../../../../controllers/services/minichat.service
 import {AuthService} from "../../../../controllers/services/auth.service";
 import {HttpHeaders} from "@angular/common/http";
 import {ApiService} from "../../../../controllers/services/api.service";
+import {ChatAttaschment} from "../../../../models/ChatAttaschment.class";
+import {environment} from "../../../../../environments/environment";
+import {FileClass} from "../../../../models/File.class";
 
 interface AdminUser {
   id: string;
@@ -52,6 +55,7 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   previewDoc: string;
   unreadCount = 0;
   errorMessage = '';
+  internatPathUrl = environment.internalPathUrl;
 
   messages: MiniChatMessage[] = [];
   allUsersInfos: AdminUser[] = [];
@@ -66,7 +70,7 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     private chatService: MiniChatService,
     private authService: AuthService,
     private changeDetectorRef: ChangeDetectorRef,
-    // private apiService : ApiService
+    private apiService : ApiService
   ) {
     this.messageForm = this.fb.group({
       message: ['', [Validators.required, Validators.maxLength(1000)]]
@@ -183,12 +187,13 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     ];
   }
 
-  sendMessage() {
+  async sendMessage() {
     if (this.messageForm.valid && this.messageForm.value.message.trim()) {
       const messageText = this.messageForm.value.message.trim();
-      // if (this.selectedFiles) {
-      //   await this.uploadFiles();
-      // }
+      let attachments = null;
+      if (this.selectedFiles) {
+        attachments = await this.uploadFiles();
+      }
       const newMessage: MiniChatMessage = {
         senderId: this.currentUser.id ?? '',
         senderName: this.currentUser.name ?? '',
@@ -205,14 +210,12 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       };
 
       this.messageForm.reset();
-
-      // Envoyer le message via le service (qui l'ajoutera automatiquement à la liste)
-      const success = this.chatService.sendMessage(this.pharmacy.id, newMessage);
-
+      console.log('the atachement', attachments)
+      const success = this.chatService.sendMessage(this.pharmacy.id, newMessage, attachments);
       if (success) {
         this.shouldScrollToBottom = true;
+        this.removeFile();
       } else {
-        // En cas d'erreur, afficher un message
         this.errorMessage = 'Impossible d\'envoyer le message';
       }
     }
@@ -301,6 +304,11 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       const history = await this.chatService.getChatHistory(this.pharmacy.id);
       if (history) {
         this.messages = history;
+        this.messages.forEach(message => {
+          if (message.attachments !== null && message.attachments) {
+            console.log(message.attachments);
+          }
+        })
         this.shouldScrollToBottom = true;
         console.log(`📜 Historique chargé: ${history.length} messages`);
       }
@@ -308,26 +316,6 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       console.error('❌ Erreur lors du chargement de l\'historique:', error);
     }
   }
-
-  // setupFormTypingIndicator() {
-  //   this.messageForm.get('message')?.valueChanges
-  //     .pipe(takeUntil(this.destroy$))
-  //     .subscribe(value => {
-  //       if (value && value.trim() && this.isConnected) {
-  //         if (!this.isTyping) {
-  //           this.isTyping = true;
-  //           this.chatService.setTyping(this.pharmacy.id, true, this.userType);
-  //         }
-  //
-  //         // Reset du timeout
-  //         clearTimeout(this.typingTimeout);
-  //         this.typingTimeout = setTimeout(() => {
-  //           this.imTyping = false;
-  //           this.chatService.setTyping(this.pharmacy.id, false, this.userType);
-  //         }, 2000);
-  //       }
-  //     });
-  // }
 
   ngOnDestroy() {
     this.destroy$.next();
@@ -364,7 +352,6 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     return types[mimeType] || 'Fichier';
   }
-
   onFileSelected(event: any): void {
     const file = event.target.files[0];
     if (!file) return;
@@ -428,12 +415,10 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     event.preventDefault();
     event.stopPropagation();
   }
-
   onDragLeave(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
   }
-
   onDrop(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
@@ -448,43 +433,59 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.onFileSelected(mockEvent);
     }
   }
-  // private async uploadFiles(): Promise<{[key: string]: string}> {
-  //   const uploadedFiles: {[key: string]: string} = {};
-  //   const token = await this.authService.getRealToken();
-  //   const uid = await this.authService.getUid();
-  //
-  //   if (!token) {
-  //     throw new Error('Token d\'authentification manquant');
-  //   }
-  //
-  //   const headers = new HttpHeaders({
-  //     'Authorization': `Bearer ${token}`
-  //   });
-  //
-  //   for (const [fileType, file] of Object.entries(this.selectedFiles)) {
-  //     if (file) {
-  //       const formData = new FormData();
-  //       formData.append('file', file);
-  //       formData.append('type_', 'atachment');
-  //       formData.append('pharmacyId', this.pharmacy.id || '');
-  //       formData.append('uid', uid);
-  //
-  //       try {
-  //         const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-document', formData, headers).toPromise();
-  //         if (response && response.success) {
-  //           uploadedFiles[fileType] = response.data.fileId;
-  //         }
-  //       } catch (error) {
-  //         throw new Error(`Erreur lors de l'upload du fichier ${fileType}`);
-  //       }
-  //     }
-  //   }
-  //   // if (type) {
-  //   //   await this.loadPharmacyDetails(this.pharmacy.id);
-  //   //   this.closeModal();
-  //   // }
-  //   return uploadedFiles;
-  // }
+  private async uploadFiles(): Promise<string> {
+    let fileId: string = '';
+    const token = await this.authService.getRealToken();
+    const uid = await this.authService.getUid();
+
+    if (!token) {
+      throw new Error('Token d\'authentification manquant');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    if (this.selectedFiles) {
+      const formData = new FormData();
+      formData.append('file', this.selectedFiles);
+      formData.append('type_', 'chat_pharm_apartment');
+      formData.append('pharmacyId', this.pharmacy.id || '');
+      formData.append('uid', uid);
+
+      try {
+        const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-document', formData, headers).toPromise();
+        if (response && response.success) {
+          fileId = response.fileId;
+        }
+      } catch (error) {
+      }
+    }
+    return fileId;
+  }
+
+  downloadFile(attachment: FileClass): void {
+    if (!attachment || !attachment.url) {
+      console.error('Aucun fichier à télécharger');
+      return;
+    }
+
+    try {
+      const fileUrl = this.internatPathUrl + attachment.url;
+      const filename: string = attachment.fileName || 'fichier';
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = filename;
+      link.target = '_blank';
+      link.style.display = 'none';
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      alert('Erreur lors du téléchargement du fichier. Veuillez réessayer.');
+    }
+  }
 
   ngAfterViewChecked() {
     if (this.shouldScrollToBottom) {

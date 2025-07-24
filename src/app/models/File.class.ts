@@ -1,22 +1,22 @@
 
 export class FileClass {
-  _id?: String;
-  originalName: String;
-  fileName: String;
-  fileType: String;
-  fileSize: String;
-  url?: String;
-  extension?: String;
+  _id?: string;
+  originalName: string;
+  fileName: string;
+  fileType: string;
+  fileSize: string;
+  url?: string;
+  extension?: string;
   uploadedBy: {
-    name: String,
-    email: String,
-    _id: String
+    name: string,
+    email: string,
+    _id: string
   };
   linkedTo: {
-    model: String,
-    objectId: String
+    model: string,
+    objectId: string
   };
-  tags: [String];
+  tags: [string];
   isPrivate: Boolean;
   expiresAt: Date;
   meta: {

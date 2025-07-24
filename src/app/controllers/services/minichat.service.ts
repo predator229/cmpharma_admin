@@ -225,7 +225,7 @@ export class MiniChatService {
     }
   }
 
-  sendMessage(pharmacyId: string, newMessage: MiniChatMessage): boolean {
+  sendMessage(pharmacyId: string, newMessage: MiniChatMessage, attachments: string | null): boolean {
     if (!this.socket?.connected) {
       console.error('❌ Socket non connecté, impossible d\'envoyer le message');
       this.errorSubject.next('Connexion au chat perdue');
@@ -238,13 +238,19 @@ export class MiniChatService {
       return false;
     }
 
-    const payload = {
-      pharmacyId: pharmacyId,
-      message: newMessage
-    };
 
-    // this.messagesSubject.next(newMessage);
-
+    const payload =
+      attachments != null ?
+      {
+        pharmacyId: pharmacyId,
+        message: newMessage,
+        attachments: attachments
+      } :
+       {
+        pharmacyId: pharmacyId,
+        message: newMessage
+      };
+    console.log(payload)
     this.socket.emit('send_message', payload);
     return true;
   }
