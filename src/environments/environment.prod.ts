@@ -5,6 +5,6 @@ export const environment = {
   production: true,
   baseUrl: '/server/admin/api/',
   internalPathUrl: '/server/',
-  socketUrl: '/server/admin/websocket',
+  socketUrl: '/admin/websocket',
   pathWebsocket: '/server/socket.io'
 };

@@ -99,6 +99,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
   @ViewChild('formGeneralInfos') formGeneralInfos: ElementRef | undefined;
   @ViewChild('formLegalsInfos') formLegalsInfos: ElementRef | undefined;
   @ViewChild('formHorrairesInfos') formHorrairesInfos: ElementRef | undefined;
+  @ViewChild('formDeliveryServices') formDeliveryServices: ElementRef | undefined;
   @ViewChild('formCoordonatesInfos') formCoordonatesInfos: ElementRef | undefined;
   @ViewChild('formCoordonatesZoneInfos') formCoordonatesZoneInfos: ElementRef | undefined;
   @ViewChild('editOrViewDocument') editOrViewDocument: ElementRef | undefined;
@@ -160,6 +161,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       case 3:
       case 4:
       case 7:
+      case 8:
       case 5: form = this.pharmaciesCustomSave; break;
       default: form = this.pharmacyForm; break;
     }
@@ -399,6 +401,12 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       workingHours: workingHours,
       registerDate: this.pharmacy?.registerDate || new Date(),
       deliveryZone: formValue.deliveryZone ?? ( this.pharmacy?.deliveryZone || null),
+      deliveryServices: {
+        homeDelivery: formValue.homeDelivery ?? (this.pharmacy.deliveryServices.homeDelivery ?? true),
+        pickupInStore: formValue.pickupInStore ?? (this.pharmacy.deliveryServices.pickupInStore ?? true),
+        expressDelivery: formValue.expressDelivery ?? (this.pharmacy.deliveryServices.expressDelivery ?? false),
+        scheduledDelivery: formValue.scheduledDelivery ?? (this.pharmacy.deliveryServices.scheduledDelivery ?? false),
+      }
     });
   }
   private markFormGroupTouched(formGroup: FormGroup): void {
@@ -895,6 +903,38 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       });
     }, 0);
     this.loadingService.setLoading(false);
+  }
+  openDeliveryServices(): void {
+    this.closeModal();
+    if (!this.pharmacy) { return; }
+
+    this.loadingService.setLoading(true);
+
+    const currentServices = this.pharmacy.deliveryServices || {
+      homeDelivery: true,
+      pickupInStore: true,
+      expressDelivery: false,
+      scheduledDelivery: false
+    };
+
+    const form = this.fb.group({
+      id: [this.pharmacy.id ?? ''],
+      homeDelivery: [currentServices.homeDelivery ?? true],
+      pickupInStore: [currentServices.pickupInStore ?? true],
+      expressDelivery: [currentServices.expressDelivery ?? false],
+      scheduledDelivery: [currentServices.scheduledDelivery ?? false],
+    });
+
+    this.pharmaciesCustomSave = form;
+
+    setTimeout(() => {
+      this.modalService.open(this.formDeliveryServices, {
+        size: 'xl',
+        backdrop: 'static',
+        centered: true
+      });
+      this.loadingService.setLoading(false);
+    }, 0);
   }
   onFileSelected(event: any, fileType: string, type: number =0): void {
     const file = event.target.files[0];

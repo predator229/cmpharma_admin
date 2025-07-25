@@ -345,30 +345,35 @@
         </div>
         <div class="card mb-4">
           <div class="card-header">
-            <h5><i class="fas fa-car"></i> Services de livraison acceptees <span style="color:red">*</span></h5>
+            <h5><i class="fas fa-car"></i> Services de livraison <span style="color:red">*</span></h5>
+            <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit">
+              <button class="btn btn-sm btn-outline-primary" (click)="openDeliveryServices()">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
           </div>
           <div class="card-body">
             <div class="opening-hours">
               <div *ngIf="pharmacy.deliveryServices != null">
                 <div class="day-hours">
                   <span class="day" > Livraison a domicile </span>
-                  <span class="hours open" *ngIf="pharmacy.deliveryServices.homeDelivery.type"><i class="fa fa-check-circle"></i></span>
-                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.homeDelivery.type"><i class="fa fa-check-circle"></i></span>
+                  <span class="hours open" *ngIf="pharmacy.deliveryServices.homeDelivery"><i class="fa fa-check-circle" style="color:#45a049"></i></span>
+                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.homeDelivery"><i class="fa fa-cancel"></i></span>
                 </div>
                 <div class="day-hours">
-                  <span class="day" > Recupperer en pharmacie </span>
-                  <span class="hours open" *ngIf="pharmacy.deliveryServices.pickupInStore.type"><i class="fa fa-check-circle"></i></span>
-                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.pickupInStore.type"><i class="fa fa-check-circle"></i></span>
+                  <span class="day" > Recuperer en pharmacie </span>
+                  <span class="hours open" *ngIf="pharmacy.deliveryServices.pickupInStore"><i class="fa fa-check-circle" style="color:#45a049"></i></span>
+                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.pickupInStore"><i class="fa fa-cancel"></i></span>
                 </div>
                 <div class="day-hours">
                   <span class="day" > Livraison express </span>
-                  <span class="hours open" *ngIf="pharmacy.deliveryServices.expressDelivery.type"><i class="fa fa-check-circle"></i></span>
-                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.expressDelivery.type"><i class="fa fa-check-circle"></i></span>
+                  <span class="hours open" *ngIf="pharmacy.deliveryServices.expressDelivery"><i class="fa fa-check-circle" style="color:#45a049"></i></span>
+                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.expressDelivery"><i class="fa fa-cancel"></i></span>
                 </div>
                 <div class="day-hours">
-                  <span class="day" > Livraison programmee </span>
-                  <span class="hours open" *ngIf="pharmacy.deliveryServices.scheduledDelivery.type"><i class="fa fa-check-circle"></i></span>
-                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.scheduledDelivery.type"><i class="fa fa-check-circle"></i></span>
+                  <span class="day" > Livraison programmée </span>
+                  <span class="hours open" *ngIf="pharmacy.deliveryServices.scheduledDelivery"><i class="fa fa-check-circle" style="color:#45a049"></i></span>
+                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.scheduledDelivery"><i class="fa fa-cancel"></i></span>
                 </div>
               </div>
             </div>
@@ -1219,7 +1224,126 @@
     </div>
   </div>
 </ng-template>
+<!--formDeliveryServices-->
+<ng-template #formDeliveryServices let-modal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="formDeliveryServicesModal"><i class="fas fa-truck"></i> Services de livraison !</h5>
+      <button type="button" (click)="closeModal()" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="pharmacy-details">
+        <form [formGroup]="pharmaciesCustomSave" (ngSubmit)="onSubmit(8)">
+          <div class="steps-container">
+            <div class="form-step active">
+              <hr>
+              <p class="step-subtitle">Les modifications sur les services de livraison ne seront appliquées que pour les nouvelles commandes !</p>
+              <hr>
+              <div class="mb-3">
+                <div class="row mb-3 align-items-center">
+                  <div class="col-md-8">
+                    <label class="form-label fw-bold">
+                      <i class="fas fa-home"></i> Livraison à domicile
+                    </label>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        formControlName="homeDelivery"
+                        id="homeDelivery"
+                      >
+                      <label class="form-check-label" for="homeDelivery">
+                        <i class="fas {{ this.pharmaciesCustomSave.get('homeDelivery').value ? 'fa-check' : 'fa-cancel'}}"></i> {{ this.pharmaciesCustomSave.get('homeDelivery').value ? 'Activé' : 'Désactivé' }}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                  <div class="col-md-8">
+                    <label class="form-label fw-bold">
+                      <i class="fas fa-store"></i> Récupérer en pharmacie
+                    </label>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        formControlName="pickupInStore"
+                        id="pickupInStore"
+                      >
+                      <label class="form-check-label" for="pickupInStore">
+                        <i class="fas {{ this.pharmaciesCustomSave.get('pickupInStore').value ? 'fa-check' : 'fa-cancel'}}"></i> {{ this.pharmaciesCustomSave.get('pickupInStore').value ? 'Activé' : 'Désactivé' }}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                  <div class="col-md-8">
+                    <label class="form-label fw-bold">
+                      <i class="fas fa-bolt"></i> Livraison express
+                    </label>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        formControlName="expressDelivery"
+                        id="expressDelivery"
+                      >
+                      <label class="form-check-label" for="expressDelivery">
+                        <i class="fas {{ this.pharmaciesCustomSave.get('expressDelivery').value ? 'fa-check' : 'fa-cancel'}}"></i> {{ this.pharmaciesCustomSave.get('expressDelivery').value ? 'Activé' : 'Désactivé' }}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                  <div class="col-md-8">
+                    <label class="form-label fw-bold">
+                      <i class="fas fa-calendar-alt"></i> Livraison programmée
+                    </label>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        formControlName="scheduledDelivery"
+                        id="scheduledDelivery"
+                      >
+                      <label class="form-check-label" for="scheduledDelivery">
+                        <i class="fas {{ this.pharmaciesCustomSave.get('scheduledDelivery').value ? 'fa-check' : 'fa-cancel'}}"></i> {{ this.pharmaciesCustomSave.get('scheduledDelivery').value ? 'Activé' : 'Désactivé' }}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
 
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSubmit(4)"
+        [disabled]="pharmaciesCustomSave.invalid || isSubmitting"
+      >
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="fas fa-save" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les services' }}
+      </button>
+    </div>
+  </div>
+</ng-template>
 <!--formCoordonatesInfos-->
 <ng-template #formCoordonatesInfos let-modal>
   <div class="modal-content">

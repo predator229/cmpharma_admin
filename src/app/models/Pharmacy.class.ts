@@ -20,10 +20,10 @@ export interface DocumentsPharmacy {
 }
 
 export interface DeliveryServices {
-  homeDelivery: { type: Boolean, default: true },
-  pickupInStore: { type: Boolean, default: true },
-  expressDelivery: { type: Boolean, default: false },
-  scheduledDelivery: { type: Boolean, default: false }
+  homeDelivery: boolean,
+  pickupInStore: boolean,
+  expressDelivery: boolean,
+  scheduledDelivery: boolean
 };
 
 export class PharmacyClass {
