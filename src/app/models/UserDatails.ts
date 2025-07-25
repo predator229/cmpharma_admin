@@ -93,7 +93,7 @@ export class UserDetails {
       setups: data.user.setups ?? null,
       pharmaciesManaged: data.user.pharmaciesManaged,
       groups: data.user.groups ? data.user.groups.map((group: any) => new Group(group)) : [],
-      onlyShowListPharm: data?.onlyShowListPharm || [],
+      onlyShowListPharm: data?.onlyShowListPharm.filter(pharmacyId => pharmacyId !== null) || [],
       isActivated: data.user.isActivated,
       lastLogin: data.user.lastLogin,
       createdAt: new Date(data.user.createdAt),
@@ -112,10 +112,7 @@ export class UserDetails {
           });
         });
       });
-    this.allpermissions = this.onlyShowListPharm && (idPharmacy == null || this.onlyShowListPharm.includes(idPharmacy) ) ? ['pharmacies.view'] : Array.from(allPermissionsSet).sort();
-    if (idPharmacy != null) {
-      console.log(this.allpermissions);
-    }
+    this.allpermissions = this.onlyShowListPharm.length && (idPharmacy == null || this.onlyShowListPharm.includes(idPharmacy) ) ? ['pharmacies.view'] : Array.from(allPermissionsSet).sort();
   }
 
   hasPermission(permission: string, idPharmacy: string|null = null): boolean {
@@ -129,7 +126,6 @@ export class UserDetails {
     if (!this.allpermissions || !Array.isArray(permissions)) {
       return false;
     }
-    // return false;
     return permissions.every(permission => this.allpermissions!.includes(permission));
   }
 

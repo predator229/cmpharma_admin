@@ -83,7 +83,8 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
         if (loaded && this.userDetail) {
           this.loadPharmacies();
         }
-        if (this.userDetail?.onlyShowListPharm) {
+        this.userDetail.loadAllPermissions();
+        if (this.userDetail?.onlyShowListPharm.length >= 1) {
           this.messageNotification = "Une ou plusieurs de vos pharmacies sont en attente de compléments d'informations. Veuillez compléter toutes les informations requises pour poursuivre le processus d'enregistrement.\n";          this.openShowMsg();
         }
       });

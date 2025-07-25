@@ -46,7 +46,8 @@ export class PharmacyLogsComponent implements OnInit {
           .pipe(takeUntil(this.destroy$))
           .subscribe(loaded => {
             this.userDetails = this.authUser.getUserDetails();
-            if (this.userDetails?.onlyShowListPharm) {
+            this.userDetails.loadAllPermissions();
+            if (this.userDetails?.onlyShowListPharm.length) {
               this.handleError("Une ou plusieurs de vos pharmacies sont en attente de compléments d'informations. Veuillez compléter toutes les informations requises pour poursuivre le processus d'enregistrement.\n");
               window.location.href = "pharmacy/pharmacies/list";
             }

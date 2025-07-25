@@ -44,11 +44,11 @@ export class LoginGuard implements CanActivate {
 
   private getRedirectionForUser(userDetails: any): boolean | UrlTree {
     const roleRedirectMap: Record<string, string> = {
-      [GroupCode.MANAGER_PHARMACY]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
-      [GroupCode.PHARMACIEN]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
-      [GroupCode.PREPARATEUR]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
-      [GroupCode.CAISSIER]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
-      [GroupCode.CONSULTANT]: userDetails.onlyShowListPharm ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
+      [GroupCode.MANAGER_PHARMACY]: userDetails.onlyShowListPharm.length ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
+      [GroupCode.PHARMACIEN]: userDetails.onlyShowListPharm.length ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
+      [GroupCode.PREPARATEUR]: userDetails.onlyShowListPharm.length ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
+      [GroupCode.CAISSIER]: userDetails.onlyShowListPharm.length ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
+      [GroupCode.CONSULTANT]: userDetails.onlyShowListPharm.length ? 'pharmacy/pharmacies/list' : 'pharmacy/dashboard',
       [GroupCode.SUPERADMIN]: 'admin/dashboard/overview',
       [GroupCode.MANAGER_ADMIN]: 'admin/dashboard/overview',
       [GroupCode.ADMIN_TECHNIQUE]: 'admin/dashboard/overview',

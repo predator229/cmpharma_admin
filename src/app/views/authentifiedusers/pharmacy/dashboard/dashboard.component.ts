@@ -29,7 +29,7 @@ export class DefaultComponent {
   }
   ngOnInit(): void {
     this.userDetails = this.authUser.getUserDetails();
-    if (this.userDetails?.onlyShowListPharm) {
+    if (this.userDetails?.onlyShowListPharm.length) {
       window.location.href = "pharmacy/pharmacies/list";
     }
   }
