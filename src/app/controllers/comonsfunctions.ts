@@ -60,6 +60,7 @@ export class CommonFunctions {
       city: data.city || null,
       country: data.country || null,
       deliveryZone: data.deliveryZone || null,
+      deliveryServices: data.deliveryServices || null,
     });
   }
 

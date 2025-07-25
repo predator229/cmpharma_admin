@@ -343,6 +343,37 @@
             </div>
           </div>
         </div>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5><i class="fas fa-car"></i> Services de livraison acceptees <span style="color:red">*</span></h5>
+          </div>
+          <div class="card-body">
+            <div class="opening-hours">
+              <div *ngIf="pharmacy.deliveryServices != null">
+                <div class="day-hours">
+                  <span class="day" > Livraison a domicile </span>
+                  <span class="hours open" *ngIf="pharmacy.deliveryServices.homeDelivery.type"><i class="fa fa-check-circle"></i></span>
+                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.homeDelivery.type"><i class="fa fa-check-circle"></i></span>
+                </div>
+                <div class="day-hours">
+                  <span class="day" > Recupperer en pharmacie </span>
+                  <span class="hours open" *ngIf="pharmacy.deliveryServices.pickupInStore.type"><i class="fa fa-check-circle"></i></span>
+                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.pickupInStore.type"><i class="fa fa-check-circle"></i></span>
+                </div>
+                <div class="day-hours">
+                  <span class="day" > Livraison express </span>
+                  <span class="hours open" *ngIf="pharmacy.deliveryServices.expressDelivery.type"><i class="fa fa-check-circle"></i></span>
+                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.expressDelivery.type"><i class="fa fa-check-circle"></i></span>
+                </div>
+                <div class="day-hours">
+                  <span class="day" > Livraison programmee </span>
+                  <span class="hours open" *ngIf="pharmacy.deliveryServices.scheduledDelivery.type"><i class="fa fa-check-circle"></i></span>
+                  <span class="hours closed" *ngIf="!pharmacy.deliveryServices.scheduledDelivery.type"><i class="fa fa-check-circle"></i></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="card mb-4" style="height: 400px; overflow-y: scroll;">
           <div class="card-header">
             <h5><i class="fas fa-clock"></i> Historiques </h5>

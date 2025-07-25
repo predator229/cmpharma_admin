@@ -24,6 +24,13 @@ import {UserDetails} from "../../../../../models/UserDatails";
 declare var bootstrap: any;
 declare var google: any;
 
+export interface DeliveryServices {
+  homeDelivery: { type: Boolean, default: true },
+  pickupInStore: { type: Boolean, default: true },
+  expressDelivery: { type: Boolean, default: false },
+  scheduledDelivery: { type: Boolean, default: false }
+};
+
 @Component({
   selector: 'app-pharmacy-detail',
   standalone: true,
@@ -56,6 +63,12 @@ export class PharmacyDetailComponent implements OnInit, OnDestroy {
     idDocument?: string;
     insurance?: string;
   } = {};
+  // deliveryServices: DeliveryServices = {
+  //   homeDelivery: { type: true, default: true },
+  //   pickupInStore: { type: true, default: true },
+  //   expressDelivery: { type: false, default: false },
+  //   scheduledDelivery: { type: false, default: false }
+  // };
   private destroy$ = new Subject<void>();
   private dayNames = [
     'Lundi', 'Mardi', 'Mercredi', 'Jeudi',

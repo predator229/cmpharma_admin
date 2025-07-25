@@ -37,10 +37,11 @@ export class MiniChatService {
       return;
     }
 
-    console.log('🔄 Tentative de connexion au socket...', `${this.API_BASE_SOCKET}/admin/websocket`);
+    console.log('🔄 Tentative de connexion au socket...', `${this.API_BASE_SOCKET}`);
 
     // CORRECTION 1: Connexion au bon namespace
     this.socket = io(`${this.API_BASE_SOCKET}`, {
+      // path: `${environment.internalPathUrl}socket.io/`,
       auth: { token: token },
       transports: ['websocket', 'polling'],
       reconnection: true,
