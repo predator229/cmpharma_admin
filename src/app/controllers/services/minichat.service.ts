@@ -41,7 +41,7 @@ export class MiniChatService {
 
     // CORRECTION 1: Connexion au bon namespace
     this.socket = io(`${this.API_BASE_SOCKET}`, {
-      // path: `${environment.internalPathUrl}socket.io/`,
+      path: `${environment.pathWebsocket}`,
       auth: { token: token },
       transports: ['websocket', 'polling'],
       reconnection: true,
