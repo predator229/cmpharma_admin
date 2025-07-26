@@ -3,6 +3,7 @@ import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnIni
 import * as $ from 'jquery';
 import 'select2';
 import {Country} from "../../../../models/Country.class";
+import {Category} from "../../../../models/Category.class";
 
 @Component({
   selector: 'app-select2-ajax',
@@ -15,7 +16,7 @@ export class Select2AjaxComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() apiUrl!: string;
   @Input() country!: string;
   @Input() type!: string;
-  @Input() countriesListArray: { [id: string]: Country } | null;
+  @Input() countriesListArray: { [id: string]: Country | Category } | null;
   @Input() value?: string;
   @Input() placeholder = 'Sélectionner une option';
 
@@ -68,7 +69,6 @@ export class Select2AjaxComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.isSelect2Initialized = true;
 
-    // Définir la valeur initiale après l'initialisation
     if (this.value) {
       this.updateSelectedValue();
     }
@@ -81,8 +81,14 @@ export class Select2AjaxComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.value) {
       let optionText = this.value;
 
-      if (this.type === 'country' && this.countriesListArray?.[this.value]) {
-        optionText = `${this.countriesListArray[this.value].emoji} ${this.countriesListArray[this.value].name} (${this.countriesListArray[this.value].code})`;
+      if (this.type === 'country' && this.countriesListArray?.[this.value] && this.countriesListArray[this.value] instanceof Country) {
+        const country = this.countriesListArray[this.value] as Country;
+        optionText = `${country.emoji ?? ''} ${country.name} (${country.code})`;
+      }
+
+      if (this.type === 'category' && this.countriesListArray?.[this.value] && this.countriesListArray[this.value] instanceof Category) {
+        const country = this.countriesListArray[this.value] as Category;
+        optionText = `${country.name} (${country.slug})`;
       }
 
       const option = new Option(optionText, this.value, true, true);
