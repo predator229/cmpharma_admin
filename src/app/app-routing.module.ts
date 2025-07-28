@@ -8,6 +8,9 @@ import { GroupGuard } from './controllers/guards/group.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
 import {GroupCode} from "./models/Group.class";
 import {PharmacyCategoryListComponent} from "./views/authentifiedusers/pharmacy/categories/list/list.component";
+import {
+  PharmacyCategoryDetailComponent
+} from "./views/authentifiedusers/pharmacy/categories/category/category.component";
 
 const routes: Routes = [{
     path: 'admin',
@@ -38,6 +41,7 @@ const routes: Routes = [{
       { path: 'pharmacies/:id',  loadComponent: () => import('./views/authentifiedusers/pharmacy/pharmacies/details/details.component').then((c) => c.PharmacyDetailComponentPharmacie), },
 
       { path: 'categories/list', loadComponent: () =>import('./views/authentifiedusers/pharmacy/categories/list/list.component').then((c) => c.PharmacyCategoryListComponent), },
+      { path: 'categories/:id',  loadComponent: () => import('./views/authentifiedusers/pharmacy/categories/category/category.component').then((c) => c.PharmacyCategoryDetailComponent), },
 
       { path: 'admin/logs',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/logs/logs.component').then((c) => c.PharmacyLogsComponent), },
       { path: 'admin/logs/:idPharmacy',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/logs/logs.component').then((c) => c.PharmacyLogsComponent), },

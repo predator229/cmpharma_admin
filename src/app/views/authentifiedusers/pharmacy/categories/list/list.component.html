@@ -8,11 +8,11 @@
         <i class="fas fa-search"></i>
       </div>
       <div class="btn-group">
-        <button class="btn btn-primary" style="margin-right: 5px;" (click)="openCreateModal()">
-          <i class="fas fa-plus"></i> Ajouter une catégorie
+        <button class="btn btn-primary" style="margin-right: 5px;" (click)="openCreateModal()" *ngIf="permissions.addCategorie">
+          <i class="fas fa-plus"></i> Ajouter
         </button>
         <button class="btn btn-outline-primary" style="background-color: #4caf50; color: white"
-                (click)="exportCategoriesList()">
+                (click)="exportCategoriesList()" *ngIf="permissions.exportCategories">
           <i class="fas fa-download"></i> Exporter
         </button>
       </div>
@@ -21,6 +21,13 @@
 
   <div class="category-list-container">
     <div class="category-filters">
+      <div class="filter-group">
+        <label>Filtrer par pharmacie:</label>
+        <select class="form-select" [(ngModel)]="pharmacyFilter" (change)="filterCategories()">
+          <option value="">Toutes les pharmacies</option>
+          <option *ngFor="let pharmacy of pharmaciesListArray" [value]="pharmacy.value">Niveau {{pharmacy.label}}</option>
+        </select>
+      </div>
       <div class="filter-group">
         <label>Filtrer par niveau:</label>
         <select class="form-select" [(ngModel)]="levelFilter" (change)="filterCategories()">
@@ -65,116 +72,102 @@
       <p>{{ searchText || levelFilter || statusFilter || specialCategoryFilter ? 'Aucune catégorie ne correspond à vos critères de recherche.' : 'Commencez par créer votre première catégorie.' }}</p>
     </div>
 
-    <!-- Categories table -->
     <div *ngIf="!isLoading && filteredCategories.length > 0" class="table-responsive">
       <table class="table table-hover">
         <thead>
-        <tr>
-          <th>
-            <div class="th-content" (click)="sort('name')">
-              Nom
-              <i class="fas" [ngClass]="getSortIcon('name')"></i>
-            </div>
-          </th>
-          <th>Slug</th>
-          <th>
-            <div class="th-content" (click)="sort('level')">
-              Niveau
-              <i class="fas" [ngClass]="getSortIcon('level')"></i>
-            </div>
-          </th>
-          <th>Catégorie parent</th>
-          <th>
-            <div class="th-content" (click)="sort('status')">
-              Statut
-              <i class="fas" [ngClass]="getSortIcon('status')"></i>
-            </div>
-          </th>
-          <th>Type spécial</th>
-          <th>
-            <div class="th-content" (click)="sort('productCount')">
-              Nb Produits
-              <i class="fas" [ngClass]="getSortIcon('productCount')"></i>
-            </div>
-          </th>
-          <th>
-            <div class="th-content" (click)="sort('displayOrder')">
-              Ordre
-              <i class="fas" [ngClass]="getSortIcon('displayOrder')"></i>
-            </div>
-          </th>
-          <th>Visible</th>
-          <th>
-            <div class="th-content" (click)="sort('createdAt')">
-              Créé le
-              <i class="fas" [ngClass]="getSortIcon('createdAt')"></i>
-            </div>
-          </th>
-          <th>Actions</th>
-        </tr>
+          <tr>
+            <th>#</th>
+            <th>
+              <div class="th-content" (click)="sort('name')">
+                Nom
+                <i class="fas" [ngClass]="getSortIcon('name')"></i>
+              </div>
+            </th>
+            <th>Slug</th>
+            <th>
+              <div class="th-content" (click)="sort('level')">
+                Niveau
+                <i class="fas" [ngClass]="getSortIcon('level')"></i>
+              </div>
+            </th>
+            <th>Catégorie parent</th>
+            <th>
+              <div class="th-content" (click)="sort('status')">
+                Statut
+                <i class="fas" [ngClass]="getSortIcon('status')"></i>
+              </div>
+            </th>
+            <th>Type spécial</th>
+            <th>
+              <div class="th-content" (click)="sort('productCount')">
+                Nb Produits
+                <i class="fas" [ngClass]="getSortIcon('productCount')"></i>
+              </div>
+            </th>
+            <th>
+              <div class="th-content" (click)="sort('displayOrder')">
+                Ordre
+                <i class="fas" [ngClass]="getSortIcon('displayOrder')"></i>
+              </div>
+            </th>
+            <th>Visible</th>
+            <th>
+              <div class="th-content" (click)="sort('createdAt')">
+                Créé le
+                <i class="fas" [ngClass]="getSortIcon('createdAt')"></i>
+              </div>
+            </th>
+            <th>Actions</th>
+          </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let category of getPaginatedCategories()">
-          <td>
-            <div class="category-info">
-              <img *ngIf="category.iconUrl" [src]="internatPathUrl+category.iconUrl?.url" alt="Icon" class="preview-image">
-              <span class="category-name">{{ category.name }}</span>
-            </div>
-          </td>
-          <td>
-            <code>{{ category.slug }}</code>
-          </td>
-          <td>
-            <span class="level-badge level-{{category.level}}">{{ category.level }}</span>
-          </td>
-          <td>
-            <span *ngIf="category.parentCategory">{{ category.parentCategory }}</span>
-            <span *ngIf="!category.parentCategory" class="text-muted">—</span>
-          </td>
-          <td>
-              <span class="status-badge" [ngClass]="category.status">
-                {{ getStatusLabel(category.status) }}
-              </span>
-          </td>
-          <td>
-              <span class="special-category-badge" [ngClass]="category.specialCategory">
-                {{ getSpecialCategoryLabel(category.specialCategory) }}
-              </span>
-          </td>
-          <td>
-            <span class="product-count">{{ category.productCount }}</span>
-          </td>
-          <td>{{ category.displayOrder }}</td>
-          <td>
-            <i class="fas fa-eye" *ngIf="category.isVisible" style="color: green;" title="Visible"></i>
-            <i class="fas fa-eye-slash" *ngIf="!category.isVisible" style="color: red;" title="Masqué"></i>
-          </td>
-          <td>{{ category.createdAt | date: 'dd/MM/yyyy' }}</td>
-          <td>
-            <div class="action-buttons">
-              <button class="btn btn-outline-primary btn-sm"
-                      (click)="viewCategoryDetails(category)"
-                      title="Voir les détails">
-                <i class="fas fa-eye"></i>
-              </button>
-              <button class="btn btn-outline-warning btn-sm"
-                      (click)="openEditModal(category)"
-                      title="Modifier">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button class="btn btn-outline-danger btn-sm"
-                      (click)="deleteCategory(category)"
-                      title="Supprimer">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
+          <tr *ngFor="let category of getPaginatedCategories()">
+            <td><img *ngIf="category.iconUrl" [src]="internatPathUrl+category.iconUrl?.url" alt="Icon" class="preview-image" width="20"></td>
+            <td>
+              <div class="category-info"><span class="category-name"><a [routerLink]="['/pharmacy/categories', category._id]">{{ category.name }}</a></span></div>
+            </td>
+            <td>
+              <code>{{ category.slug }}</code>
+            </td>
+            <td>
+              <span class="level-badge level-{{category.level}}">{{ category.level }}</span>
+            </td>
+            <td>
+              <span *ngIf="category.parentCategory">{{ category.parentCategory.name }}</span>
+              <span *ngIf="!category.parentCategory" class="text-muted">—</span>
+            </td>
+            <td>
+                <span class="status-badge" [ngClass]="category.status">
+                  {{ getStatusLabel(category.status) }}
+                </span>
+            </td>
+            <td>
+                <span class="special-category-badge" [ngClass]="category.specialCategory">
+                  {{ getSpecialCategoryLabel(category.specialCategory) }}
+                </span>
+            </td>
+            <td>
+              <span class="product-count">{{ category.productCount }}</span>
+            </td>
+            <td>{{ category.displayOrder }}</td>
+            <td>
+              <i class="fas fa-eye" *ngIf="category.isVisible" style="color: green;" title="Visible"></i>
+              <i class="fas fa-eye-slash" *ngIf="!category.isVisible" style="color: red;" title="Masqué"></i>
+            </td>
+            <td>{{ category.createdAt | date: 'dd/MM/yyyy' }}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-outline-primary btn-sm"
+                        (click)="viewCategoryDetails(category)"
+                        title="Voir les détails">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
-
-    <!-- Pagination -->
     <div *ngIf="!isLoading && filteredCategories.length > 0" class="d-flex justify-content-between align-items-center mt-3 pagination-wrapper">
       <div class="pagination-info">
         Affichage de {{paginationStart + 1}} à {{paginationEnd}} sur {{filteredCategories.length}} catégories
@@ -195,8 +188,6 @@
     </div>
   </div>
 </div>
-
-<!-- Modal pour les détails de la catégorie -->
 <ng-template #categoryDetailsModal>
   <div class="modal-header">
     <h4 class="modal-title">Détails de la catégorie</h4>
@@ -223,8 +214,10 @@
             <p><span class="level-badge level-{{selectedCategory.level}}">{{ selectedCategory.level }}</span></p>
           </div>
           <div class="detail-group">
-            <label>Catégorie parent:</label>
-            <p>{{ selectedCategory.parentCategory || 'Aucune' }}</p>
+            <label>{{selectedCategory.parentCategory ? 'Catégorie parent' : '' }}</label>
+              <p>
+                <span class="special-category-badge"> {{ selectedCategory.parentCategory ? selectedCategory.parentCategory.name : 'Categorie de base'}} </span>
+              </p>
           </div>
         </div>
         <div class="col-md-6">
@@ -254,18 +247,24 @@
           </div>
         </div>
       </div>
-
-      <div *ngIf="selectedCategory.imageUrl || selectedCategory.iconUrl" class="row mt-3">
-        <div class="col-12">
-          <h5>Images</h5>
-          <div class="image-preview">
-            <div *ngIf="selectedCategory.iconUrl" class="image-item">
-              <label>Icône:</label>
-              <img [src]="selectedCategory.iconUrl.url" alt="Icône" class="preview-image">
+      <div class="col-12">
+        <h5>Restrictions:</h5>
+        <div class="detail-group">
+          <div class="row col-12">
+            {{ selectedCategory.restrictions ? '' : 'Aucune' }}
+            <span class="badge-group" *ngFor="let restriction of selectedCategory.restrictions"> {{ getRestrictionByValue(restriction).label+" ("+getRestrictionByValue(restriction).category+")" }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-12">
+        <h5>Images:</h5>
+        <div class="detail-group">
+          <div class="row">
+            <div class="col-md-6" *ngIf="selectedCategory.iconUrl">
+                <img [src]="internatPathUrl+selectedCategory.iconUrl.url" alt="Icône" class="preview-image" style="width: 100%;">
             </div>
-            <div *ngIf="selectedCategory.imageUrl" class="image-item">
-              <label>Image:</label>
-              <img [src]="selectedCategory.imageUrl.url" alt="Image" class="preview-image">
+            <div class="col-md-6" *ngIf="selectedCategory.imageUrl">
+              <img [src]="internatPathUrl+selectedCategory.imageUrl.url" alt="Image" class="preview-image" style="width: 100%;">
             </div>
           </div>
         </div>
@@ -309,16 +308,11 @@
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
-    <button type="button" class="btn btn-warning" (click)="openEditModal(selectedCategory!)">
-      <i class="fas fa-edit"></i> Modifier
-    </button>
   </div>
 </ng-template>
-
-<!-- Modal pour ajouter/modifier une catégorie -->
 <ng-template #addEditCategoryModal>
   <div class="modal-header">
-    <h4 class="modal-title">{{ isEditing ? 'Modifier la catégorie' : 'Ajouter une catégorie' }}</h4>
+    <h4 class="modal-title">{{ 'Ajouter une catégorie' }}</h4>
     <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
   </div>
   <form [formGroup]="categoryForm" (ngSubmit)="onSubmit()">
@@ -359,10 +353,8 @@
                       rows="3"
                       formControlName="description"></textarea>
           </div>
-
           <div class="mb-3">
             <label for="level" class="form-label">Niveau <span class="text-danger">*</span></label>
-
             <select class="form-select"
             id="level"
             formControlName="level"
@@ -458,14 +450,18 @@
               </label>
             </div>
           </div>
-
           <div class="mb-3">
-            <label for="ageRestriction" class="form-label">Restriction d'âge</label>
-            <input type="text"
-                   class="form-control"
-                   id="ageRestriction"
-                   formControlName="ageRestriction"
-                   placeholder="Ex: 18+">
+            <label for="restrictions" class="form-label">
+              Restrictions <span class="text-muted">(Sélectionnez toutes les restrictions applicables)</span>
+            </label>
+            <select2
+              multiple="multiple"
+              class="form-control"
+              id="restrictions"
+              formControlName="restrictions"
+              [data]="restrictions"
+            >
+            </select2>
           </div>
         </div>
       </div>
@@ -490,7 +486,7 @@
               <div class="file-preview mt-2" *ngIf="selectedFiles.iconUrl">
                 <div class="preview-item">
                   <div class="file-info">
-                    <i [class]="getFileIcon('insurance')"></i>
+                    <i [class]="getFileIcon('iconUrl')"></i>
                     <span class="file-name">{{ selectedFiles.iconUrl.name }}</span>
                     <span class="file-size">({{ (selectedFiles.iconUrl.size / 1024 / 1024).toFixed(2) }} MB)</span>
                   </div>
@@ -517,7 +513,7 @@
             <div class="file-preview mt-2" *ngIf="selectedFiles.imageUrl">
               <div class="preview-item">
                 <div class="file-info">
-                  <i [class]="getFileIcon('insurance')"></i>
+                  <i [class]="getFileIcon('imageUrl')"></i>
                   <span class="file-name">{{ selectedFiles.imageUrl.name }}</span>
                   <span class="file-size">({{ (selectedFiles.imageUrl.size / 1024 / 1024).toFixed(2) }} MB)</span>
                 </div>
@@ -577,7 +573,7 @@
               class="btn btn-primary"
               [disabled]="!categoryForm.valid || isSubmitting">
         <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-        {{ isEditing ? 'Modifier' : 'Créer' }}
+        {{ 'Créer' }}
       </button>
     </div>
   </form>

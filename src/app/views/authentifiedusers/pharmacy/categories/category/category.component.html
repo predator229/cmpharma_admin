@@ -1,0 +1,669 @@
+<div class="category-detail-container">
+  <!-- Loading indicator -->
+  <div *ngIf="isLoading" class="loading-container d-flex justify-content-center align-items-center"
+       style="min-height: 400px;">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div *ngIf="errorMessage && !isLoading" class="alert alert-danger">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+  </div>
+
+  <!-- Main content -->
+  <div *ngIf="!isLoading && category && !errorMessage">
+    <!-- Header -->
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex align-items-center">
+        <button class="btn btn-outline-secondary me-3" (click)="goBack()" title="Retour">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1 class="h2 mb-0">
+          <img *ngIf="category.iconUrl"
+               [src]="internatPathUrl + category.iconUrl.url"
+               alt="Icon"
+               class="me-2"
+               style="width: 32px; height: 32px; object-fit: cover;">
+          {{ category.name }}
+        </h1>
+        <span class="status-badge ms-3" [ngClass]="category.status">
+          {{ getStatusLabel(category.status) }}
+        </span>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-danger"
+                (click)="deleteCategory()"
+                *ngIf="permissions.deleteCategorie"
+                title="Supprimer la catégorie">
+          <i class="fas fa-trash"></i> Supprimer
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+          <a href="javascript:void(0)" (click)="navigateToList()">Catégories</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+      </ol>
+    </nav>
+
+    <!-- Category Information Cards -->
+    <div class="row">
+      <!-- Basic Information -->
+      <div class="col-lg-8">
+        <div class="card mb-4">
+          <div class="page-header d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+              <h5 class="h2 mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                Informations générales
+              </h5>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-sm btn-outline-primary me-2"
+                  (click)="openEditModal(1)"
+                  *ngIf="permissions.editCategorie"
+                  title="Modifier la catégorie">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="detail-group mb-3">
+                  <label class="fw-bold text-muted">Nom:</label>
+                  <p class="mb-0">{{ category.name }}</p>
+                </div>
+                <div class="detail-group mb-3">
+                  <label class="fw-bold text-muted">Slug:</label>
+                  <p class="mb-0"><code>{{ category.slug }}</code></p>
+                </div>
+                <div class="detail-group mb-3">
+                  <label class="fw-bold text-muted">Niveau:</label>
+                  <p class="mb-0">
+                    <span class="level-badge level-{{category.level}}">{{ category.level }}</span>
+                  </p>
+                </div>
+                <div class="detail-group mb-3">
+                  <label class="fw-bold text-muted">Catégorie parent:</label>
+                  <p class="mb-0">
+                    <span *ngIf="category.parentCategory" class="special-category-badge">
+                      {{ category.parentCategory.name }}
+                    </span>
+                    <span *ngIf="!category.parentCategory" class="text-muted">
+                      Catégorie de base
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="detail-group mb-3">
+                  <label class="fw-bold text-muted">Type spécial:</label>
+                  <p class="mb-0">
+                    <span class="special-category-badge" [ngClass]="category.specialCategory">
+                      {{ getSpecialCategoryLabel(category.specialCategory) }}
+                    </span>
+                  </p>
+                </div>
+                <div class="detail-group mb-3">
+                  <label class="fw-bold text-muted">Ordre d'affichage:</label>
+                  <p class="mb-0">{{ category.displayOrder }}</p>
+                </div>
+                <div class="detail-group mb-3">
+                  <label class="fw-bold text-muted">Visible:</label>
+                  <p class="mb-0">
+                    <i class="fas fa-eye text-success" *ngIf="category.isVisible" title="Visible"></i>
+                    <i class="fas fa-eye-slash text-danger" *ngIf="!category.isVisible" title="Masqué"></i>
+                    {{ category.isVisible ? 'Oui' : 'Non' }}
+                  </p>
+                </div>
+                <div class="detail-group mb-3">
+                  <label class="fw-bold text-muted">Ordonnance requise:</label>
+                  <p class="mb-0">
+                    <i class="fas fa-check text-success" *ngIf="category.requiresPrescription"></i>
+                    <i class="fas fa-times text-danger" *ngIf="!category.requiresPrescription"></i>
+                    {{ category.requiresPrescription ? 'Oui' : 'Non' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="category.description" class="detail-group">
+              <label class="fw-bold text-muted">Description:</label>
+              <p class="mb-0">{{ category.description }}</p>
+            </div>
+
+            <!-- Meta Information -->
+            <div *ngIf="category.metaTitle || category.metaDescription || category.keywords?.length" class="mt-4 pt-3 border-top">
+              <h6 class="fw-bold mb-3">Informations SEO</h6>
+              <div class="row" *ngIf="category.metaTitle">
+                <div class="col-12">
+                  <div class="detail-group mb-3">
+                    <label class="fw-bold text-muted">Meta Title:</label>
+                    <p class="mb-0">{{ category.metaTitle }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="row" *ngIf="category.metaDescription">
+                <div class="col-12">
+                  <div class="detail-group mb-3">
+                    <label class="fw-bold text-muted">Meta Description:</label>
+                    <p class="mb-0">{{ category.metaDescription }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="row" *ngIf="category.keywords?.length">
+                <div class="col-12">
+                  <div class="detail-group mb-3">
+                    <label class="fw-bold text-muted">Mots-clés:</label>
+                    <div class="d-flex flex-wrap gap-1">
+                      <span *ngFor="let keyword of category.keywords" class="badge bg-secondary">{{ keyword }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Restrictions -->
+            <div *ngIf="category.restrictions?.length" class="mt-3 pt-3 border-top">
+              <h6 class="fw-bold mb-3">Restrictions</h6>
+              <div class="d-flex flex-wrap gap-2">
+                <span *ngFor="let restriction of category.restrictions"
+                      class="badge bg-warning text-dark">
+                  {{ getRestrictionByValue(restriction)?.label || restriction }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pharmacies associées -->
+        <div class="card mb-4" *ngIf="category.pharmaciesList">
+          <div class="page-header d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+              <h5 class="h2 mb-0">
+                <i class="fas fa-clinic-medical me-2"></i>
+                Pharmacies associées
+              </h5>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-sm btn-outline-primary me-2"
+                      (click)="openEditModal(2)"
+                      *ngIf="permissions.editCategorie"
+                      title="Modifier la catégorie">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6" *ngFor="let pharmacy of category.pharmaciesList">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="fas fa-clinic-medical text-primary me-2"></i>
+                  <span>{{ pharmacy.name || pharmacy.id }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-12 mb-3">
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5><i class="fas fa-shopping-cart"></i> Produits les plus commandes</h5>
+              <button class="btn btn-sm btn-outline-primary" [routerLink]="['pharmacy/products/list']" [queryParams]="{pharmacy: category._id}">
+                Voir tous les produits de la categorie
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Client</th>
+                    <th>Date</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr *ngFor="let product of []">
+                    <td>{{ product.id }}</td>
+                    <td>{{ product.clientName }}</td>
+                    <td>{{ product.date | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td>{{ product.buc }}</td>
+                    <td>{{ product.amount | currency:'EUR' }}</td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary" [routerLink]="['/pharmacy/products', product.id]">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  </tbody>
+                </table>
+                <div class="text-center py-3" *ngIf="[].length === 0">
+                  <p class="text-muted">Aucune produits recement vendus</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- rigth part -->
+      <div class="col-lg-4">
+        <div class="card mb-4">
+          <div class="page-header d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+              <h5 class="h2 mb-0">
+                <i class="fas fa-chart-bar me-2"></i>
+                Statistiques
+              </h5>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="stat-item d-flex justify-content-between align-items-center mb-3">
+              <span class="text-muted">
+                <i class="fas fa-box me-2"></i>
+                Nombre de produits
+              </span>
+              <span class="badge bg-primary">{{ category.productCount || 0 }}</span>
+            </div>
+            <div class="stat-item d-flex justify-content-between align-items-center mb-3">
+              <span class="text-muted">
+                <i class="fas fa-eye me-2"></i>
+                Nombre de vues
+              </span>
+              <span class="badge bg-info">{{ category.viewCount || 0 }}</span>
+            </div>
+            <div class="stat-item d-flex justify-content-between align-items-center">
+              <span class="text-muted">
+                <i class="fas fa-calendar me-2"></i>
+                Créé le
+              </span>
+              <span class="text-muted">{{ category.createdAt | date: 'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="card mb-4">
+          <div class="page-header d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+              <h5 class="h2 mb-0">
+                <i class="fas fa-images me-2"></i>
+                Icône
+              </h5>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-sm btn-outline-primary me-2"
+                      (click)="openEditModal(3)"
+                      *ngIf="permissions.editCategorie"
+                      title="Modifier l'icone">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="col-md-12" *ngIf="category.iconUrl">
+              <div class="text-center">
+                <img [src]="internatPathUrl + category.iconUrl.url"
+                     alt="Icône"
+                     class="img-fluid rounded shadow-sm"
+                     style="max-height: 200px; object-fit: cover;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card mb-4">
+          <div class="page-header d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+              <h5 class="h2 mb-0">
+                <i class="fas fa-images me-2"></i>
+                Image
+              </h5>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-sm btn-outline-primary me-2"
+                      (click)="openEditModal(4)"
+                      *ngIf="permissions.editCategorie"
+                      title="Modifier la catégorie">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="col-md-12" *ngIf="category.imageUrl">
+              <div class="text-center">
+                <img [src]="internatPathUrl + category.imageUrl.url"
+                     alt="Image"
+                     class="img-fluid rounded shadow-sm"
+                     style="max-height: 200px; object-fit: cover;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card mb-4" style="height: 400px; overflow-y: scroll;">
+          <div class="card-header">
+            <h5><i class="fas fa-clock"></i> Historiques </h5>
+          </div>
+          <div class="row">
+            <app-activity-timeline [activites]="categoryActivities" [usersInfo]="usersInfo"></app-activity-timeline>
+            <div class="col-md-12">
+              <div class="text-center py-3" *ngIf="categoryActivities.length > 0">
+                <!--                <p class="text-muted" routerLink=['/admin/pharmacies', pharmacy.id] >Voir plus...</p>-->
+                <a [routerLink]="['/pharmacy/admin/logs', category._id]">Voir plus</a>
+              </div>
+              <div class="text-center py-3" *ngIf="categoryActivities.length === 0">
+                <p class="text-muted">Aucune activité récente</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Category Modal -->
+<ng-template #editCategoryModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-edit me-2"></i>
+      Modifier la catégorie
+    </h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+  </div>
+
+  <form [formGroup]="categoryForm" (ngSubmit)="onSubmit()" novalidate>
+    <div class="modal-body">
+      <div class="row">
+        <!-- Informations de base -->
+        <div *ngIf="categoryForm.get('type_').value == 1" >
+          <div class="col-12">
+            <h6 class="fw-bold mb-3 text-primary">
+              <i class="fas fa-info-circle me-2"></i>
+              Informations de base
+            </h6>
+          </div>
+          <!-- Nom -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="name" class="form-label">
+                Nom <span class="text-danger">*</span>
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="name"
+                     formControlName="name"
+                     [class.is-valid]="isFieldValid('name')"
+                     [class.is-invalid]="isFieldInvalid('name')"
+                     (blur)="generateSlug()">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+                {{ getFieldError('name') }}
+              </div>
+            </div>
+            <!-- Slug -->
+            <div class="col-md-6 mb-3">
+              <label for="slug" class="form-label">
+                Slug <span class="text-danger">*</span>
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="slug"
+                     formControlName="slug"
+                     [class.is-valid]="isFieldValid('slug')"
+                     [class.is-invalid]="isFieldInvalid('slug')">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('slug')">
+                {{ getFieldError('slug') }}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <!-- Description -->
+            <div class="col-12 mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control"
+                      id="description"
+                      rows="3"
+                      formControlName="description"
+                      placeholder="Description de la catégorie..."></textarea>
+          </div>
+          </div>
+          <div class="row">
+            <!-- Type spécial -->
+            <div class="col-md-6 mb-3">
+              <label for="specialCategory" class="form-label">
+                Type spécial <span class="text-danger">*</span>
+              </label>
+              <select class="form-select"
+                      id="specialCategory"
+                      formControlName="specialCategory">
+                <option value="otc">Vente libre</option>
+                <option value="prescription">Sur ordonnance</option>
+                <option value="homeopathy">Homéopathie</option>
+                <option value="medical_device">Dispositif médical</option>
+                <option value="supplement">Complément alimentaire</option>
+                <option value="cosmetic">Cosmétique</option>
+              </select>
+            </div>
+            <!-- Statut -->
+            <div class="col-md-6 mb-3">
+              <label for="status" class="form-label">
+                Statut <span class="text-danger">*</span>
+              </label>
+              <select class="form-select"
+                      id="status"
+                      formControlName="status">
+                <option value="active">Actif</option>
+                <option value="inactive">Inactif</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="mb-3">
+              <label for="restrictions" class="form-label">
+                Restrictions <span class="text-muted">(Sélectionnez toutes les restrictions applicables)</span>
+              </label>
+              <select2
+                multiple="multiple"
+                class="form-control"
+                id="restrictions"
+                formControlName="restrictions"
+                [data]="restrictions"
+              >
+              </select2>
+            </div>
+          </div>
+          <!-- Catégorie parent et niveau -->
+          <div class="mb-3">
+            <label for="parentCategory" class="form-label">Catégorie parent</label>
+            <select2
+              class="form-control"
+              id="parentCategory"
+              formControlName="parentCategory"
+              [data]="categoriesArraySelect2"
+              [class.is-invalid]="isFieldInvalid('parentCategory')"
+            >
+            </select2>
+            <div class="invalid-feedback">{{ getFieldError('parentCategory') }}</div>
+          </div>
+          <!-- Configuration -->
+          <div class="col-12 mt-4">
+            <h6 class="fw-bold mb-3 text-primary">
+              <i class="fas fa-cogs me-2"></i>
+              Configuration
+            </h6>
+          </div>
+          <div class="row">
+          <!-- Ordre d'affichage -->
+            <div class="col-md-6 mb-3">
+              <label for="displayOrder" class="form-label">Ordre d'affichage</label>
+              <input type="number"
+                     class="form-control"
+                     id="displayOrder"
+                     formControlName="displayOrder"
+                     min="0">
+            </div>
+            <!-- Options -->
+            <div class="col-md-6 mb-3">
+          <div class="form-check mb-2">
+            <input class="form-check-input"
+                   type="checkbox"
+                   id="isVisible"
+                   formControlName="isVisible">
+            <label class="form-check-label" for="isVisible">
+              Visible
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   id="requiresPrescription"
+                   formControlName="requiresPrescription">
+            <label class="form-check-label" for="requiresPrescription">
+              Ordonnance requise
+            </label>
+          </div>
+        </div>
+          </div>
+          <!-- SEO -->
+          <div class="col-12 mt-4">
+            <h6 class="fw-bold mb-3 text-primary">
+              <i class="fas fa-search me-2"></i>
+              Référencement (SEO)
+            </h6>
+          </div>
+          <div class="row">
+            <div class="col-6">
+              <!-- Meta Title -->
+              <div class="col-12 mb-3">
+                <label for="metaTitle" class="form-label">Meta Title</label>
+                <input type="text"
+                       class="form-control"
+                       id="metaTitle"
+                       formControlName="metaTitle"
+                       maxlength="60">
+                <div class="form-text">Recommandé: 50-60 caractères</div>
+              </div>
+              <!-- Keywords -->
+              <div class="col-12 mb-3">
+                <label for="keywords" class="form-label">Mots-clés</label>
+                <input type="text"
+                       class="form-control"
+                       id="keywords"
+                       formControlName="keywords"
+                       placeholder="Séparez les mots-clés par des virgules">
+                <div class="form-text">Séparez les mots-clés par des virgules</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <!-- Meta Description -->
+              <div class="col-12 mb-3">
+                <label for="metaDescription" class="form-label">Meta Description</label>
+                <textarea class="form-control"
+                  id="metaDescription"
+                  rows="5"
+                  formControlName="metaDescription"
+                  maxlength="160"></textarea>
+                <div class="form-text">Recommandé: 150-160 caractères</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="categoryForm.get('type_').value == 2" >
+          <!-- Pharmacies -->
+          <div class="row">
+            <div class="col-12 mb-3">
+              <label for="pharmaciesList" class="form-label">Liste des pharmacies de la Categorie</label>
+              <select2
+                multiple="multiple"
+                class="form-control"
+                id="pharmaciesList"
+                formControlName="pharmaciesList"
+                [data]="pharmaciesListArray"
+                [class.is-invalid]="isFieldInvalid('pharmaciesList')"
+              >
+              </select2>
+              <div class="invalid-feedback">{{ getFieldError('pharmaciesList') }}</div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="categoryForm.get('type_').value == 3" >
+          <!-- Icône -->
+          <div class="col-md-6 mb-3">
+            <label for="iconUrl" class="form-label">Icône</label>
+            <input type="file"
+                   class="form-control"
+                   id="iconUrl"
+                   accept="image/jpeg,image/jpg,image/png"
+                   (change)="onFileSelected($event, 'iconUrl')">
+            <div class="form-text">JPG, PNG ou JPEG. Taille max: 5MB</div>
+
+            <!-- Preview -->
+            <div *ngIf="previewUrls.iconUrl || (category?.iconUrl && !selectedFiles.iconUrl)" class="mt-2">
+              <img [src]="previewUrls.iconUrl || (internatPathUrl + category?.iconUrl?.url)"
+                   alt="Aperçu icône"
+                   class="img-thumbnail"
+                   style="max-height: 100px;">
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger ms-2"
+                      (click)="removeFile('iconUrl')">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="categoryForm.get('type_').value == 4" >
+          <!-- Images -->
+          <div class="col-md-6 mb-3">
+            <label for="imageUrl" class="form-label">Image</label>
+            <input type="file"
+                   class="form-control"
+                   id="imageUrl"
+                   accept="image/jpeg,image/jpg,image/png"
+                   (change)="onFileSelected($event, 'imageUrl')">
+            <div class="form-text">JPG, PNG ou JPEG. Taille max: 5MB</div>
+
+            <!-- Preview -->
+            <div *ngIf="previewUrls.imageUrl || (category?.imageUrl && !selectedFiles.imageUrl)" class="mt-2">
+              <img [src]="previewUrls.imageUrl || (internatPathUrl + category?.imageUrl?.url)"
+                   alt="Aperçu de l'image"
+                   class="img-thumbnail"
+                   style="max-height: 100px;">
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger ms-2"
+                      (click)="removeFile('imageUrl')">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button"
+              class="btn btn-secondary"
+              (click)="closeModal()"
+              [disabled]="isSubmitting">
+        <i class="fas fa-times me-1"></i>
+        Annuler
+      </button>
+      <button type="submit"
+              class="btn btn-primary"
+              [disabled]="categoryForm.invalid || isSubmitting">
+        <i class="fas fa-spinner fa-spin me-1" *ngIf="isSubmitting"></i>
+        <i class="fas fa-save me-1" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer' }}
+      </button>
+    </div>
+  </form>
+</ng-template>

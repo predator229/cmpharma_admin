@@ -1,6 +1,87 @@
 import {PharmacyClass} from "./Pharmacy.class";
 import {FileClass} from "./File.class";
 
+interface PharmacyRestriction {
+  value: string;
+  label: string;
+  category: string;
+  description?: string;
+}
+export const getRestrictionsByCategory = (): any[] => {
+  const groups: { [key: string]: PharmacyRestriction[] } = PHARMACY_RESTRICTIONS.reduce((groups, restriction) => {
+    const category = restriction.category;
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(restriction);
+    return groups;
+  }, {} as { [key: string]: PharmacyRestriction[] });
+
+  // Convertir au format Select2 avec optgroups
+  return Object.keys(groups).map(category => ({
+    text: category,
+    children: groups[category].map(restriction => ({
+      value: restriction.value,
+      label: restriction.label
+    }))
+  }));
+};
+// Helper pour récupérer les labels des restrictions sélectionnées
+export const getSelectedRestrictionLabels = (selectedValues: string[]): string[] => {
+  return PHARMACY_RESTRICTIONS
+    .filter(restriction => selectedValues.includes(restriction.value))
+    .map(restriction => restriction.label);
+};
+
+// Helper pour récupérer une restriction par sa valeur
+export const getRestrictionByValue = (value: string): PharmacyRestriction | undefined => {
+  return PHARMACY_RESTRICTIONS.find(restriction => restriction.value === value);
+};
+
+// Types pour les valeurs de restrictions
+export type RestrictionValue = typeof PHARMACY_RESTRICTIONS[number]['value'];
+export type RestrictionCategory = typeof PHARMACY_RESTRICTIONS[number]['category'];
+export const PHARMACY_RESTRICTIONS: PharmacyRestriction[] = [
+  // Restrictions d'âge
+  { value: 'age_18', label: '18 ans et plus', category: 'Restrictions d\'âge' },
+  { value: 'age_16', label: '16 ans et plus', category: 'Restrictions d\'âge' },
+  { value: 'age_12', label: '12 ans et plus', category: 'Restrictions d\'âge' },
+  { value: 'minors_supervision', label: 'Mineurs sous supervision parentale', category: 'Restrictions d\'âge' },
+
+  // Restrictions médicales
+  { value: 'prescription_required', label: 'Ordonnance médicale obligatoire', category: 'Restrictions médicales' },
+  { value: 'pharmacist_advice', label: 'Conseil du pharmacien requis', category: 'Restrictions médicales' },
+  { value: 'medical_history', label: 'Vérification des antécédents médicaux', category: 'Restrictions médicales' },
+  { value: 'contraindications_check', label: 'Vérification des contre-indications', category: 'Restrictions médicales' },
+  { value: 'drug_interactions', label: 'Contrôle des interactions médicamenteuses', category: 'Restrictions médicales' },
+
+  // Restrictions de quantité
+  { value: 'quantity_limited', label: 'Quantité limitée par achat', category: 'Restrictions de quantité' },
+  { value: 'monthly_limit', label: 'Limite mensuelle', category: 'Restrictions de quantité' },
+  { value: 'one_per_person', label: 'Un seul par personne', category: 'Restrictions de quantité' },
+  { value: 'bulk_restriction', label: 'Vente en gros interdite', category: 'Restrictions de quantité' },
+
+  // Conditions de vente
+  { value: 'id_required', label: 'Pièce d\'identité obligatoire', category: 'Conditions de vente' },
+  { value: 'registration_required', label: 'Enregistrement client requis', category: 'Conditions de vente' },
+  { value: 'pharmacist_presence', label: 'Présence du pharmacien obligatoire', category: 'Conditions de vente' },
+  { value: 'consultation_required', label: 'Consultation préalable requise', category: 'Conditions de vente' },
+
+  // Restrictions temporelles
+  { value: 'daytime_only', label: 'Vente en journée uniquement', category: 'Restrictions temporelles' },
+  { value: 'business_hours', label: 'Heures d\'ouverture strictes', category: 'Restrictions temporelles' },
+  { value: 'no_weekend', label: 'Pas de vente le weekend', category: 'Restrictions temporelles' },
+  { value: 'appointment_only', label: 'Sur rendez-vous uniquement', category: 'Restrictions temporelles' },
+
+  // Restrictions spéciales
+  { value: 'pregnancy_warning', label: 'Mise en garde grossesse', category: 'Restrictions spéciales' },
+  { value: 'driving_warning', label: 'Avertissement conduite', category: 'Restrictions spéciales' },
+  { value: 'alcohol_incompatible', label: 'Incompatible avec l\'alcool', category: 'Restrictions spéciales' },
+  { value: 'professional_use', label: 'Usage professionnel uniquement', category: 'Restrictions spéciales' },
+  { value: 'controlled_substance', label: 'Substance contrôlée', category: 'Restrictions spéciales' },
+  { value: 'cold_chain', label: 'Chaîne du froid obligatoire', category: 'Restrictions spéciales' }
+];
+
 export class Category {
   _id?: string;
   name: string;
@@ -26,7 +107,7 @@ export class Category {
   viewCount: number;
 
   requiresPrescription: boolean;
-  ageRestriction?: number;
+  restrictions?: string[];
   specialCategory: 'otc' | 'prescription' | 'homeopathy' | 'medical_device' | 'supplement' | 'cosmetic';
 
   pharmaciesList: [PharmacyClass];
@@ -53,7 +134,7 @@ export class Category {
     productCount?: number;
     viewCount?: number;
     requiresPrescription?: boolean;
-    ageRestriction?: number;
+    restrictions?: string[];
     specialCategory?: 'otc' | 'prescription' | 'homeopathy' | 'medical_device' | 'supplement' | 'cosmetic';
     pharmaciesList: [PharmacyClass];
     createdAt: Date;
@@ -83,7 +164,7 @@ export class Category {
     this.viewCount = data.viewCount || 0;
 
     this.requiresPrescription = data.requiresPrescription || false;
-    this.ageRestriction = data.ageRestriction;
+    this.restrictions = data.restrictions;
     this.specialCategory = data.specialCategory || 'otc';
 
     this.pharmaciesList = data.pharmaciesList;
@@ -110,10 +191,6 @@ export class Category {
 
   isPrescriptionRequired(): boolean {
     return this.requiresPrescription || this.specialCategory === 'prescription';
-  }
-
-  hasAgeRestriction(): boolean {
-    return this.ageRestriction !== null && this.ageRestriction !== undefined;
   }
 
   getDisplayName(): string {
@@ -178,7 +255,7 @@ export class Category {
       productCount: this.productCount,
       viewCount: this.viewCount,
       requiresPrescription: this.requiresPrescription,
-      ageRestriction: this.ageRestriction,
+      restrictions: this.restrictions,
       specialCategory: this.specialCategory,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt

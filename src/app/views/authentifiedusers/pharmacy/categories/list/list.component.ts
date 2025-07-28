@@ -2,7 +2,12 @@ import {Component, OnInit, OnDestroy, ViewChild, ElementRef} from '@angular/core
 import { CommonModule } from "@angular/common";
 import { SharedModule } from "../../../../theme/shared/shared.module";
 import { AuthService } from "../../../../../controllers/services/auth.service";
-import { Category } from "../../../../../models/Category.class";
+import {
+  PHARMACY_RESTRICTIONS,
+  getRestrictionsByCategory,
+  Category,
+  getRestrictionByValue
+} from "../../../../../models/Category.class";
 import { Router, RouterModule } from "@angular/router";
 import { Subject, takeUntil } from 'rxjs';
 import { HttpHeaders } from '@angular/common/http';
@@ -33,6 +38,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
 
   searchText: string = '';
   levelFilter: string = '';
+  pharmacyFilter: string = '';
   statusFilter: string = '';
   specialCategoryFilter: string = '';
   sortColumn: string = 'name';
@@ -44,13 +50,19 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
   paginationEnd: number = 0;
   currentPage: number = 1;
   internatPathUrl = environment.internalPathUrl;
-
+  permissions = {
+    addCategorie: false,
+    editCategorie: false,
+    deleteCategorie: false,
+    viewCategories: false,
+    exportCategories: false,
+  };
+  restrictions = PHARMACY_RESTRICTIONS;
   levels: number[] = [];
-  specialCategories: string[] = ['otc', 'prescription', 'homeopathy', 'medical_device', 'supplement', 'cosmetic'];
+  // specialCategories: string[] = ['otc', 'prescription', 'homeopathy', 'medical_device', 'supplement', 'cosmetic'];
 
   categoryForm: FormGroup;
   isSubmitting: boolean = false;
-  isEditing: boolean = false;
 
   private destroy$ = new Subject<void>();
   private modalService: NgbModal;
@@ -80,17 +92,21 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       this.isLoading = loading;
     });
     this.modalService = modalService;
-    this.categoryForm = this.createForm();
   }
 
   ngOnInit(): void {
-    this.loadCategories();
     this.auth.userDetailsLoaded$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(loaded => {
+      .subscribe(async loaded => {
         this.userDetail = this.auth.getUserDetails();
+        this.permissions.viewCategories = this.userDetail.hasPermission('categories.view');
+        this.permissions.addCategorie = this.userDetail.hasPermission('categories.create');
+        this.permissions.editCategorie = this.userDetail.hasPermission('categories.edit');
+        this.permissions.deleteCategorie = this.userDetail.hasPermission('categories.delete');
+        this.permissions.exportCategories = this.userDetail.hasPermission('categories.export');
         if (loaded && this.userDetail) {
-          this.loadCategories();
+          await this.loadCategories();
+          this.categoryForm = this.createForm();
         }
       });
   }
@@ -111,9 +127,9 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       metaDescription: [''],
       keywords: [[]],
       requiresPrescription: [false],
-      ageRestriction: [''],
+      restrictions: [[]],
       specialCategory: ['otc', [Validators.required]],
-      pharmaciesList: [[], [Validators.required]]
+      pharmaciesList: [this.pharmaciesListArray.map(pharm=>pharm.value), [Validators.required]]
     });
   }
 
@@ -182,6 +198,9 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       );
     }
 
+    if (this.pharmacyFilter) {
+      filtered = filtered.filter(c => c.pharmaciesList.filter((pharmacy) => { pharmacy.id == this.pharmacyFilter }));
+    }
     if (this.levelFilter) {
       filtered = filtered.filter(c => c.level === parseInt(this.levelFilter));
     }
@@ -312,7 +331,6 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
   }
 
   openCreateModal(): void {
-    this.isEditing = false;
     this.categoryForm.reset();
     this.categoryForm.patchValue({
       status: 'active',
@@ -321,37 +339,6 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       isVisible: true,
       requiresPrescription: false,
       specialCategory: 'otc'
-    });
-    this.modalService.dismissAll('ok');
-    setTimeout(() => {
-      this.modalService.open(this.addEditCategoryModal, {
-        size: 'xl',
-        backdrop: 'static',
-        centered: true
-      });
-    }, 0);
-  }
-
-  openEditModal(category: Category): void {
-    this.isEditing = true;
-    this.selectedCategory = category;
-    this.categoryForm.patchValue({
-      name: category.name,
-      description: category.description,
-      slug: category.slug,
-      parentCategory: category.parentCategory,
-      level: category.level,
-      imageUrl: category.imageUrl,
-      iconUrl: category.iconUrl,
-      status: category.status,
-      displayOrder: category.displayOrder,
-      isVisible: category.isVisible,
-      metaTitle: category.metaTitle,
-      metaDescription: category.metaDescription,
-      keywords: category.keywords,
-      requiresPrescription: category.requiresPrescription,
-      ageRestriction: category.ageRestriction,
-      specialCategory: category.specialCategory
     });
     this.modalService.dismissAll('ok');
     setTimeout(() => {
@@ -475,7 +462,6 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       const formData = {
         ...this.categoryForm.value,
         uid: await this.auth.getUid(),
-        id: this.isEditing ? this.selectedCategory?._id : undefined
       };
 
       try {
@@ -488,7 +474,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
           'Content-Type': 'application/json'
         });
 
-        const endpoint = this.isEditing ? 'pharmacy-management/categories/update' : 'pharmacy-management/categories/create';
+        const endpoint = 'pharmacy-management/categories/create';
 
         this.apiService.post(endpoint, formData, headers)
           .pipe(takeUntil(this.destroy$))
@@ -496,13 +482,13 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
             next: async (response: any) => {
               if (response && !response.error && response.data) {
                 if (this.categoryForm.get('iconUrl').value) {
-                  this.uploadFiles(this.categoryForm.get('iconUrl').value, 'iconUrl', response.data._id);
+                  await this.uploadFiles(this.categoryForm.get('iconUrl').value, 'iconUrl', response.data._id);
                 }
                 if (this.categoryForm.get('imageUrl').value) {
-                  this.uploadFiles(this.categoryForm.get('imageUrl').value, 'imageUrl', response.data._id);
+                  await this.uploadFiles(this.categoryForm.get('imageUrl').value, 'imageUrl', response.data._id);
                 }
 
-                this.showSuccess( response.message ?? (this.isEditing ? 'Catégorie modifiée avec succès' : 'Catégorie créée avec succès'));
+                this.showSuccess(response.message ?? 'Catégorie créée avec succès');
                 this.closeModal();
                 this.categoryForm.reset();
                 this.loadCategories();
@@ -590,7 +576,6 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     }
     return 'fa-sort';
   }
-
   private extractLevels(): void {
     const levelSet = new Set<number>();
     this.categories.forEach(category => {
@@ -600,28 +585,9 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
   }
 
   getPaginatedCategories(): Category[] {
-    const start = this.paginationStart;
-    const end = this.paginationEnd;
+    const start = this.permissions.viewCategories ? this.paginationStart : 0;
+    const end = this.permissions.viewCategories ? this.paginationEnd : 0;
     return this.filteredCategories.slice(start, end);
-  }
-
-  onCountrySelected(categoryCode: string): void {
-    const selectedCategory = this.categoriesListArray?.[categoryCode];
-
-    if (!selectedCategory) {
-      this.handleError("La categorie n'a pas été retrouvée");
-      return;
-    }
-
-    // const targetForm = type === 0 ? this.pharmacyForm : this.pharmaciesCustomSave;
-    const targetForm =this.categoryForm;
-    targetForm.patchValue({parentCategory: selectedCategory._id});
-  }
-  getFilePreviewUrl(): string {
-    return '';
-  }
-  getAcceptedFileTypes(): string {
-    return 'image/*';
   }
   getFileIcon(fileType: string): string {
     return 'fa fa-file-image';
@@ -650,17 +616,14 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         [`${fileType}`]: file
       });
     }
-    // this.uploadFiles(type);
   }
   private async uploadFiles(file: File, fileType: string, categoryId: string): Promise<string> {
     let idFile: string = '';
     const token = await this.auth.getRealToken();
     const uid = await this.auth.getUid();
-
     if (!token) {
       throw new Error('Token d\'authentification manquant');
     }
-
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
@@ -671,7 +634,6 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       formData.append('type_', fileType);
       formData.append('categoryId', categoryId);
       formData.append('uid', uid || '');
-
       try {
         const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-images-cat', formData, headers).toPromise();
         if (response && response.success) {
@@ -681,7 +643,6 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         throw new Error(`Erreur lors de l'upload du fichier ${fileType}`);
       }
     }
-
     return idFile;
   }
 
@@ -698,4 +659,6 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     }
   }
 
+  protected readonly parseFloat = parseFloat;
+  protected readonly getRestrictionByValue = getRestrictionByValue;
 }
