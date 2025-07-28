@@ -1,46 +1,40 @@
-import {Component, OnInit, OnDestroy, ViewChild, ElementRef} from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from "@angular/common";
 import { SharedModule } from "../../../../theme/shared/shared.module";
 import { AuthService } from "../../../../../controllers/services/auth.service";
-import {
-  PHARMACY_RESTRICTIONS,
-  getRestrictionsByCategory,
-  Category,
-  getRestrictionByValue
-} from "../../../../../models/Category.class";
 import { Router, RouterModule } from "@angular/router";
 import { Subject, takeUntil } from 'rxjs';
 import { HttpHeaders } from '@angular/common/http';
 import { ApiService } from '../../../../../controllers/services/api.service';
 import Swal from 'sweetalert2';
-import {FormBuilder, FormGroup, FormsModule, Validators} from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { LoadingService } from 'src/app/controllers/services/loading.service';
-import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
-import {CommonFunctions} from "../../../../../controllers/comonsfunctions";
-import {UserDetails} from "../../../../../models/UserDatails";
-// import {Select2AjaxComponent} from "../../../sharedComponents/select2-ajax/select2-ajax.component";
-import {environment} from "../../../../../../environments/environment";
-import {Select2} from "ng-select2-component";
-import {FileClass} from "../../../../../models/File.class";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { CommonFunctions } from "../../../../../controllers/comonsfunctions";
+import { UserDetails } from "../../../../../models/UserDatails";
+import { environment } from "../../../../../../environments/environment";
+import { Select2 } from "ng-select2-component";
+import { FileClass } from "../../../../../models/File.class";
+import { Category } from "../../../../../models/Category.class";
+import {Product} from "../../../../../models/Product";
 
 @Component({
-  selector: 'app-pharmacy-category-list',
+  selector: 'app-pharmacy-product-list',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterModule, FormsModule, Select2], //Select2AjaxComponent
-  templateUrl: './list.component.html',
-  styleUrls: ['./list.component.scss']
+  imports: [CommonModule, SharedModule, RouterModule, FormsModule, Select2],
+  templateUrl: './products.component.html',
+  styleUrls: ['./products.component.scss']
 })
-
-export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
-  categories: Category[] = [];
-  filteredCategories: Category[] = [];
-  selectedCategory: Category | null = null;
+export class PharmacyProductListComponent implements OnInit, OnDestroy {
+  products: Product[] = [];
+  filteredProducts: Product[] = [];
+  selectedProduct: Product | null = null;
 
   searchText: string = '';
-  levelFilter: string = '';
+  categoryFilter: string = '';
   pharmacyFilter: string = '';
   statusFilter: string = '';
-  specialCategoryFilter: string = '';
+  prescriptionFilter: string = '';
   sortColumn: string = 'name';
   sortDirection: string = 'asc';
 
@@ -50,45 +44,75 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
   paginationEnd: number = 0;
   currentPage: number = 1;
   internatPathUrl = environment.internalPathUrl;
-  permissions = {
-    addCategorie: false,
-    editCategorie: false,
-    deleteCategorie: false,
-    viewCategories: false,
-    exportCategories: false,
-  };
-  restrictions = PHARMACY_RESTRICTIONS;
-  levels: number[] = [];
-  // specialCategories: string[] = ['otc', 'prescription', 'homeopathy', 'medical_device', 'supplement', 'cosmetic'];
 
-  categoryForm: FormGroup;
+  permissions = {
+    addProduct: false,
+    editProduct: false,
+    deleteProduct: false,
+    viewProducts: false,
+    exportProducts: false,
+  };
+
+  categories: Category[] = [];
+  categoriesArraySelect2: Array<{value: string, label: string}> = [];
+  pharmaciesListArray: Array<{value: string, label: string}> = [];
+
+  prescriptionTypes = [
+    { value: 'none', label: 'Aucune' },
+    { value: 'simple', label: 'Simple' },
+    { value: 'renewable', label: 'Renouvelable' },
+    { value: 'restricted', label: 'Restreinte' }
+  ];
+
+  drugForms = [
+    { value: 'comprime', label: 'Comprimé' },
+    { value: 'gelule', label: 'Gélule' },
+    { value: 'sirop', label: 'Sirop' },
+    { value: 'creme', label: 'Crème' },
+    { value: 'pommade', label: 'Pommade' },
+    { value: 'injection', label: 'Injection' },
+    { value: 'gouttes', label: 'Gouttes' },
+    { value: 'spray', label: 'Spray' },
+    { value: 'sachet', label: 'Sachet' },
+    { value: 'suppositoire', label: 'Suppositoire' }
+  ];
+
+  productForm: FormGroup;
   isSubmitting: boolean = false;
+  isLoading: boolean = false;
 
   private destroy$ = new Subject<void>();
   private modalService: NgbModal;
 
-  // Loading state
-  isLoading: boolean = false;
-  @ViewChild('categoryDetailsModal') categoryDetailsModal: ElementRef | undefined;
-  @ViewChild('addEditCategoryModal') addEditCategoryModal: ElementRef | undefined;
-  @ViewChild('importCategoriesModal') importCategoriesModal: ElementRef | undefined;
+  @ViewChild('productDetailsModal') productDetailsModal: ElementRef | undefined;
+  @ViewChild('addEditProductModal') addEditProductModal: ElementRef | undefined;
+  @ViewChild('importProductsModal') importProductsModal: ElementRef | undefined;
 
   userDetail: UserDetails;
   baseUrl = environment.baseUrl;
-  categoriesListArray: { [p: string]: Category };
-  categoriesArraySelect2: Array<{value: string, label: string}> = [];
-  pharmaciesListArray: Array<{value: string, label: string}> = [];
 
   importFile: File | null = null;
   importPreview: Array<{data: any, errors: string[]}> = [];
   importStats = { total: 0, valid: 0, errors: 0 };
   isImporting: boolean = false;
 
+  selectedFiles: {
+    mainImage?: File;
+    images?: File[];
+  } = {};
+  previewUrls: {
+    mainImage?: string;
+    images?: string[];
+  } = {};
 
-  selectedFiles: { iconUrl?: File; imageUrl?: File; } = {};
-  previewUrls: { iconUrl?: string; imageUrl?: string; } = {};
-
-  constructor(modalService: NgbModal, private auth: AuthService, private router: Router, private apiService: ApiService, private loadingService: LoadingService, private fb: FormBuilder) {
+  constructor(
+    modalService: NgbModal,
+    private auth: AuthService,
+    private router: Router,
+    private apiService: ApiService,
+    private loadingService: LoadingService,
+    private fb: FormBuilder
+  ) {
     this.loadingService.isLoading$.subscribe((loading) => {
       this.isLoading = loading;
     });
@@ -100,48 +124,77 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(async loaded => {
         this.userDetail = this.auth.getUserDetails();
-        this.permissions.viewCategories = this.userDetail.hasPermission('categories.view');
-        this.permissions.addCategorie = this.userDetail.hasPermission('categories.create');
-        this.permissions.editCategorie = this.userDetail.hasPermission('categories.edit');
-        this.permissions.deleteCategorie = this.userDetail.hasPermission('categories.delete');
-        this.permissions.exportCategories = this.userDetail.hasPermission('categories.export');
+        this.permissions.viewProducts = this.userDetail.hasPermission('produits.view');
+        this.permissions.addProduct = this.userDetail.hasPermission('produits.create');
+        this.permissions.editProduct = this.userDetail.hasPermission('produits.edit');
+        this.permissions.deleteProduct = this.userDetail.hasPermission('produits.delete');
+        this.permissions.exportProducts = this.userDetail.hasPermission('produits.export');
+
         if (loaded && this.userDetail) {
+          await this.loadProducts();
           await this.loadCategories();
         }
       });
-  }
-
-  createForm(): FormGroup {
-    return this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-      description: [''],
-      slug: ['', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
-      parentCategory: [''],
-      level: [0, [Validators.required, Validators.min(0)]],
-      imageUrl:  [null],
-      iconUrl:  [null],
-      status: ['active', [Validators.required]],
-      displayOrder: [0, [Validators.min(0)]],
-      isVisible: [true],
-      metaTitle: [''],
-      metaDescription: [''],
-      keywords: [[]],
-      requiresPrescription: [false],
-      restrictions: [[]],
-      specialCategory: ['otc', [Validators.required]],
-      pharmaciesList: [this.pharmaciesListArray.map(pharm => pharm.value), [Validators.required]]
-    });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
+
+  createForm(): FormGroup {
+    return this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(200)]],
+      description: [''],
+      shortDescription: [''],
+      slug: ['', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
+      categories: [[], [Validators.required]],
+      barcode: [''],
+      sku: ['', [Validators.required]],
+      cipCode: [''],
+      laboratoire: [''],
+      marque: [''],
+      price: [0, [Validators.required, Validators.min(0)]],
+      originalPrice: [0],
+      cost: [0],
+      status: ['active', [Validators.required]],
+      isVisible: [true],
+      isFeatured: [false],
+      isOnSale: [false],
+      mainImage: [null],
+      images: [[]],
+      requiresPrescription: [false],
+      prescriptionType: ['none'],
+      drugForm: [''],
+      dosage: [''],
+      packaging: [''],
+      activeIngredients: [[]],
+      ageRestrictionMinAge: [null],
+      ageRestrictionMaxAge: [null],
+      contraindications: [[]],
+      sideEffects: [[]],
+      warnings: [[]],
+      therapeuticClass: [''],
+      pharmacologicalClass: [''],
+      indicationsTherapeutiques: [[]],
+      weight: [0],
+      metaTitle: [''],
+      metaDescription: [''],
+      keywords: [[]],
+      instructions: [''],
+      storage: [''],
+      origin: [''],
+      pharmacies: [[], [Validators.required]],
+      isFragile: [false],
+      requiresColdChain: [false]
+    });
+  }
+
   get canImport(): boolean {
     return this.importFile !== null && this.importStats.valid > 0;
   }
 
-  async loadCategories(): Promise<void> {
+  async loadProducts(): Promise<void> {
     this.loadingService.setLoading(true);
     try {
       const token = await this.auth.getRealToken();
@@ -157,28 +210,22 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacy-management/categories/list', { uid }, headers)
+      this.apiService.post('pharmacy-management/products/list', { uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
             if (response && response.data) {
-              this.categories = response.data.map((item: any) => new Category(item));
-              this.extractLevels();
-              this.filterCategories();
-              this.categoriesListArray = response.catPerId ?? [];
-              this.categoriesArraySelect2 = Object.keys(this.categoriesListArray || {}).map(key => ({
-                value: key,
-                label: this.categoriesListArray![key].name
-              }));
+              this.products = response.data.map((item: any) => new Product(item));
+              this.filterProducts();
               this.pharmaciesListArray = response.pharmaciesList ?? [];
             } else {
-              this.categories = [];
-              this.filterCategories();
+              this.products = [];
+              this.filterProducts();
             }
             this.loadingService.setLoading(false);
           },
           error: (error) => {
-            this.handleError('Erreur lors du chargement des catégories');
+            this.handleError('Erreur lors du chargement des produits');
             this.loadingService.setLoading(false);
           }
         });
@@ -188,49 +235,92 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     }
   }
 
-  filterCategories(): void {
-    let filtered = [...this.categories];
+  async loadCategories(): Promise<void> {
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+      if (!token) return;
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('pharmacy-management/categories/list', { uid }, headers)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response: any) => {
+            if (response && response.data) {
+              this.categories = response.data.map((item: any) => new Category(item));
+              this.categoriesArraySelect2 = this.categories.map(cat => ({
+                value: cat._id!,
+                label: cat.name
+              }));
+            }
+          },
+          error: (error) => {
+            console.error('Erreur lors du chargement des catégories', error);
+          }
+        });
+    } catch (error) {
+      console.error('Une erreur s\'est produite lors du chargement des catégories');
+    }
+  }
+
+  filterProducts(): void {
+    let filtered = [...this.products];
 
     if (this.searchText) {
       const searchTerms = this.searchText.toLowerCase().trim();
-      filtered = filtered.filter(c =>
-        c.name?.toLowerCase().includes(searchTerms) ||
-        c.description?.toLowerCase().includes(searchTerms) ||
-        c.slug?.toLowerCase().includes(searchTerms) ||
-        c.keywords?.some(keyword => keyword.toLowerCase().includes(searchTerms))
+      filtered = filtered.filter(p =>
+        p.name?.toLowerCase().includes(searchTerms) ||
+        p.description?.toLowerCase().includes(searchTerms) ||
+        p.slug?.toLowerCase().includes(searchTerms) ||
+        p.sku?.toLowerCase().includes(searchTerms) ||
+        p.barcode?.toLowerCase().includes(searchTerms) ||
+        p.laboratoire?.toLowerCase().includes(searchTerms) ||
+        p.marque?.toLowerCase().includes(searchTerms) ||
+        p.keywords?.some(keyword => keyword.toLowerCase().includes(searchTerms))
+      );
+    }
+
+    if (this.categoryFilter) {
+      filtered = filtered.filter(p =>
+        p.categories.some(cat => cat._id === this.categoryFilter)
       );
     }
 
     if (this.pharmacyFilter) {
-      filtered = filtered.filter(c => c.pharmaciesList.filter((pharmacy) => { pharmacy.id == this.pharmacyFilter }));
-    }
-    if (this.levelFilter) {
-      filtered = filtered.filter(c => c.level === parseInt(this.levelFilter));
+      filtered = filtered.filter(p =>
+        p.pharmacies.some(pharmacy => pharmacy.pharmacy.id === this.pharmacyFilter)
+      );
     }
 
     if (this.statusFilter) {
-      filtered = filtered.filter(c => c.status === this.statusFilter);
+      filtered = filtered.filter(p => p.status === this.statusFilter);
     }
 
-    if (this.specialCategoryFilter) {
-      filtered = filtered.filter(c => c.specialCategory === this.specialCategoryFilter);
+    if (this.prescriptionFilter) {
+      if (this.prescriptionFilter === 'required') {
+        filtered = filtered.filter(p => p.requiresPrescription);
+      } else if (this.prescriptionFilter === 'not_required') {
+        filtered = filtered.filter(p => !p.requiresPrescription);
+      }
     }
 
-    filtered = this.sortCategories(filtered);
+    filtered = this.sortProducts(filtered);
 
-    this.filteredCategories = filtered;
-    this.totalPages = Math.max(1, Math.ceil(this.filteredCategories.length / this.itemsPerPage));
+    this.filteredProducts = filtered;
+    this.totalPages = Math.max(1, Math.ceil(this.filteredProducts.length / this.itemsPerPage));
     this.currentPage = Math.min(this.currentPage, this.totalPages);
     this.updatePaginationInfo();
   }
 
-  sortCategories(categories: Category[]): Category[] {
-    return categories.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      aValue = this.getPropertyValue(a, this.sortColumn);
-      bValue = this.getPropertyValue(b, this.sortColumn);
+  sortProducts(products: Product[]): Product[] {
+    return products.sort((a, b) => {
+      let aValue: any = this.getPropertyValue(a, this.sortColumn);
+      let bValue: any = this.getPropertyValue(b, this.sortColumn);
 
       if (aValue === null || aValue === undefined) aValue = '';
       if (bValue === null || bValue === undefined) bValue = '';
@@ -257,7 +347,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     this.paginationStart = (this.currentPage - 1) * this.itemsPerPage;
     this.paginationEnd = Math.min(
       this.currentPage * this.itemsPerPage,
-      this.filteredCategories.length
+      this.filteredProducts.length
     );
   }
 
@@ -275,24 +365,29 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       this.sortColumn = column;
       this.sortDirection = 'asc';
     }
-    this.filterCategories();
+    this.filterProducts();
   }
 
-  exportCategoriesList(): void {
+  exportProductsList(): void {
     try {
-      const headers = ['Nom', 'Slug', 'Niveau', 'Statut', 'Type spécial', 'Nb Produits', 'Créé le'];
+      const headers = [
+        'Nom', 'SKU', 'Prix', 'Statut', 'Laboratoire', 'Marque',
+        'Ordonnance requise', 'Stock', 'Créé le'
+      ];
 
       let csvContent = headers.join(',') + '\n';
 
-      this.filteredCategories.forEach(category => {
+      this.filteredProducts.forEach(product => {
         const row = [
-          this.escapeCsvValue(category.name),
-          this.escapeCsvValue(category.slug),
-          category.level.toString(),
-          this.escapeCsvValue(this.getStatusLabel(category.status)),
-          this.escapeCsvValue(this.getSpecialCategoryLabel(category.specialCategory)),
-          category.productCount.toString(),
-          this.escapeCsvValue(category.createdAt ? new Date(category.createdAt).toLocaleDateString() : '')
+          this.escapeCsvValue(product.name),
+          this.escapeCsvValue(product.sku),
+          product.price.toString(),
+          this.escapeCsvValue(this.getStatusLabel(product.status)),
+          this.escapeCsvValue(product.laboratoire || ''),
+          this.escapeCsvValue(product.marque || ''),
+          product.requiresPrescription ? 'Oui' : 'Non',
+          product.status === 'out_of_stock' ? 'Épuisé' : 'Disponible',
+          this.escapeCsvValue(product.createdAt ? new Date(product.createdAt).toLocaleDateString() : '')
         ];
         csvContent += row.join(',') + '\n';
       });
@@ -302,7 +397,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       const url = URL.createObjectURL(blob);
 
       link.setAttribute('href', url);
-      link.setAttribute('download', `categories_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `products_${new Date().toISOString().split('T')[0]}.csv`);
       link.style.visibility = 'hidden';
 
       document.body.appendChild(link);
@@ -319,12 +414,12 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     return `"${value}"`;
   }
 
-  viewCategoryDetails(category: Category): void {
+  viewProductDetails(product: Product): void {
     this.modalService.dismissAll('ok');
-    if (category) {
-      this.selectedCategory = category;
+    if (product) {
+      this.selectedProduct = product;
       setTimeout(() => {
-        this.modalService.open(this.categoryDetailsModal, {
+        this.modalService.open(this.productDetailsModal, {
           size: 'xl',
           backdrop: 'static',
           centered: true
@@ -332,18 +427,19 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       }, 0);
     }
   }
-  resetImportData(): void {
-    this.importFile = null;
-    this.importPreview = [];
-    this.importStats = { total: 0, valid: 0, errors: 0 };
-    this.isImporting = false;
-  }
 
-  openImportModal(): void {
-    this.resetImportData();
+  openCreateModal(): void {
+    this.productForm = this.createForm();
+    this.productForm.patchValue({
+      status: 'active',
+      isVisible: true,
+      requiresPrescription: false,
+      prescriptionType: 'none',
+      pharmacies: this.pharmaciesListArray.map(pharm => pharm.value)
+    });
     this.modalService.dismissAll('ok');
     setTimeout(() => {
-      this.modalService.open(this.importCategoriesModal, {
+      this.modalService.open(this.addEditProductModal, {
         size: 'xl',
         backdrop: 'static',
         centered: true
@@ -351,19 +447,11 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  openCreateModal(): void {
-    this.categoryForm = this.createForm();
-    this.categoryForm.patchValue({
-      status: 'active',
-      level: 0,
-      displayOrder: 0,
-      isVisible: true,
-      requiresPrescription: false,
-      specialCategory: 'otc'
-    });
+  openImportModal(): void {
+    this.resetImportData();
     this.modalService.dismissAll('ok');
     setTimeout(() => {
-      this.modalService.open(this.addEditCategoryModal, {
+      this.modalService.open(this.importProductsModal, {
         size: 'xl',
         backdrop: 'static',
         centered: true
@@ -376,20 +464,20 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       case 'active': return 'Actif';
       case 'inactive': return 'Inactif';
       case 'deleted': return 'Supprimé';
+      case 'out_of_stock': return 'Épuisé';
+      case 'discontinued': return 'Discontinué';
       default: return 'Inconnu';
     }
   }
 
-  getSpecialCategoryLabel(specialCategory: string): string {
-    switch (specialCategory) {
-      case 'otc': return 'Vente libre';
-      case 'prescription': return 'Sur ordonnance';
-      case 'homeopathy': return 'Homéopathie';
-      case 'medical_device': return 'Dispositif médical';
-      case 'supplement': return 'Complément alimentaire';
-      case 'cosmetic': return 'Cosmétique';
-      default: return 'Inconnu';
-    }
+  getPrescriptionTypeLabel(type: string): string {
+    const prescriptionType = this.prescriptionTypes.find(pt => pt.value === type);
+    return prescriptionType ? prescriptionType.label : 'Inconnu';
+  }
+
+  getDrugFormLabel(form: string): string {
+    const drugForm = this.drugForms.find(df => df.value === form);
+    return drugForm ? drugForm.label : form;
   }
 
   private handleError(message: string): void {
@@ -423,11 +511,11 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     });
   }
 
-  async deleteCategory(category: Category): Promise<void> {
+  async deleteProduct(product: Product): Promise<void> {
     try {
       const confirmed = await this.showConfirmation(
-        'Supprimer la catégorie',
-        `Êtes-vous sûr de vouloir supprimer la catégorie "${category.name}" ? Cette action est irréversible.`,
+        'Supprimer le produit',
+        `Êtes-vous sûr de vouloir supprimer le produit "${product.name}" ? Cette action est irréversible.`,
         'Supprimer'
       );
 
@@ -446,19 +534,19 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('category-management/categories/delete', { id: category._id, uid }, headers)
+      this.apiService.post('pharmacy-management/products/delete', { id: product._id, uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
-            const index = this.categories.findIndex(c => c._id === category._id);
+            const index = this.products.findIndex(p => p._id === product._id);
             if (index > -1) {
-              this.categories.splice(index, 1);
-              this.filterCategories();
-              this.showSuccess('Catégorie supprimée avec succès');
+              this.products.splice(index, 1);
+              this.filterProducts();
+              this.showSuccess('Produit supprimé avec succès');
             }
           },
           error: (error) => {
-            this.handleError('Erreur lors de la suppression de la catégorie');
+            this.handleError('Erreur lors de la suppression du produit');
           }
         });
     } catch (error) {
@@ -471,19 +559,34 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
   }
 
   async onSubmit(): Promise<void> {
-    if (!this.categoryForm.get('parentCategory').value && this.categoryForm.get('level').value == 1) {
-      this.handleError("Vous devez selectionner une categorie parent pour le niveau choisi !");
+    if (!this.productForm.get('categories')?.value?.length) {
+      this.handleError("Vous devez sélectionner au moins une catégorie !");
       return;
     }
-    if (!this.categoryForm.get('pharmaciesList').value) {
-      this.handleError("Vous devez associer la categorie a au moins une pharmacie !");
+    if (!this.productForm.get('pharmacies')?.value?.length) {
+      this.handleError("Vous devez associer le produit à au moins une pharmacie !");
       return;
     }
-    if (this.categoryForm.valid) {
+
+    if (this.productForm.valid) {
       const formData = {
-        ...this.categoryForm.value,
+        ...this.productForm.value,
         uid: await this.auth.getUid(),
+        ageRestriction: {
+          minAge: this.productForm.get('ageRestrictionMinAge')?.value || null,
+          maxAge: this.productForm.get('ageRestrictionMaxAge')?.value || null
+        },
+        deliveryInfo: {
+          isFragile: this.productForm.get('isFragile')?.value || false,
+          requiresColdChain: this.productForm.get('requiresColdChain')?.value || false
+        }
       };
+
+      // Remove temporary fields
+      delete formData.ageRestrictionMinAge;
+      delete formData.ageRestrictionMaxAge;
+      delete formData.isFragile;
+      delete formData.requiresColdChain;
 
       try {
         this.loadingService.setLoading(true);
@@ -495,24 +598,26 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
           'Content-Type': 'application/json'
         });
 
-        const endpoint = 'pharmacy-management/categories/create';
+        const endpoint = 'pharmacy-management/products/create';
 
         this.apiService.post(endpoint, formData, headers)
           .pipe(takeUntil(this.destroy$))
           .subscribe({
             next: async (response: any) => {
               if (response && !response.error && response.data) {
-                if (this.categoryForm.get('iconUrl').value) {
-                  await this.uploadFiles(this.categoryForm.get('iconUrl').value, 'iconUrl', response.data._id);
+                if (this.selectedFiles.mainImage) {
+                  await this.uploadFiles(this.selectedFiles.mainImage, 'mainImage', response.data._id);
                 }
-                if (this.categoryForm.get('imageUrl').value) {
-                  await this.uploadFiles(this.categoryForm.get('imageUrl').value, 'imageUrl', response.data._id);
+                if (this.selectedFiles.images && this.selectedFiles.images.length > 0) {
+                  for (let i = 0; i < this.selectedFiles.images.length; i++) {
+                    await this.uploadFiles(this.selectedFiles.images[i], `images_${i}`, response.data._id);
+                  }
                 }
 
-                this.showSuccess(response.message ?? 'Catégorie créée avec succès');
+                this.showSuccess(response.message ?? 'Produit créé avec succès');
                 this.closeModal();
-                this.categoryForm.reset();
-                this.loadCategories();
+                this.productForm.reset();
+                this.loadProducts();
               } else {
                 this.handleError(response.errorMessage ?? 'Erreur lors de la sauvegarde');
               }
@@ -533,7 +638,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
   }
 
   generateSlug(): void {
-    const name = this.categoryForm.get('name')?.value;
+    const name = this.productForm.get('name')?.value;
     if (name) {
       const slug = name
         .toLowerCase()
@@ -541,12 +646,12 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .trim();
-      this.categoryForm.patchValue({ slug });
+      this.productForm.patchValue({ slug });
     }
   }
 
   getFieldError(fieldName: string): string {
-    const control = this.categoryForm.get(fieldName);
+    const control = this.productForm.get(fieldName);
     if (control && control.errors && control.touched) {
       if (control.errors['required']) return 'Ce champ est obligatoire';
       if (control.errors['minlength']) return `Minimum ${control.errors['minlength'].requiredLength} caractères`;
@@ -558,12 +663,12 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
   }
 
   isFieldValid(fieldName: string): boolean {
-    const control = this.categoryForm.get(fieldName);
+    const control = this.productForm.get(fieldName);
     return control ? control.valid && control.touched : false;
   }
 
   isFieldInvalid(fieldName: string): boolean {
-    const control = this.categoryForm.get(fieldName);
+    const control = this.productForm.get(fieldName);
     return control ? control.invalid && control.touched : false;
   }
 
@@ -597,48 +702,69 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     }
     return 'fa-sort';
   }
-  private extractLevels(): void {
-    const levelSet = new Set<number>();
-    this.categories.forEach(category => {
-      levelSet.add(category.level);
-    });
-    this.levels = Array.from(levelSet).sort((a, b) => a - b);
+
+  getPaginatedProducts(): Product[] {
+    const start = this.permissions.viewProducts ? this.paginationStart : 0;
+    const end = this.permissions.viewProducts ? this.paginationEnd : 0;
+    return this.filteredProducts.slice(start, end);
   }
 
-  getPaginatedCategories(): Category[] {
-    const start = this.permissions.viewCategories ? this.paginationStart : 0;
-    const end = this.permissions.viewCategories ? this.paginationEnd : 0;
-    return this.filteredCategories.slice(start, end);
-  }
   getFileIcon(fileType: string): string {
     return 'fa fa-file-image';
   }
-  onFileSelected(event: any, fileType: string, type: number =0): void {
-    const file = event.target.files[0];
-    if (file) {
-      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-        this.handleError('Type de fichier non autorisé. Utilisez PDF, JPG, PNG ou JPEG.');
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        this.handleError('La taille du fichier ne peut pas dépasser 5MB.');
-        return;
-      }
-      this.selectedFiles[fileType as keyof typeof this.selectedFiles] = file;
-      if (file.type.startsWith('image/')) {
+
+  onFileSelected(event: any, fileType: string): void {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      if (fileType === 'mainImage') {
+        const file = files[0];
+        if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+          this.handleError('Type de fichier non autorisé. Utilisez JPG, PNG ou JPEG.');
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          this.handleError('La taille du fichier ne peut pas dépasser 5MB.');
+          return;
+        }
+        this.selectedFiles.mainImage = file;
+
         const reader = new FileReader();
         reader.onload = (e: any) => {
-          this.previewUrls[fileType as keyof typeof this.previewUrls] = e.target.result;
+          this.previewUrls.mainImage = e.target.result;
         };
         reader.readAsDataURL(file);
-      }
+      } else if (fileType === 'images') {
+        const fileArray = Array.from(files) as File[];
+        const validFiles: File[] = [];
 
-      this.categoryForm.patchValue({
-        [`${fileType}`]: file
-      });
+        for (const file of fileArray) {
+          if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+            this.handleError(`Type de fichier non autorisé pour ${file.name}. Utilisez JPG, PNG ou JPEG.`);
+            continue;
+          }
+          if (file.size > 5 * 1024 * 1024) {
+            this.handleError(`La taille du fichier ${file.name} ne peut pas dépasser 5MB.`);
+            continue;
+          }
+          validFiles.push(file);
+        }
+
+        this.selectedFiles.images = validFiles;
+        this.previewUrls.images = [];
+
+        validFiles.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+            if (!this.previewUrls.images) this.previewUrls.images = [];
+            this.previewUrls.images.push(e.target.result);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
     }
   }
-  private async uploadFiles(file: File, fileType: string, categoryId: string): Promise<string> {
+
+  private async uploadFiles(file: File, fileType: string, productId: string): Promise<string> {
     let idFile: string = '';
     const token = await this.auth.getRealToken();
     const uid = await this.auth.getUid();
@@ -653,10 +779,11 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type_', fileType);
-      formData.append('categoryId', categoryId);
+      formData.append('productId', productId);
       formData.append('uid', uid || '');
+
       try {
-        const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-images-cat', formData, headers).toPromise();
+        const response: any = await this.apiService.post('pharmacy-management/products/upload-images', formData, headers).toPromise();
         if (response && response.success) {
           idFile = response.data.fileId;
         }
@@ -667,7 +794,33 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     return idFile;
   }
 
-// Sélection du fichier d'import
+  removeFile(fileType: string, index?: number): void {
+    if (fileType === 'mainImage') {
+      delete this.selectedFiles.mainImage;
+      delete this.previewUrls.mainImage;
+    } else if (fileType === 'images' && index !== undefined) {
+      if (this.selectedFiles.images) {
+        this.selectedFiles.images.splice(index, 1);
+      }
+      if (this.previewUrls.images) {
+        this.previewUrls.images.splice(index, 1);
+      }
+    }
+
+    const fileInput = document.getElementById(fileType) as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
+
+  // Import functionality
+  resetImportData(): void {
+    this.importFile = null;
+    this.importPreview = [];
+    this.importStats = { total: 0, valid: 0, errors: 0 };
+    this.isImporting = false;
+  }
+
   onImportFileSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
@@ -685,7 +838,6 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     }
   }
 
-// Parsing du fichier CSV
   parseCSVFile(file: File): void {
     const reader = new FileReader();
     reader.onload = (e: any) => {
@@ -697,14 +849,12 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         return;
       }
 
-      // Parse header
       const headers = lines[0].split(',').map((h: string) => h.trim().replace(/"/g, ''));
 
-      // Parse data avec indicateur de progression
       this.importPreview = [];
       for (let i = 1; i < lines.length; i++) {
         const values = this.parseCSVLine(lines[i]);
-        const rowData = this.mapCSVRowToCategory(headers, values);
+        const rowData = this.mapCSVRowToProduct(headers, values);
         const errors = this.validateImportRow(rowData);
 
         this.importPreview.push({
@@ -714,43 +864,28 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       }
 
       this.updateImportStats();
-
-      // Notification de fin de parsing
-      if (this.importStats.valid > 0) {
-        this.showSuccess(`Fichier analysé : ${this.importStats.valid} catégories valides sur ${this.importStats.total}`);
-      } else if (this.importStats.errors === this.importStats.total) {
-        this.handleError(`Aucune catégorie valide trouvée dans le fichier. Vérifiez le format et les données.`);
-      }
     };
 
     reader.onerror = () => {
       this.handleError('Erreur lors de la lecture du fichier.');
     };
 
-    reader.readAsText(file, 'UTF-8'); // Spécifier l'encodage
+    reader.readAsText(file);
   }
 
-// Parsing d'une ligne CSV (amélioré pour gérer les guillemets imbriqués)
   parseCSVLine(line: string): string[] {
     const result: string[] = [];
     let current = '';
     let inQuotes = false;
-    let quoteCount = 0;
 
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
 
       if (char === '"') {
-        quoteCount++;
-        if (quoteCount % 2 === 1) {
-          inQuotes = true;
-        } else {
-          inQuotes = false;
-        }
+        inQuotes = !inQuotes;
       } else if (char === ',' && !inQuotes) {
         result.push(current.trim());
         current = '';
-        quoteCount = 0;
       } else {
         current += char;
       }
@@ -760,13 +895,12 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     return result;
   }
 
-// Mapping des données CSV vers objet catégorie
-  mapCSVRowToCategory(headers: string[], values: string[]): any {
+  mapCSVRowToProduct(headers: string[], values: string[]): any {
     const data: any = {};
 
     headers.forEach((header, index) => {
       const value = values[index] || '';
-      const cleanValue = value.replace(/^"|"$/g, '').trim(); // Retirer les guillemets de début/fin
+      const cleanValue = value.replace(/"/g, '').trim();
 
       switch (header.toLowerCase()) {
         case 'nom':
@@ -775,36 +909,29 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         case 'description':
           data.description = cleanValue;
           break;
-        case 'slug':
-          data.slug = cleanValue;
+        case 'sku':
+          data.sku = cleanValue;
           break;
-        case 'niveau':
-          data.level = parseInt(cleanValue) || 0;
+        case 'prix':
+          data.price = parseFloat(cleanValue) || 0;
           break;
-        case 'catégorie parent':
-        case 'categorie parent':
-        case 'parent':
-          data.parentCategoryName = cleanValue;
+        case 'laboratoire':
+          data.laboratoire = cleanValue;
+          break;
+        case 'marque':
+          data.marque = cleanValue;
           break;
         case 'statut':
-          data.status = cleanValue.toLowerCase() || 'active';
+          data.status = cleanValue || 'active';
           break;
-        case 'type spécial':
-        case 'type special':
-        case 'type':
-          data.specialCategory = cleanValue.toLowerCase() || 'otc';
-          break;
-        case 'visible':
-          data.isVisible = ['true', '1', 'oui', 'yes'].includes(cleanValue.toLowerCase());
-          break;
-        case 'ordre d\'affichage':
-        case 'ordre affichage':
-        case 'ordre':
-          data.displayOrder = parseInt(cleanValue) || 0;
-          break;
-        case 'ordonnance requise':
         case 'ordonnance':
-          data.requiresPrescription = ['true', '1', 'oui', 'yes'].includes(cleanValue.toLowerCase());
+          data.requiresPrescription = cleanValue.toLowerCase() === 'oui' || cleanValue === '1';
+          break;
+        case 'forme':
+          data.drugForm = cleanValue;
+          break;
+        case 'dosage':
+          data.dosage = cleanValue;
           break;
       }
     });
@@ -812,49 +939,29 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     return data;
   }
 
-// Validation améliorée des données
   validateImportRow(data: any): string[] {
     const errors: string[] = [];
 
-    // Validation du nom (obligatoire)
     if (!data.name || data.name.trim() === '') {
       errors.push('Le nom est obligatoire');
-    } else if (data.name.length < 2) {
-      errors.push('Le nom doit contenir au moins 2 caractères');
-    } else if (data.name.length > 100) {
-      errors.push('Le nom ne peut pas dépasser 100 caractères');
     }
 
-    // Validation du niveau
-    if (![0, 1].includes(data.level)) {
-      errors.push('Le niveau doit être 0 ou 1');
+    if (!data.sku || data.sku.trim() === '') {
+      errors.push('Le SKU est obligatoire');
     }
 
-    // Validation du statut
-    if (!['active', 'inactive', 'deleted'].includes(data.status)) {
-      errors.push('Le statut doit être: active, inactive ou deleted');
+    if (data.price < 0) {
+      errors.push('Le prix ne peut pas être négatif');
     }
 
-    // Validation du type spécial
-    const validTypes = ['otc', 'prescription', 'homeopathy', 'medical_device', 'supplement', 'cosmetic'];
-    if (!validTypes.includes(data.specialCategory)) {
-      errors.push(`Type spécial invalide. Valeurs acceptées: ${validTypes.join(', ')}`);
-    }
-
-    // Validation catégorie parent pour niveau 1
-    if (data.level === 1 && (!data.parentCategoryName || data.parentCategoryName.trim() === '')) {
-      errors.push('Une catégorie parent est requise pour le niveau 1');
-    }
-
-    // Validation ordre d'affichage
-    if (data.displayOrder < 0) {
-      errors.push('L\'ordre d\'affichage ne peut pas être négatif');
+    if (!['active', 'inactive', 'deleted', 'out_of_stock', 'discontinued'].includes(data.status)) {
+      errors.push('Statut invalide');
     }
 
     return errors;
   }
 
-// Mise à jour des statistiques
+// Mise à jour des statistiques d'import
   updateImportStats(): void {
     this.importStats.total = this.importPreview.length;
     this.importStats.valid = this.importPreview.filter(item => item.errors.length === 0).length;
@@ -906,11 +1013,11 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         title: 'Import réussi !',
         html: `
         <div class="import-success-details">
-          <p><strong>${success} catégorie(s)</strong> importée(s) avec succès sur ${total}</p>
+          <p><strong>${success} produit(s)</strong> importé(s) avec succès sur ${total}</p>
           <div class="success-stats">
             <div class="stat-item">
               <i class="fas fa-check-circle text-success"></i>
-              <span>Toutes les catégories ont été créées</span>
+              <span>Tous les produits ont été créés</span>
             </div>
           </div>
         </div>
@@ -951,7 +1058,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
           </div>
 
           <p style="margin-top: 10px;">
-            <small>Les catégories valides ont été importées. Corrigez les erreurs et relancez l'import si nécessaire.</small>
+            <small>Les produits valides ont été importés. Corrigez les erreurs et relancez l'import si nécessaire.</small>
           </p>
         </div>
       `,
@@ -969,7 +1076,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         title: 'Échec de l\'import',
         html: `
         <div class="import-error-details">
-          <p>Aucune catégorie n'a pu être importée sur les <strong>${total}</strong> tentées.</p>
+          <p>Aucun produit n'a pu être importé sur les <strong>${total}</strong> tentés.</p>
 
           <div class="error-details" style="margin-top: 15px;">
             <h6>Détail des erreurs :</h6>
@@ -1000,12 +1107,12 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
 
     try {
       const validItems = this.importPreview.filter(item => item.errors.length === 0);
-      const categoriesToImport = validItems.map(item => {
-        const category = { ...item.data };
+      const productsToImport = validItems.map(item => {
+        const product = { ...item.data };
 
-        // Générer le slug si vide
-        if (!category.slug && category.name) {
-          category.slug = category.name
+        // Génération automatique du slug si manquant
+        if (!product.slug && product.name) {
+          product.slug = product.name
             .toLowerCase()
             .replace(/[^a-z0-9\s-]/g, '')
             .replace(/\s+/g, '-')
@@ -1013,26 +1120,15 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
             .trim();
         }
 
-        // Trouver l'ID de la catégorie parent si nécessaire
-        if (category.parentCategoryName && category.level === 1) {
-          const parentCategory = this.categories.find(cat =>
-            cat.name.toLowerCase() === category.parentCategoryName.toLowerCase()
-          );
-          if (parentCategory) {
-            category.parentCategory = parentCategory._id;
-          }
-          delete category.parentCategoryName;
-        }
+        // Assignation des valeurs par défaut
+        product.categories = this.categoriesArraySelect2.length > 0 ? [this.categoriesArraySelect2[0].value] : [];
+        product.pharmacies = this.pharmaciesListArray.map(pharm => pharm.value);
+        product.isVisible = true;
+        product.isFeatured = false;
+        product.isOnSale = false;
+        product.prescriptionType = product.requiresPrescription ? 'simple' : 'none';
 
-        // Ajouter les champs par défaut
-        category.pharmaciesList = this.pharmaciesListArray.map(pharm => pharm.value);
-        category.restrictions = [];
-        category.requiresPrescription = category.requiresPrescription || false;
-        category.metaTitle = '';
-        category.metaDescription = '';
-        category.keywords = [];
-
-        return category;
+        return product;
       });
 
       const token = await this.auth.getRealToken();
@@ -1051,7 +1147,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       });
 
       const requestData = {
-        categories: categoriesToImport,
+        products: productsToImport,
         uid: uid
       };
 
@@ -1065,7 +1161,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
               <span class="visually-hidden">Chargement...</span>
             </div>
           </div>
-          <p>Traitement de ${categoriesToImport.length} catégorie(s)</p>
+          <p>Traitement de ${productsToImport.length} produit(s)</p>
           <div class="progress mt-2">
             <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
           </div>
@@ -1078,7 +1174,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         }
       });
 
-      this.apiService.post('pharmacy-management/categories/import', requestData, headers)
+      this.apiService.post('pharmacy-management/products/import', requestData, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -1093,7 +1189,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
                 setTimeout(() => {
                   this.closeModal();
                   this.resetImportData();
-                  this.loadCategories();
+                  this.loadProducts();
                 }, 2000);
               }
             } else {
@@ -1105,7 +1201,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
             Swal.close(); // Fermer le loader
             console.error('Erreur d\'import:', error);
 
-            let errorMessage = 'Erreur lors de l\'importation des catégories';
+            let errorMessage = 'Erreur lors de l\'importation des produits';
             if (error.error && typeof error.error === 'string') {
               errorMessage = error.error;
             } else if (error.message) {
@@ -1125,18 +1221,78 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     }
   }
 
-  removeFile(type:number, fileType: string): void {
-    delete this.selectedFiles[fileType as keyof typeof this.selectedFiles];
-    delete this.previewUrls[fileType as keyof typeof this.previewUrls];
-    this.categoryForm.patchValue({
-      [`${fileType}File`]: null
-    });
-
-    const fileInput = document.getElementById(`${fileType}File`) as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = '';
-    }
+  // Helper methods for arrays
+  addActiveIngredient(): void {
+    const ingredients = this.productForm.get('activeIngredients')?.value || [];
+    ingredients.push({ name: '', dosage: '' });
+    this.productForm.patchValue({ activeIngredients: ingredients });
   }
+
+  removeActiveIngredient(index: number): void {
+    const ingredients = this.productForm.get('activeIngredients')?.value || [];
+    ingredients.splice(index, 1);
+    this.productForm.patchValue({ activeIngredients: ingredients });
+  }
+
+  addContraindication(): void {
+    const contraindications = this.productForm.get('contraindications')?.value || [];
+    contraindications.push('');
+    this.productForm.patchValue({ contraindications: contraindications });
+  }
+
+  removeContraindication(index: number): void {
+    const contraindications = this.productForm.get('contraindications')?.value || [];
+    contraindications.splice(index, 1);
+    this.productForm.patchValue({ contraindications: contraindications });
+  }
+
+  addSideEffect(): void {
+    const sideEffects = this.productForm.get('sideEffects')?.value || [];
+    sideEffects.push('');
+    this.productForm.patchValue({ sideEffects: sideEffects });
+  }
+
+  removeSideEffect(index: number): void {
+    const sideEffects = this.productForm.get('sideEffects')?.value || [];
+    sideEffects.splice(index, 1);
+    this.productForm.patchValue({ sideEffects: sideEffects });
+  }
+
+  addWarning(): void {
+    const warnings = this.productForm.get('warnings')?.value || [];
+    warnings.push('');
+    this.productForm.patchValue({ warnings: warnings });
+  }
+
+  removeWarning(index: number): void {
+    const warnings = this.productForm.get('warnings')?.value || [];
+    warnings.splice(index, 1);
+    this.productForm.patchValue({ warnings: warnings });
+  }
+
+  addKeyword(): void {
+    const keywords = this.productForm.get('keywords')?.value || [];
+    keywords.push('');
+    this.productForm.patchValue({ keywords: keywords });
+  }
+
+  removeKeyword(index: number): void {
+    const keywords = this.productForm.get('keywords')?.value || [];
+    keywords.splice(index, 1);
+    this.productForm.patchValue({ keywords: keywords });
+  }
+
+  addIndication(): void {
+    const indications = this.productForm.get('indicationsTherapeutiques')?.value || [];
+    indications.push('');
+    this.productForm.patchValue({ indicationsTherapeutiques: indications });
+  }
+
+  removeIndication(index: number): void {
+    const indications = this.productForm.get('indicationsTherapeutiques')?.value || [];
+    indications.splice(index, 1);
+    this.productForm.patchValue({ indicationsTherapeutiques: indications });
+  }
+
   protected readonly parseFloat = parseFloat;
-  protected readonly getRestrictionByValue = getRestrictionByValue;
 }

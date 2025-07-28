@@ -358,7 +358,6 @@
             <app-activity-timeline [activites]="categoryActivities" [usersInfo]="usersInfo"></app-activity-timeline>
             <div class="col-md-12">
               <div class="text-center py-3" *ngIf="categoryActivities.length > 0">
-                <!--                <p class="text-muted" routerLink=['/admin/pharmacies', pharmacy.id] >Voir plus...</p>-->
                 <a [routerLink]="['/pharmacy/admin/logs', category._id]">Voir plus</a>
               </div>
               <div class="text-center py-3" *ngIf="categoryActivities.length === 0">
@@ -483,17 +482,31 @@
             </div>
           </div>
           <!-- Catégorie parent et niveau -->
-          <div class="mb-3">
-            <label for="parentCategory" class="form-label">Catégorie parent</label>
-            <select2
-              class="form-control"
-              id="parentCategory"
-              formControlName="parentCategory"
-              [data]="categoriesArraySelect2"
-              [class.is-invalid]="isFieldInvalid('parentCategory')"
-            >
-            </select2>
-            <div class="invalid-feedback">{{ getFieldError('parentCategory') }}</div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="level" class="form-label">Niveau <span class="text-danger">*</span></label>
+              <select class="form-select"
+                      id="level"
+                      formControlName="level"
+                      [class.is-valid]="isFieldValid('level')"
+                      [class.is-invalid]="isFieldInvalid('level')">
+                <option value="0">Categorie de base</option>
+                <option value="{{ this.category.level ?? 1  }}">Categorie enfant</option>
+              </select>
+              <div class="invalid-feedback">{{ getFieldError('level') }}</div>
+            </div>
+            <div class="col-md-6 mb-3" *ngIf="categoryForm.get('level')?.value" >
+                <label for="parentCategory" class="form-label">Catégorie parent</label>
+                <select2
+                  class="form-control"
+                  id="parentCategory"
+                  formControlName="parentCategory"
+                  [data]="categoriesArraySelect2"
+                  [class.is-invalid]="isFieldInvalid('parentCategory')"
+                >
+                </select2>
+                <div class="invalid-feedback">{{ getFieldError('parentCategory') }}</div>
+            </div>
           </div>
           <!-- Configuration -->
           <div class="col-12 mt-4">

@@ -1,0 +1,1098 @@
+
+<div class="product-management-container">
+  <div class="page-header">
+    <span class="h1-badge">Mes Produits</span>
+    <div class="header-actions">
+      <div class="search-box">
+        <input type="text" class="form-control" placeholder="Rechercher un produit..."
+               [(ngModel)]="searchText" (keyup)="filterProducts()">
+        <i class="fas fa-search"></i>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" style="margin-right: 5px;" (click)="openCreateModal()" *ngIf="permissions.addProduct">
+          <i class="fas fa-plus"></i> Ajouter
+        </button>
+        <button class="btn btn-outline-primary" style="background-color: #4caf50; color: white"
+                (click)="exportProductsList()" *ngIf="permissions.exportProducts">
+          <i class="fas fa-download"></i> Exporter
+        </button>
+        <button class="btn btn-outline-success" style="margin-left: 5px; background-color: #d91a72; color: white"
+                (click)="openImportModal()" *ngIf="permissions.addProduct">
+          <i class="fas fa-upload"></i> Importer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="product-list-container">
+    <div class="product-filters">
+      <div class="filter-group">
+        <label>Filtrer par catégorie:</label>
+        <select class="form-select" [(ngModel)]="categoryFilter" (change)="filterProducts()">
+          <option value="">Toutes les catégories</option>
+          <option *ngFor="let category of categoriesArraySelect2" [value]="category.value">{{category.label}}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Filtrer par pharmacie:</label>
+        <select class="form-select" [(ngModel)]="pharmacyFilter" (change)="filterProducts()">
+          <option value="">Toutes les pharmacies</option>
+          <option *ngFor="let pharmacy of pharmaciesListArray" [value]="pharmacy.value">{{pharmacy.label}}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Filtrer par statut:</label>
+        <select class="form-select" [(ngModel)]="statusFilter" (change)="filterProducts()">
+          <option value="">Tous les statuts</option>
+          <option value="active">Actif</option>
+          <option value="inactive">Inactif</option>
+          <option value="deleted">Supprimé</option>
+          <option value="out_of_stock">Épuisé</option>
+          <option value="discontinued">Discontinué</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Ordonnance:</label>
+        <select class="form-select" [(ngModel)]="prescriptionFilter" (change)="filterProducts()">
+          <option value="">Tous</option>
+          <option value="required">Requise</option>
+          <option value="not_required">Non requise</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!isLoading && filteredProducts.length === 0" class="empty-state">
+      <i class="fas fa-box-open"></i>
+      <h3>Aucun produit trouvé</h3>
+      <p>{{ searchText || categoryFilter || statusFilter || prescriptionFilter ? 'Aucun produit ne correspond à vos critères de recherche.' : 'Commencez par créer votre premier produit.' }}</p>
+    </div>
+
+    <div *ngIf="!isLoading && filteredProducts.length > 0" class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+        <tr>
+          <th>Image</th>
+          <th>
+            <div class="th-content" (click)="sort('name')">
+              Nom
+              <i class="fas" [ngClass]="getSortIcon('name')"></i>
+            </div>
+          </th>
+          <th>SKU</th>
+          <th>
+            <div class="th-content" (click)="sort('price')">
+              Prix
+              <i class="fas" [ngClass]="getSortIcon('price')"></i>
+            </div>
+          </th>
+          <th>Laboratoire</th>
+          <th>Marque</th>
+          <th>
+            <div class="th-content" (click)="sort('status')">
+              Statut
+              <i class="fas" [ngClass]="getSortIcon('status')"></i>
+            </div>
+          </th>
+          <th>Ordonnance</th>
+          <th>Visible</th>
+          <th>En vedette</th>
+          <th>
+            <div class="th-content" (click)="sort('createdAt')">
+              Créé le
+              <i class="fas" [ngClass]="getSortIcon('createdAt')"></i>
+            </div>
+          </th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let product of getPaginatedProducts()">
+          <td>
+            <img *ngIf="product.getMainImageUrl()"
+                 [src]="internatPathUrl + product.getMainImageUrl()"
+                 alt="Image produit"
+                 class="preview-image"
+                 width="40"
+                 height="40"
+                 style="object-fit: cover; border-radius: 4px;">
+            <div *ngIf="!product.getMainImageUrl()" class="no-image-placeholder">
+              <i class="fas fa-image"></i>
+            </div>
+          </td>
+          <td>
+            <div class="product-info">
+                <span class="product-name">
+                  <a [routerLink]="['/pharmacy/products', product._id]">{{ product.name }}</a>
+                </span>
+              <small class="text-muted d-block" *ngIf="product.shortDescription">{{ product.shortDescription }}</small>
+            </div>
+          </td>
+          <td>
+            <code>{{ product.sku }}</code>
+          </td>
+          <td>
+            <span class="price">{{ product.price | currency:'EUR':'symbol':'1.2-2' }}</span>
+            <small class="text-muted d-block" *ngIf="product.originalPrice && product.originalPrice > product.price">
+              <s>{{ product.originalPrice | currency:'EUR':'symbol':'1.2-2' }}</s>
+            </small>
+          </td>
+          <td>{{ product.laboratoire || '—' }}</td>
+          <td>{{ product.marque || '—' }}</td>
+          <td>
+              <span class="status-badge" [ngClass]="product.status">
+                {{ getStatusLabel(product.status) }}
+              </span>
+          </td>
+          <td>
+            <i class="fas fa-prescription-bottle" *ngIf="product.requiresPrescription" style="color: red;" title="Ordonnance requise"></i>
+            <i class="fas fa-shopping-cart" *ngIf="!product.requiresPrescription" style="color: green;" title="Vente libre"></i>
+          </td>
+          <td>
+            <i class="fas fa-eye" *ngIf="product.isVisible" style="color: green;" title="Visible"></i>
+            <i class="fas fa-eye-slash" *ngIf="!product.isVisible" style="color: red;" title="Masqué"></i>
+          </td>
+          <td>
+            <i class="fas fa-star" *ngIf="product.isFeatured" style="color: gold;" title="En vedette"></i>
+            <span *ngIf="!product.isFeatured" class="text-muted">—</span>
+          </td>
+          <td>{{ product.createdAt | date: 'dd/MM/yyyy' }}</td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-outline-primary btn-sm"
+                      (click)="viewProductDetails(product)"
+                      title="Voir les détails">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!isLoading && filteredProducts.length > 0" class="d-flex justify-content-between align-items-center mt-3 pagination-wrapper">
+      <div class="pagination-info">
+        Affichage de {{paginationStart + 1}} à {{paginationEnd}} sur {{filteredProducts.length}} produits
+      </div>
+      <nav aria-label="Page navigation">
+        <ul class="pagination">
+          <li class="page-item" [ngClass]="{'disabled': currentPage === 1}">
+            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage - 1)">Précédent</a>
+          </li>
+          <li class="page-item" *ngFor="let page of getPageNumbers()" [ngClass]="{'active': page === currentPage}">
+            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(page)">{{page}}</a>
+          </li>
+          <li class="page-item" [ngClass]="{'disabled': currentPage === totalPages}">
+            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage + 1)">Suivant</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<!-- Product Details Modal -->
+<ng-template #productDetailsModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Détails du produit</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body" *ngIf="selectedProduct">
+    <div class="product-details">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="detail-group">
+            <label>Nom:</label>
+            <p>{{ selectedProduct.name }}</p>
+          </div>
+          <div class="detail-group">
+            <label>SKU:</label>
+            <p><code>{{ selectedProduct.sku }}</code></p>
+          </div>
+          <div class="detail-group">
+            <label>Prix:</label>
+            <p>{{ selectedProduct.price | currency:'EUR':'symbol':'1.2-2' }}</p>
+          </div>
+          <div class="detail-group" *ngIf="selectedProduct.originalPrice">
+            <label>Prix original:</label>
+            <p>{{ selectedProduct.originalPrice | currency:'EUR':'symbol':'1.2-2' }}</p>
+          </div>
+          <div class="detail-group">
+            <label>Laboratoire:</label>
+            <p>{{ selectedProduct.laboratoire || 'Non spécifié' }}</p>
+          </div>
+          <div class="detail-group">
+            <label>Marque:</label>
+            <p>{{ selectedProduct.marque || 'Non spécifiée' }}</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="detail-group">
+            <label>Statut:</label>
+            <p><span class="status-badge" [ngClass]="selectedProduct.status">{{ getStatusLabel(selectedProduct.status) }}</span></p>
+          </div>
+          <div class="detail-group">
+            <label>Ordonnance requise:</label>
+            <p>
+              <i class="fas fa-prescription-bottle" *ngIf="selectedProduct.requiresPrescription" style="color: red;"></i>
+              <i class="fas fa-shopping-cart" *ngIf="!selectedProduct.requiresPrescription" style="color: green;"></i>
+              {{ selectedProduct.requiresPrescription ? 'Oui' : 'Non' }}
+            </p>
+          </div>
+          <div class="detail-group" *ngIf="selectedProduct.requiresPrescription">
+            <label>Type d'ordonnance:</label>
+            <p>{{ getPrescriptionTypeLabel(selectedProduct.prescriptionType) }}</p>
+          </div>
+          <div class="detail-group" *ngIf="selectedProduct.drugForm">
+            <label>Forme:</label>
+            <p>{{ getDrugFormLabel(selectedProduct.drugForm) }}</p>
+          </div>
+          <div class="detail-group" *ngIf="selectedProduct.dosage">
+            <label>Dosage:</label>
+            <p>{{ selectedProduct.dosage }}</p>
+          </div>
+          <div class="detail-group">
+            <label>Visible:</label>
+            <p>
+              <i class="fas fa-eye" *ngIf="selectedProduct.isVisible" style="color: green;"></i>
+              <i class="fas fa-eye-slash" *ngIf="!selectedProduct.isVisible" style="color: red;"></i>
+              {{ selectedProduct.isVisible ? 'Oui' : 'Non' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3" *ngIf="selectedProduct.description">
+        <div class="col-12">
+          <div class="detail-group">
+            <h5>Description</h5>
+            <p>{{ selectedProduct.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3" *ngIf="selectedProduct.activeIngredients?.length">
+        <div class="col-12">
+          <h5>Principes actifs</h5>
+          <div class="ingredient-list">
+            <span *ngFor="let ingredient of selectedProduct.activeIngredients" class="ingredient-tag">
+              {{ ingredient.name }}
+              <span *ngIf="ingredient.dosage"> - {{ ingredient.dosage }}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3" *ngIf="selectedProduct.getMainImageUrl() || selectedProduct.images?.length">
+        <div class="col-12">
+          <h5>Images</h5>
+          <div class="images-grid">
+            <div *ngIf="selectedProduct.getMainImageUrl()" class="main-image">
+              <img [src]="internatPathUrl + selectedProduct.getMainImageUrl()"
+                   alt="Image principale"
+                   class="preview-image"
+                   style="max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 8px;">
+              <small class="d-block text-center">Image principale</small>
+            </div>
+            <div *ngFor="let image of selectedProduct.images" class="additional-image">
+              <img [src]="internatPathUrl + image.url"
+                   alt="Image additionnelle"
+                   class="preview-image"
+                   style="max-width: 150px; max-height: 150px; object-fit: cover; border-radius: 8px;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <div class="detail-group">
+            <label>Créé le:</label>
+            <p>{{ selectedProduct.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="detail-group">
+            <label>Modifié le:</label>
+            <p>{{ selectedProduct.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
+  </div>
+</ng-template>
+
+<!-- Add/Edit Product Modal -->
+<ng-template #addEditProductModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Ajouter un produit</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+  </div>
+  <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
+    <div class="modal-body">
+      <div class="row">
+        <!-- Informations générales -->
+        <div class="col-md-6">
+          <h5>Informations générales</h5>
+          <div class="mb-3">
+            <label for="name" class="form-label">Nom <span class="text-danger">*</span></label>
+            <input type="text"
+                   class="form-control"
+                   id="name"
+                   formControlName="name"
+                   [class.is-valid]="isFieldValid('name')"
+                   [class.is-invalid]="isFieldInvalid('name')"
+                   (blur)="generateSlug()">
+            <div class="invalid-feedback">{{ getFieldError('name') }}</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="slug" class="form-label">Slug <span class="text-danger">*</span></label>
+            <input type="text"
+                   class="form-control"
+                   id="slug"
+                   formControlName="slug"
+                   [class.is-valid]="isFieldValid('slug')"
+                   [class.is-invalid]="isFieldInvalid('slug')">
+            <div class="form-text">Format: lettres minuscules, chiffres et tirets uniquement</div>
+            <div class="invalid-feedback">{{ getFieldError('slug') }}</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control"
+                      id="description"
+                      rows="3"
+                      formControlName="description"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="shortDescription" class="form-label">Description courte</label>
+            <textarea class="form-control"
+                      id="shortDescription"
+                      rows="2"
+                      formControlName="shortDescription"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="categories" class="form-label">Catégories <span class="text-danger">*</span></label>
+            <select2
+              multiple="multiple"
+              class="form-control"
+              id="categories"
+              formControlName="categories"
+              [data]="categoriesArraySelect2"
+              [class.is-invalid]="isFieldInvalid('categories')"
+            >
+            </select2>
+            <div class="invalid-feedback">{{ getFieldError('categories') }}</div>
+          </div>
+        </div>
+
+        <!-- Informations produit -->
+        <div class="col-md-6">
+          <h5>Informations produit</h5>
+          <div class="mb-3">
+            <label for="sku" class="form-label">SKU <span class="text-danger">*</span></label>
+            <input type="text"
+                   class="form-control"
+                   id="sku"
+                   formControlName="sku"
+                   [class.is-valid]="isFieldValid('sku')"
+                   [class.is-invalid]="isFieldInvalid('sku')">
+            <div class="invalid-feedback">{{ getFieldError('sku') }}</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="barcode" class="form-label">Code-barres</label>
+            <input type="text"
+                   class="form-control"
+                   id="barcode"
+                   formControlName="barcode">
+          </div>
+
+          <div class="mb-3">
+            <label for="cipCode" class="form-label">Code CIP</label>
+            <input type="text"
+                   class="form-control"
+                   id="cipCode"
+                   formControlName="cipCode">
+          </div>
+
+          <div class="mb-3">
+            <label for="laboratoire" class="form-label">Laboratoire</label>
+            <input type="text"
+                   class="form-control"
+                   id="laboratoire"
+                   formControlName="laboratoire">
+          </div>
+
+          <div class="mb-3">
+            <label for="marque" class="form-label">Marque</label>
+            <input type="text"
+                   class="form-control"
+                   id="marque"
+                   formControlName="marque">
+          </div>
+        </div>
+      </div>
+
+      <!-- Prix et statut -->
+      <div class="row mt-3">
+        <div class="col-md-4">
+          <h5>Prix et statut</h5>
+          <div class="mb-3">
+            <label for="price" class="form-label">Prix <span class="text-danger">*</span></label>
+            <input type="number"
+                   class="form-control"
+                   id="price"
+                   formControlName="price"
+                   min="0"
+                   step="0.01"
+                   [class.is-valid]="isFieldValid('price')"
+                   [class.is-invalid]="isFieldInvalid('price')">
+            <div class="invalid-feedback">{{ getFieldError('price') }}</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="originalPrice" class="form-label">Prix original</label>
+            <input type="number"
+                   class="form-control"
+                   id="originalPrice"
+                   formControlName="originalPrice"
+                   min="0"
+                   step="0.01">
+          </div>
+
+          <div class="mb-3">
+            <label for="cost" class="form-label">Coût</label>
+            <input type="number"
+                   class="form-control"
+                   id="cost"
+                   formControlName="cost"
+                   min="0"
+                   step="0.01">
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <h5>Configuration</h5>
+          <div class="mb-3">
+            <label for="status" class="form-label">Statut <span class="text-danger">*</span></label>
+            <select class="form-select"
+                    id="status"
+                    formControlName="status"
+                    [class.is-valid]="isFieldValid('status')"
+                    [class.is-invalid]="isFieldInvalid('status')">
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
+              <option value="deleted">Supprimé</option>
+              <option value="out_of_stock">Épuisé</option>
+              <option value="discontinued">Discontinué</option>
+            </select>
+            <div class="invalid-feedback">{{ getFieldError('status') }}</div>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     id="isVisible"
+                     formControlName="isVisible">
+              <label class="form-check-label" for="isVisible">
+                Visible sur le site
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     id="isFeatured"
+                     formControlName="isFeatured">
+              <label class="form-check-label" for="isFeatured">
+                Produit en vedette
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     id="isOnSale"
+                     formControlName="isOnSale">
+              <label class="form-check-label" for="isOnSale">
+                En promotion
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <h5>Ordonnance</h5>
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     id="requiresPrescription"
+                     formControlName="requiresPrescription">
+              <label class="form-check-label" for="requiresPrescription">
+                Nécessite une ordonnance
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3" *ngIf="productForm.get('requiresPrescription')?.value">
+            <label for="prescriptionType" class="form-label">Type d'ordonnance</label>
+            <select class="form-select"
+                    id="prescriptionType"
+                    formControlName="prescriptionType">
+              <option *ngFor="let type of prescriptionTypes" [value]="type.value">{{ type.label }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informations médicales -->
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <h5>Informations médicales</h5>
+          <div class="mb-3">
+            <label for="drugForm" class="form-label">Forme galénique</label>
+            <select class="form-select"
+                    id="drugForm"
+                    formControlName="drugForm">
+              <option value="">Sélectionner une forme</option>
+              <option *ngFor="let form of drugForms" [value]="form.value">{{ form.label }}</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="dosage" class="form-label">Dosage</label>
+            <input type="text"
+                   class="form-control"
+                   id="dosage"
+                   formControlName="dosage"
+                   placeholder="Ex: 500mg, 10ml, etc.">
+          </div>
+
+          <div class="mb-3">
+            <label for="packaging" class="form-label">Conditionnement</label>
+            <input type="text"
+                   class="form-control"
+                   id="packaging"
+                   formControlName="packaging"
+                   placeholder="Ex: Boîte de 30 comprimés">
+          </div>
+
+          <div class="mb-3">
+            <label for="therapeuticClass" class="form-label">Classe thérapeutique</label>
+            <input type="text"
+                   class="form-control"
+                   id="therapeuticClass"
+                   formControlName="therapeuticClass">
+          </div>
+
+          <div class="mb-3">
+            <label for="pharmacologicalClass" class="form-label">Classe pharmacologique</label>
+            <input type="text"
+                   class="form-control"
+                   id="pharmacologicalClass"
+                   formControlName="pharmacologicalClass">
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <h5>Restrictions d'âge</h5>
+          <div class="row">
+            <div class="col-6">
+              <div class="mb-3">
+                <label for="ageRestrictionMinAge" class="form-label">Âge minimum</label>
+                <input type="number"
+                       class="form-control"
+                       id="ageRestrictionMinAge"
+                       formControlName="ageRestrictionMinAge"
+                       min="0"
+                       max="120">
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="mb-3">
+                <label for="ageRestrictionMaxAge" class="form-label">Âge maximum</label>
+                <input type="number"
+                       class="form-control"
+                       id="ageRestrictionMaxAge"
+                       formControlName="ageRestrictionMaxAge"
+                       min="0"
+                       max="120">
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="weight" class="form-label">Poids (grammes)</label>
+            <input type="number"
+                   class="form-control"
+                   id="weight"
+                   formControlName="weight"
+                   min="0"
+                   step="0.1">
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     id="isFragile"
+                     formControlName="isFragile">
+              <label class="form-check-label" for="isFragile">
+                Produit fragile
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     id="requiresColdChain"
+                     formControlName="requiresColdChain">
+              <label class="form-check-label" for="requiresColdChain">
+                Chaîne du froid requise
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Principes actifs -->
+      <div class="row mt-3">
+        <div class="col-12">
+          <h5>Principes actifs</h5>
+          <div class="ingredients-container">
+            <div *ngFor="let ingredient of productForm.get('activeIngredients')?.value; let i = index" class="ingredient-row mb-2">
+              <div class="row">
+                <div class="col-6">
+                  <input type="text"
+                         class="form-control"
+                         placeholder="Nom du principe actif"
+                         [(ngModel)]="ingredient.name"
+                         [ngModelOptions]="{standalone: true}">
+                </div>
+                <div class="col-4">
+                  <input type="text"
+                         class="form-control"
+                         placeholder="Dosage"
+                         [(ngModel)]="ingredient.dosage"
+                         [ngModelOptions]="{standalone: true}">
+                </div>
+                <div class="col-2">
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeActiveIngredient(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="addActiveIngredient()">
+              <i class="fas fa-plus"></i> Ajouter un principe actif
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contre-indications -->
+      <div class="row mt-3">
+        <div class="col-md-4">
+          <h5>Contre-indications</h5>
+          <div class="contraindications-container">
+            <div *ngFor="let contraindication of productForm.get('contraindications')?.value; let i = index" class="list-item-row mb-2">
+              <div class="row">
+                <div class="col-10">
+                  <input type="text"
+                         class="form-control"
+                         placeholder="Contre-indication"
+                         [(ngModel)]="productForm.get('contraindications')?.value[i]"
+                         [ngModelOptions]="{standalone: true}">
+                </div>
+                <div class="col-2">
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeContraindication(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="addContraindication()">
+              <i class="fas fa-plus"></i> Ajouter
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <h5>Effets secondaires</h5>
+          <div class="side-effects-container">
+            <div *ngFor="let effect of productForm.get('sideEffects')?.value; let i = index" class="list-item-row mb-2">
+              <div class="row">
+                <div class="col-10">
+                  <input type="text"
+                         class="form-control"
+                         placeholder="Effet secondaire"
+                         [(ngModel)]="productForm.get('sideEffects')?.value[i]"
+                         [ngModelOptions]="{standalone: true}">
+                </div>
+                <div class="col-2">
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeSideEffect(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="addSideEffect()">
+              <i class="fas fa-plus"></i> Ajouter
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <h5>Avertissements</h5>
+          <div class="warnings-container">
+            <div *ngFor="let warning of productForm.get('warnings')?.value; let i = index" class="list-item-row mb-2">
+              <div class="row">
+                <div class="col-10">
+                  <input type="text"
+                         class="form-control"
+                         placeholder="Avertissement"
+                         [(ngModel)]="productForm.get('warnings')?.value[i]"
+                         [ngModelOptions]="{standalone: true}">
+                </div>
+                <div class="col-2">
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeWarning(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="addWarning()">
+              <i class="fas fa-plus"></i> Ajouter
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Indications thérapeutiques -->
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <h5>Indications thérapeutiques</h5>
+          <div class="indications-container">
+            <div *ngFor="let indication of productForm.get('indicationsTherapeutiques')?.value; let i = index" class="list-item-row mb-2">
+              <div class="row">
+                <div class="col-10">
+                  <input type="text"
+                         class="form-control"
+                         placeholder="Indication thérapeutique"
+                         [(ngModel)]="productForm.get('indicationsTherapeutiques')?.value[i]"
+                         [ngModelOptions]="{standalone: true}">
+                </div>
+                <div class="col-2">
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeIndication(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="addIndication()">
+              <i class="fas fa-plus"></i> Ajouter
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <h5>Mots-clés SEO</h5>
+          <div class="keywords-container">
+            <div *ngFor="let keyword of productForm.get('keywords')?.value; let i = index" class="list-item-row mb-2">
+              <div class="row">
+                <div class="col-10">
+                  <input type="text"
+                         class="form-control"
+                         placeholder="Mot-clé"
+                         [(ngModel)]="productForm.get('keywords')?.value[i]"
+                         [ngModelOptions]="{standalone: true}">
+                </div>
+                <div class="col-2">
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeKeyword(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="addKeyword()">
+              <i class="fas fa-plus"></i> Ajouter
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Images -->
+      <div class="row mt-3">
+        <div class="col-12">
+          <h5>Images</h5>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="mainImage" class="form-label">Image principale</label>
+            <div class="file-upload-container">
+              <input
+                type="file"
+                class="form-control"
+                id="mainImage"
+                accept="image/jpeg,image/jpg,image/png"
+                (change)="onFileSelected($event, 'mainImage')"
+              >
+              <small class="form-text text-muted">Formats acceptés: JPG, PNG (max 5MB)</small>
+              <div class="file-preview mt-2" *ngIf="previewUrls.mainImage">
+                <div class="preview-item">
+                  <img [src]="previewUrls.mainImage" alt="Aperçu" style="max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 8px;">
+                  <br>
+                  <button type="button" class="btn btn-sm btn-outline-danger mt-2" (click)="removeFile('mainImage')">
+                    <i class="fas fa-times"></i> Supprimer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="images" class="form-label">Images additionnelles</label>
+            <div class="file-upload-container">
+              <input
+                type="file"
+                class="form-control"
+                id="images"
+                accept="image/jpeg,image/jpg,image/png"
+                multiple
+                (change)="onFileSelected($event, 'images')"
+              >
+              <small class="form-text text-muted">Formats acceptés: JPG, PNG (max 5MB par image)</small>
+              <div class="file-preview mt-2" *ngIf="previewUrls.images && previewUrls.images.length > 0">
+                <div class="row">
+                  <div class="col-4 mb-2" *ngFor="let url of previewUrls.images; let i = index">
+                    <div class="preview-item">
+                      <img [src]="url" alt="Aperçu" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px;">
+                      <button type="button" class="btn btn-sm btn-outline-danger mt-1 w-100" (click)="removeFile('images', i)">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEO -->
+      <div class="row mt-3">
+        <div class="col-12">
+          <h5>SEO</h5>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="metaTitle" class="form-label">Meta Title</label>
+            <input type="text"
+                   class="form-control"
+                   id="metaTitle"
+                   formControlName="metaTitle"
+                   maxlength="60">
+            <div class="form-text">Titre pour les moteurs de recherche (60 caractères max.)</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="metaDescription" class="form-label">Meta Description</label>
+            <textarea class="form-control"
+                      id="metaDescription"
+                      rows="2"
+                      formControlName="metaDescription"
+                      maxlength="160"></textarea>
+            <div class="form-text">Description pour les moteurs de recherche (160 caractères max.)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions et stockage -->
+      <div class="row mt-3">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="instructions" class="form-label">Instructions d'utilisation</label>
+            <textarea class="form-control"
+                      id="instructions"
+                      rows="3"
+                      formControlName="instructions"
+                      placeholder="Mode d'emploi, posologie, etc."></textarea>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="storage" class="form-label">Conditions de stockage</label>
+            <textarea class="form-control"
+                      id="storage"
+                      rows="3"
+                      formControlName="storage"
+                      placeholder="Température, humidité, lumière, etc."></textarea>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="origin" class="form-label">Origine</label>
+            <input type="text"
+                   class="form-control"
+                   id="origin"
+                   formControlName="origin"
+                   placeholder="Pays de fabrication">
+          </div>
+        </div>
+      </div>
+
+      <!-- Pharmacies -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <label for="pharmacies" class="form-label">Pharmacies associées <span class="text-danger">*</span></label>
+          <select2
+            multiple="multiple"
+            class="form-control"
+            id="pharmacies"
+            formControlName="pharmacies"
+            [data]="pharmaciesListArray"
+            [class.is-invalid]="isFieldInvalid('pharmacies')"
+          >
+          </select2>
+          <div class="invalid-feedback">{{ getFieldError('pharmacies') }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+      <button type="submit"
+              class="btn btn-primary"
+              [disabled]="!productForm.valid || isSubmitting">
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Créer
+      </button>
+    </div>
+  </form>
+</ng-template>
+
+<!-- Import Products Modal -->
+<ng-template #importProductsModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Importer des produits</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body import-modal">
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle"></i>
+      <strong> Format attendu :</strong> Fichier CSV avec les colonnes suivantes :
+      <ul class="mt-2 mb-0">
+        <li><strong>Nom</strong> (obligatoire) - Nom du produit</li>
+        <li><strong>Description</strong> - Description détaillée</li>
+        <li><strong>SKU</strong> (obligatoire) - Code produit unique</li>
+        <li><strong>Prix</strong> (obligatoire) - Prix en euros</li>
+        <li><strong>Laboratoire</strong> - Nom du laboratoire</li>
+        <li><strong>Marque</strong> - Marque du produit</li>
+        <li><strong>Statut</strong> - active, inactive, deleted, out_of_stock, discontinued</li>
+        <li><strong>Ordonnance</strong> - oui/non pour l'ordonnance requise</li>
+        <li><strong>Forme</strong> - comprime, gelule, sirop, creme, etc.</li>
+        <li><strong>Dosage</strong> - Dosage du produit</li>
+      </ul>
+    </div>
+
+    <div class="mb-3">
+      <label for="importFile" class="form-label">Fichier CSV <span class="text-danger">*</span></label>
+      <input type="file"
+             class="form-control"
+             id="importFile"
+             accept=".csv"
+             (change)="onImportFileSelected($event)">
+      <small class="form-text text-muted">Formats acceptés: CSV uniquement (max 10MB)</small>
+    </div>
+
+    <div class="mb-3" *ngIf="importPreview.length > 0">
+      <h6>Aperçu des données ({{importPreview.length}} lignes) :</h6>
+      <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-sm table-bordered">
+          <thead class="table-light">
+          <tr>
+            <th style="min-width: 150px;">Nom</th>
+            <th style="min-width: 100px;">SKU</th>
+            <th style="min-width: 80px;">Prix</th>
+            <th style="min-width: 100px;">Laboratoire</th>
+            <th style="min-width: 80px;">Statut</th>
+            <th style="min-width: 200px;">Erreurs</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let item of importPreview; let i = index"
+              [class.table-danger]="item.errors.length > 0"
+              [class.table-success]="item.errors.length === 0">
+            <td>{{item.data.name || '—'}}</td>
+            <td><code>{{item.data.sku || '—'}}</code></td>
+            <td>{{item.data.price | currency:'EUR':'symbol':'1.2-2'}}</td>
+            <td>{{item.data.laboratoire || '—'}}</td>
+            <td>
+              <span class="badge" [ngClass]="'bg-' + (item.data.status === 'active' ? 'success' : 'secondary')">
+                {{item.data.status}}
+              </span>
+            </td>
+            <td>
+              <span *ngIf="item.errors.length === 0" class="text-success">
+                <i class="fas fa-check"></i> Valide
+              </span>
+              <div *ngIf="item.errors.length > 0">
+                <small class="text-danger d-block" *ngFor="let error of item.errors">
+                  • {{error}}
+                </small>
+              </div>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="importStats.total > 0" class="alert alert-secondary">
+      <div class="row text-center">
+        <div class="col-4">
+          <strong>Total</strong><br>
+          <span class="fs-5">{{importStats.total}}</span>
+        </div>
+        <div class="col-4">
+          <strong>Valides</strong><br>
+          <span class="fs-5 text-success">{{importStats.valid}}</span>
+        </div>
+        <div class="col-4">
+          <strong>Erreurs</strong><br>
+          <span class="fs-5 text-danger">{{importStats.errors}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+    <button type="button"
+            class="btn btn-primary"
+            [disabled]="!canImport || isImporting"
+            (click)="processImport()">
+      <span *ngIf="isImporting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      {{isImporting ? 'Importation en cours...' : 'Importer ' + importStats.valid + ' produit(s)'}}
+    </button>
+  </div>
+</ng-template>

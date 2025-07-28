@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import {Component, Input, OnInit, SimpleChanges} from '@angular/core';
 import {CommonModule, DatePipe, NgClass} from "@angular/common";
 import {ActivityLoged} from "../../../../models/Activity.class";
 
@@ -22,10 +22,20 @@ export class ActivityTimelineComponent implements OnInit {
   constructor() {}
 
   ngOnInit(): void {
-    this.activites = this.activites.map(activity => ({
-      ...activity,
-      time: activity.createdAt
-    }));
+    this.sortActivities();
+  }
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['activites'] && this.activites) {
+      this.sortActivities();
+    }
+  }
+  private sortActivities(): void {
+    this.activites = this.activites
+      .map(activity => ({
+        ...activity,
+        time: activity.createdAt
+      }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   getActivityIcon(type: string): string {

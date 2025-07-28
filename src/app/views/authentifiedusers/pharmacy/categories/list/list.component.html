@@ -15,6 +15,10 @@
                 (click)="exportCategoriesList()" *ngIf="permissions.exportCategories">
           <i class="fas fa-download"></i> Exporter
         </button>
+        <button class="btn btn-outline-success" style="margin-left: 5px; background-color: #d91a72; color: white"
+                (click)="openImportModal()" *ngIf="permissions.addCategorie">
+          <i class="fas fa-upload"></i> Importer
+        </button>
       </div>
     </div>
   </div>
@@ -59,11 +63,11 @@
     </div>
 
     <!-- Loading indicator -->
-    <div *ngIf="isLoading" class="loading-container">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Chargement...</span>
-      </div>
-    </div>
+<!--    <div *ngIf="isLoading" class="loading-container">-->
+<!--      <div class="spinner-border text-primary" role="status">-->
+<!--        <span class="visually-hidden">Chargement...</span>-->
+<!--      </div>-->
+<!--    </div>-->
 
     <!-- Empty state -->
     <div *ngIf="!isLoading && filteredCategories.length === 0" class="empty-state">
@@ -321,7 +325,6 @@
         <!-- Informations générales -->
         <div class="col-md-6">
           <h5>Informations générales</h5>
-
           <div class="mb-3">
             <label for="name" class="form-label">Nom <span class="text-danger">*</span></label>
             <input type="text"
@@ -365,7 +368,6 @@
             </select>
             <div class="invalid-feedback">{{ getFieldError('level') }}</div>
           </div>
-
           <div class="mb-3" *ngIf="categoryForm.get('level')?.value === '1'" >
             <label for="parentCategory" class="form-label">Catégorie parent</label>
             <select2
@@ -379,7 +381,6 @@
             <div class="invalid-feedback">{{ getFieldError('parentCategory') }}</div>
           </div>
         </div>
-
         <!-- Configuration -->
         <div class="col-md-6">
           <h5>Configuration</h5>
@@ -465,7 +466,6 @@
           </div>
         </div>
       </div>
-
       <!-- Images -->
       <div class="row mt-3">
         <div class="col-12">
@@ -526,7 +526,6 @@
         </div>
         </div>
       </div>
-
       <!-- SEO -->
       <div class="row mt-3">
         <div class="col-12">
@@ -578,3 +577,91 @@
     </div>
   </form>
 </ng-template>
+<ng-template #importCategoriesModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Importer des catégories</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle"></i>
+      <strong> Format attendu :</strong> Fichier CSV avec les colonnes suivantes :
+      <ul class="mt-2 mb-0">
+        <li>Nom (obligatoire)</li>
+        <li>Description</li>
+        <li>Slug (optionnel - généré automatiquement si vide)</li>
+        <li>Niveau (0 ou 1)</li>
+        <li>Catégorie parent (nom de la catégorie parent pour niveau 1)</li>
+        <li>Statut (active, inactive, deleted)</li>
+        <li>Type spécial (otc, prescription, homeopathy, medical_device, supplement, cosmetic)</li>
+        <li>Visible (true/false)</li>
+        <li>Ordre d'affichage (nombre)</li>
+      </ul>
+    </div>
+
+    <div class="mb-3">
+      <label for="importFile" class="form-label">Fichier CSV <span class="text-danger">*</span></label>
+      <input type="file"
+             class="form-control"
+             id="importFile"
+             accept=".csv"
+             (change)="onImportFileSelected($event)">
+      <small class="form-text text-muted">Formats acceptés: CSV uniquement (max 10MB)</small>
+    </div>
+    <div class="mb-3" *ngIf="importPreview.length > 0">
+      <h6>Aperçu des données ({{importPreview.length}} lignes) :</h6>
+      <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-sm table-bordered">
+          <thead class="table-light">
+          <tr>
+            <th>Nom</th>
+            <th>Niveau</th>
+            <th>Statut</th>
+            <th>Type</th>
+            <th>Erreurs</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let item of importPreview; let i = index"
+              [class.table-danger]="item.errors.length > 0"
+              [class.table-success]="item.errors.length === 0">
+            <td>{{item.data.name}}</td>
+            <td>{{item.data.level}}</td>
+            <td>{{item.data.status}}</td>
+            <td>{{item.data.specialCategory}}</td>
+            <td>
+                <span *ngIf="item.errors.length === 0" class="text-success">
+                  <i class="fas fa-check"></i> Valide
+                </span>
+              <div *ngIf="item.errors.length > 0">
+                <small class="text-danger" *ngFor="let error of item.errors">
+                  • {{error}}
+                </small>
+              </div>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="importStats.total > 0" class="alert alert-secondary">
+      <strong>Statistiques :</strong>
+      Total : {{importStats.total}} |
+      Valides : <span class="text-success">{{importStats.valid}}</span> |
+      Erreurs : <span class="text-danger">{{importStats.errors}}</span>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+    <button type="button"
+            class="btn btn-primary"
+            [disabled]="!canImport || isImporting"
+            (click)="processImport()">
+      <span *ngIf="isImporting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      {{isImporting ? 'Importation...' : 'Importer'}}
+    </button>
+  </div>
+</ng-template>
+

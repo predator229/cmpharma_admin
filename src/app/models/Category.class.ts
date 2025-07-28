@@ -1,5 +1,6 @@
 import {PharmacyClass} from "./Pharmacy.class";
 import {FileClass} from "./File.class";
+import {CommonFunctions} from "../controllers/comonsfunctions";
 
 interface PharmacyRestriction {
   value: string;
@@ -110,7 +111,7 @@ export class Category {
   restrictions?: string[];
   specialCategory: 'otc' | 'prescription' | 'homeopathy' | 'medical_device' | 'supplement' | 'cosmetic';
 
-  pharmaciesList: [PharmacyClass];
+  pharmaciesList: PharmacyClass[];
 
   createdAt: Date;
   updatedAt: Date;
@@ -136,7 +137,7 @@ export class Category {
     requiresPrescription?: boolean;
     restrictions?: string[];
     specialCategory?: 'otc' | 'prescription' | 'homeopathy' | 'medical_device' | 'supplement' | 'cosmetic';
-    pharmaciesList: [PharmacyClass];
+    pharmaciesList: Object[];
     createdAt: Date;
     updatedAt: Date;
   }) {
@@ -167,7 +168,7 @@ export class Category {
     this.restrictions = data.restrictions;
     this.specialCategory = data.specialCategory || 'otc';
 
-    this.pharmaciesList = data.pharmaciesList;
+    this.pharmaciesList = data.pharmaciesList.map((item: any) => CommonFunctions.mapToPharmacy(item));
 
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;

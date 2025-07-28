@@ -129,13 +129,14 @@ export class PharmacyCategoryDetailComponent implements OnInit, OnDestroy {
           name: [this.category.name, [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
           description: [this.category.description],
           slug: [this.category.slug, [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
+          level: [this.category.level],
           parentCategory: [this.category.parentCategory?._id],
           status: [this.category.status, [Validators.required]],
           displayOrder: [this.category.displayOrder, [Validators.min(0)]],
           isVisible: [this.category.isVisible, [Validators.required]],
           metaTitle: [this.category.metaTitle],
           metaDescription: [this.category.metaDescription],
-          keywords: [this.category.keywords.join(' | ')],
+          keywords: [this.category.keywords.join(' , ')],
           requiresPrescription: [this.category.requiresPrescription],
           restrictions: [this.category.restrictions],
           specialCategory: [this.category.specialCategory, [Validators.required]],
@@ -145,7 +146,7 @@ export class PharmacyCategoryDetailComponent implements OnInit, OnDestroy {
           formm = this.fb.group({
             _id: [this.category._id],
             type_: [type],
-            pharmaciesList: [this.category.pharmaciesList, [Validators.required]]
+            pharmaciesList: [this.category.pharmaciesList.map(pharm => pharm.id), [Validators.required]]
           });
           break;
       case 3:
@@ -286,30 +287,6 @@ export class PharmacyCategoryDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-
-  // populateForm(type:number): void {
-  //   if (this.category) {
-  //     this.categoryForm.patchValue({
-  //       _id: this.category._id,
-  //       name: this.category.name,
-  //       description: this.category.description || '',
-  //       slug: this.category.slug,
-  //       parentCategory: this.category.parentCategory?._id || '',
-  //       level: this.category.level,
-  //       status: this.category.status,
-  //       displayOrder: this.category.displayOrder,
-  //       isVisible: this.category.isVisible,
-  //       metaTitle: this.category.metaTitle || '',
-  //       metaDescription: this.category.metaDescription || '',
-  //       keywords: this.category.keywords || [],
-  //       requiresPrescription: this.category.requiresPrescription,
-  //       restrictions: this.category.restrictions || [],
-  //       specialCategory: this.category.specialCategory,
-  //       pharmaciesList: this.category.pharmaciesList?.map(p => p.id) || []
-  //     });
-  //   }
-  // }
-
   goBack(): void {
     this.location.back();
   }
@@ -344,20 +321,29 @@ export class PharmacyCategoryDetailComponent implements OnInit, OnDestroy {
   }
 
   async onSubmit(): Promise<void> {
-    if (!this.categoryForm.get('parentCategory')?.value && this.categoryForm.get('level')?.value == 1) {
+    if ( this.categoryForm.get('type_')?.value == 1 && (!this.categoryForm.get('parentCategory')?.value && this.categoryForm.get('level')?.value != 0)) {
       this.handleError("Vous devez sélectionner une catégorie parent pour le niveau choisi !");
       return;
     }
 
-    if (!this.categoryForm.get('pharmaciesList')?.value?.length) {
+    if (this.categoryForm.get('type_')?.value == 2 && !this.categoryForm.get('pharmaciesList')?.value?.length) {
       this.handleError("Vous devez associer la catégorie à au moins une pharmacie !");
       return;
     }
 
     if (this.categoryForm.valid) {
+      if (this.categoryForm.get('type_')?.value == 1) {
+        this.categoryForm.patchValue({
+          keywords: this.categoryForm.get('keywords')?.value?.toLowerCase()
+            .split(',')
+            .map(keyword => keyword.trim())
+            .filter(keyword => keyword.length > 0)
+        });
+      }
+
       const formData = {
         ...this.categoryForm.value,
-        id: this.categoryId,
+        _id: this.categoryId,
         uid: await this.auth.getUid(),
       };
 
@@ -371,32 +357,40 @@ export class PharmacyCategoryDetailComponent implements OnInit, OnDestroy {
           'Content-Type': 'application/json'
         });
 
-        this.apiService.post('pharmacy-management/categories/update', formData, headers)
-          .pipe(takeUntil(this.destroy$))
-          .subscribe({
-            next: async (response: any) => {
-              if (response && !response.error && response.data) {
-                // Upload files if any
-                if (this.selectedFiles.iconUrl) {
-                  await this.uploadFiles(this.selectedFiles.iconUrl, 'iconUrl', this.categoryId);
+        if ([1,2].includes(formData.type_)) {
+          this.apiService.post('pharmacy-management/categories/update', formData, headers)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: async (response: any) => {
+                if (response && !response.error && response.data) {
+                  this.showSuccess(response.message ?? 'Catégorie mise à jour avec succès');
+                  this.closeModal();
+                  this.loadCategoryDetail(); // Recharger les données
+                } else {
+                  this.handleError(response.errorMessage ?? 'Erreur lors de la sauvegarde');
                 }
-                if (this.selectedFiles.imageUrl) {
-                  await this.uploadFiles(this.selectedFiles.imageUrl, 'imageUrl', this.categoryId);
-                }
-
-                this.showSuccess(response.message ?? 'Catégorie mise à jour avec succès');
-                this.closeModal();
-                this.loadCategoryDetail(); // Recharger les données
-              } else {
-                this.handleError(response.errorMessage ?? 'Erreur lors de la sauvegarde');
+                this.loadingService.setLoading(false);
+              },
+              error: (error) => {
+                this.handleError('Erreur lors de la communication avec le serveur');
+                this.loadingService.setLoading(false);
               }
-              this.loadingService.setLoading(false);
-            },
-            error: (error) => {
-              this.handleError('Erreur lors de la communication avec le serveur');
-              this.loadingService.setLoading(false);
-            }
-          });
+            });
+        }else{
+          if (this.selectedFiles.iconUrl) {
+            this.loadingService.setLoading(true);
+            await this.uploadFiles(this.selectedFiles.iconUrl, 'iconUrl', this.categoryId);
+            this.loadingService.setLoading(false);
+          }
+          if (this.selectedFiles.imageUrl) {
+            this.loadingService.setLoading(true);
+            await this.uploadFiles(this.selectedFiles.imageUrl, 'imageUrl', this.categoryId);
+            this.loadingService.setLoading(false);
+          }
+          this.loadCategoryDetail(); // Recharger les données
+          this.showSuccess('Catégorie mise à jour avec succès');
+          this.closeModal();
+        }
       } catch (error) {
         this.handleError('Une erreur s\'est produite. Veuillez réessayer!');
         this.loadingService.setLoading(false);
@@ -413,7 +407,6 @@ export class PharmacyCategoryDetailComponent implements OnInit, OnDestroy {
     }
 
     if (!this.category) return;
-
     try {
       const confirmed = await this.showConfirmation(
         'Supprimer la catégorie',
@@ -437,15 +430,15 @@ export class PharmacyCategoryDetailComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('category-management/categories/delete', {
-        id: this.categoryId,
+      this.apiService.post('pharmacy-management/categories/delete', {
+        _id: this.categoryId,
         uid
       }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
             this.showSuccess('Catégorie supprimée avec succès');
-            this.router.navigate(['/categories']);
+            this.router.navigate(['pharmacy/categories/list']);
           },
           error: (error) => {
             this.handleError('Erreur lors de la suppression de la catégorie');
