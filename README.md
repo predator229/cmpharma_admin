@@ -4,8 +4,8 @@
   <a href="#" target="_blank">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
   </a>
-  <a href="https://twitter.com/https:\/\/x.com\/DamienPadonou" target="_blank">
-    <img alt="Twitter: https:\/\/x.com\/DamienPadonou" src="https://img.shields.io/twitter/follow/https:\/\/x.com\/DamienPadonou.svg?style=social" />
+  <a href="https://x.com/DamienPadonou" target="_blank">
+    <img alt="Twitter: https://x.com/DamienPadonou" src="https://img.shields.io/twitter/follow/https://x.com/DamienPadonou.svg?style=social" />
   </a>
 </p>
 
@@ -38,13 +38,12 @@ yarn run test
 👤 **Damien Padonou**
 
 * Website: predator229
-* Twitter: [@https:\/\/x.com\/DamienPadonou](https://twitter.com/https:\/\/x.com\/DamienPadonou)
+* Twitter: [@https://x.com/DamienPadonou](https://twitter.com/https:\/\/x.com\/DamienPadonou)
 * Github: [@predator299](https://github.com/predator299)
-* LinkedIn: [@https:\/\/www.linkedin.com\/in\/damien-padonou-493658181](https://linkedin.com/in/https:\/\/www.linkedin.com\/in\/damien-padonou-493658181)
+* LinkedIn: [@https://www.linkedin.com/in/damien-padonou-493658181](https://linkedin.com/in/https:\/\/www.linkedin.com\/in\/damien-padonou-493658181)
 
 ## Show your support
 
 Give a ⭐️ if this project helped you!
 
 ***
-_This README was generated with ❤️ by [readme-md-generator](https://github.com/kefranabg/readme-md-generator)_
