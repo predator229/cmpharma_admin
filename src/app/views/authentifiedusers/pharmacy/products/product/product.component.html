@@ -209,7 +209,7 @@
                   <input type="text" class="form-control" placeholder="Mot-clé"
                          [(ngModel)]="generalForm.get('keywords')?.value[i]"
                          [ngModelOptions]="{standalone: true}">
-                  <button type="button" class="btn btn-outline-danger" (click)="removeKeyword(i)">
+                  <button type="button" class="btn btn-outline-purple" (click)="removeKeyword(i)">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
@@ -248,9 +248,9 @@
                   </div>
                 </div>
                 <div class="info-group" *ngIf="product.keywords?.length">
-                  <label>Mots-clés:</label>
+                  <label>Mots-clés :</label>
                   <div class="d-flex flex-wrap gap-1">
-                    <span *ngFor="let keyword of product.keywords" class="badge bg-light text-dark">
+                    <span *ngFor="let keyword of product.keywords" class="badge bg-purple">
                       {{ keyword }}
                     </span>
                   </div>

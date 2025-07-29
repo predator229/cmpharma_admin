@@ -11,7 +11,7 @@ export class Product {
   shortDescription?: string;
   slug: string;
 
-  categories: Category[]; // ou Category[] si tu charges les objets complets
+  categories: Category[];
 
   barcode?: string;
   sku: string;
@@ -112,7 +112,7 @@ export class Product {
     this.shortDescription = data.shortDescription;
     this.slug = data.slug || '';
 
-    this.categories = data.categories.forEach((cat: any) => new Category(cat)) || [];
+    this.categories = data.categories;
 
     this.barcode = data.barcode;
     this.sku = data.sku || '';

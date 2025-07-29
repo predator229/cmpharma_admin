@@ -88,6 +88,9 @@
             &.bg-danger {
               background-color: #dc3545 !important;
             }
+            &.bg-purple {
+              background-color: #9c27b0 !important;
+            }
           }
         }
       }
@@ -325,6 +328,15 @@
               border-color: #dc3545;
             }
           }
+          &.btn-outline-purple {
+            color: #9c27b0;
+            border-color: #9c27b0;
+
+            &:hover {
+              background-color: #9c27b0;
+              border-color: #9c27b0;
+            }
+          }
         }
       }
     }
@@ -405,6 +417,14 @@
 
       &:hover {
         border-color: #dc3545;
+      }
+    }
+    .btn-outline-purple {
+      border-left: none;
+      border-color: #9c27b0;
+
+      &:hover {
+        border-color: #9c27b0;
       }
     }
   }
@@ -701,5 +721,31 @@
       box-shadow: none !important;
       border: 1px solid #000 !important;
     }
+  }
+}
+.badge {
+  margin-right: 8px;
+  margin-bottom: 4px;
+  font-size: 0.85em;
+  padding: 0.4em 0.6em;
+
+  &.bg-success {
+    background-color: #28a745 !important;
+  }
+
+  &.bg-primary {
+    background-color: #007bff !important;
+  }
+
+  &.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529;
+  }
+
+  &.bg-danger {
+    background-color: #dc3545 !important;
+  }
+  &.bg-purple {
+    background-color: #9c27b0 !important;
   }
 }

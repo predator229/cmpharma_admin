@@ -27,11 +27,36 @@ import {ActivatedRoute, Router} from "@angular/router";
 export class PharmacyLogsComponent implements OnInit {
   pharmacyId: string[] = [];
   @Input() userDetails: UserDetails | null;
+  @Input() zoneRechercheSelected: string = 'pharmacy';
+  @Input() userSelected: string = '';
 
+  zoneRechercheArray: Array<{ key: string; name: string }> = [
+    {key:'all', name:'Toutes les sections'}, {key:'pharmacy', name: 'Pharmacies'}, {key:'category', name: 'Categories'}, {key:'product', name:'Produits'}
+  ];
+  zoneRecherche: { [key: string]: { name: string; endpoint: string } } = {
+    all: {
+      name: 'Toutes les sections',
+      endpoint: 'tools/activities',
+    },
+    category: {
+      name: 'Categories',
+      endpoint: 'pharmacy-managment/categories/activities',
+    },
+    pharmacy: {
+      name: 'Pharmacies',
+      endpoint: 'pharmacy-managment/pharmacies/activities',
+    },
+    product: {
+      name: 'Produits',
+      endpoint: 'pharmacy-management/products/activities',
+    },
+  };
+  searchText: string;
   prePage: string = '50';
   pharmacyActivities: ActivityLoged[] = [];
   usersInfo: { [key: string]:{  name: string;  img: string;  } } | null = null;
   pharmacies: PharmacyClass[] = [];
+  usersArray: Array<{ key: string, name:string}> = [];
 
   constructor(private router: Router, private route: ActivatedRoute, private authUser: AuthService, private loadingService: LoadingService, private apiService: ApiService)  {
   }
@@ -81,15 +106,18 @@ export class PharmacyLogsComponent implements OnInit {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       });
-
-      this.apiService.post('pharmacy-managment/pharmacies/list', { uid }, headers)
+      let listUsers = [{key:'',name:"Tous les utilisateurs"}];
+      this.apiService.post('pharmacy-managment/pharmacies/list', { uid, andUsersList:1 }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
             if (response && response.data) {
               this.pharmacies = response.data.map((item: any) => CommonFunctions.mapToPharmacy(item));
+              response.usersArray.forEach((item: any) => listUsers.push(item));
+              this.usersArray = listUsers;
             } else {
               this.pharmacies = [];
+              this.usersArray = [];
             }
             this.loadingService.setLoading(false);
           },
@@ -104,6 +132,13 @@ export class PharmacyLogsComponent implements OnInit {
     }
   }
   async loadPharmacyActivities(): Promise<void> {
+    if ( typeof this.zoneRecherche[this.zoneRechercheSelected] === 'undefined') {
+      this.handleError('Option selectionne invalide!');
+      return;
+    }
+
+    const endpoint = this.zoneRecherche[this.zoneRechercheSelected].endpoint;
+    const user_ = this.userSelected;
     const token = await this.authUser.getRealToken();
     const uid = await this.authUser.getUid();
     const prePage = parseInt(this.prePage);
@@ -119,7 +154,7 @@ export class PharmacyLogsComponent implements OnInit {
     });
 
     const pharmacyId = this.pharmacyId;
-    this.apiService.post('managers/pharmacies/activities', { uid, prePage, id:pharmacyId }, headers)
+    this.apiService.post(endpoint, { uid, prePage, id:pharmacyId }, headers)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
@@ -145,21 +180,7 @@ export class PharmacyLogsComponent implements OnInit {
     });
   }
 
-  getActivityIcon(type: string): string {
-    switch (type) {
-      case 'order':
-        return 'fas fa-shopping-cart';
-      case 'pharmacy':
-        return 'fas fa-clinic-medical';
-      case 'payment':
-        return 'fas fa-euro-sign';
-      case 'user':
-        return 'fas fa-user';
-      case 'delivery':
-        return 'fas fa-truck';
-      default:
-        return 'fas fa-info-circle';
-    }
-  }
+  filterLogs() {
 
+  }
 }
