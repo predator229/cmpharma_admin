@@ -74,9 +74,9 @@ export class PharmacyCategoryDetailComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private modalService: NgbModal;
   userDetail: UserDetails;
+  categoryActivities: ActivityLoged[] = [];
 
   @ViewChild('editCategoryModal') editCategoryModal: ElementRef | undefined;
-  categoryActivities: ActivityLoged[] = [];
 
   constructor(private route: ActivatedRoute, private router: Router, private location: Location, modalService: NgbModal, private auth: AuthService, private apiService: ApiService, private loadingService: LoadingService, private fb: FormBuilder) {
     this.loadingService.isLoading$.subscribe((loading) => {

@@ -12,6 +12,7 @@ import {
   PharmacyCategoryDetailComponent
 } from "./views/authentifiedusers/pharmacy/categories/category/category.component";
 import {PharmacyProductListComponent} from "./views/authentifiedusers/pharmacy/products/list/products.component";
+import {PharmacyProductDetailComponent} from "./views/authentifiedusers/pharmacy/products/product/product.component";
 
 const routes: Routes = [{
     path: 'admin',
@@ -45,6 +46,7 @@ const routes: Routes = [{
       { path: 'categories/:id',  loadComponent: () => import('./views/authentifiedusers/pharmacy/categories/category/category.component').then((c) => c.PharmacyCategoryDetailComponent), },
 
       { path: 'products/list', loadComponent: () =>import('./views/authentifiedusers/pharmacy/products/list/products.component').then((c) => c.PharmacyProductListComponent), },
+      { path: 'products/:id',  loadComponent: () => import('./views/authentifiedusers/pharmacy/products/product/product.component').then((c) => c.PharmacyProductDetailComponent), },
 
       { path: 'admin/logs',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/logs/logs.component').then((c) => c.PharmacyLogsComponent), },
       { path: 'admin/logs/:idPharmacy',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/logs/logs.component').then((c) => c.PharmacyLogsComponent), },

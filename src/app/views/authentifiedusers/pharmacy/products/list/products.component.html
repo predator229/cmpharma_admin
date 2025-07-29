@@ -71,102 +71,102 @@
     <div *ngIf="!isLoading && filteredProducts.length > 0" class="table-responsive">
       <table class="table table-hover">
         <thead>
-        <tr>
-          <th>Image</th>
-          <th>
-            <div class="th-content" (click)="sort('name')">
-              Nom
-              <i class="fas" [ngClass]="getSortIcon('name')"></i>
-            </div>
-          </th>
-          <th>SKU</th>
-          <th>
-            <div class="th-content" (click)="sort('price')">
-              Prix
-              <i class="fas" [ngClass]="getSortIcon('price')"></i>
-            </div>
-          </th>
-          <th>Laboratoire</th>
-          <th>Marque</th>
-          <th>
-            <div class="th-content" (click)="sort('status')">
-              Statut
-              <i class="fas" [ngClass]="getSortIcon('status')"></i>
-            </div>
-          </th>
-          <th>Ordonnance</th>
-          <th>Visible</th>
-          <th>En vedette</th>
-          <th>
-            <div class="th-content" (click)="sort('createdAt')">
-              Créé le
-              <i class="fas" [ngClass]="getSortIcon('createdAt')"></i>
-            </div>
-          </th>
-          <th>Actions</th>
-        </tr>
+          <tr>
+            <th>Image</th>
+            <th>
+              <div class="th-content" (click)="sort('name')">
+                Nom
+                <i class="fas" [ngClass]="getSortIcon('name')"></i>
+              </div>
+            </th>
+            <th>SKU</th>
+            <th>
+              <div class="th-content" (click)="sort('price')">
+                Prix
+                <i class="fas" [ngClass]="getSortIcon('price')"></i>
+              </div>
+            </th>
+            <th>Laboratoire</th>
+            <th>Marque</th>
+            <th>
+              <div class="th-content" (click)="sort('status')">
+                Statut
+                <i class="fas" [ngClass]="getSortIcon('status')"></i>
+              </div>
+            </th>
+            <th>Ordonnance</th>
+            <th>Visible</th>
+            <th>En vedette</th>
+            <th>
+              <div class="th-content" (click)="sort('createdAt')">
+                Créé le
+                <i class="fas" [ngClass]="getSortIcon('createdAt')"></i>
+              </div>
+            </th>
+            <th>Actions</th>
+          </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let product of getPaginatedProducts()">
-          <td>
-            <img *ngIf="product.getMainImageUrl()"
-                 [src]="internatPathUrl + product.getMainImageUrl()"
-                 alt="Image produit"
-                 class="preview-image"
-                 width="40"
-                 height="40"
-                 style="object-fit: cover; border-radius: 4px;">
-            <div *ngIf="!product.getMainImageUrl()" class="no-image-placeholder">
-              <i class="fas fa-image"></i>
-            </div>
-          </td>
-          <td>
-            <div class="product-info">
-                <span class="product-name">
-                  <a [routerLink]="['/pharmacy/products', product._id]">{{ product.name }}</a>
+          <tr *ngFor="let product of getPaginatedProducts()">
+            <td>
+              <img *ngIf="product.getMainImageUrl()"
+                   [src]="internatPathUrl + product.getMainImageUrl()"
+                   alt="Image produit"
+                   class="preview-image"
+                   width="40"
+                   height="40"
+                   style="object-fit: cover; border-radius: 4px;">
+              <div *ngIf="!product.getMainImageUrl()" class="no-image-placeholder">
+                <i class="fas fa-image"></i>
+              </div>
+            </td>
+            <td>
+              <div class="product-info">
+                  <span class="product-name">
+                    <a [routerLink]="['/pharmacy/products', product._id]">{{ product.name }}</a>
+                  </span>
+                <small class="text-muted d-block" *ngIf="product.shortDescription">{{ product.shortDescription }}</small>
+              </div>
+            </td>
+            <td>
+              <code>{{ product.sku }}</code>
+            </td>
+            <td>
+              <span class="price">{{ product.price | currency:'EUR':'symbol':'1.2-2' }}</span>
+              <small class="text-muted d-block" *ngIf="product.originalPrice && product.originalPrice > product.price">
+                <s>{{ product.originalPrice | currency:'EUR':'symbol':'1.2-2' }}</s>
+              </small>
+            </td>
+            <td>{{ product.laboratoire || '—' }}</td>
+            <td>{{ product.marque || '—' }}</td>
+            <td>
+                <span class="status-badge" [ngClass]="product.status">
+                  {{ getStatusLabel(product.status) }}
                 </span>
-              <small class="text-muted d-block" *ngIf="product.shortDescription">{{ product.shortDescription }}</small>
-            </div>
-          </td>
-          <td>
-            <code>{{ product.sku }}</code>
-          </td>
-          <td>
-            <span class="price">{{ product.price | currency:'EUR':'symbol':'1.2-2' }}</span>
-            <small class="text-muted d-block" *ngIf="product.originalPrice && product.originalPrice > product.price">
-              <s>{{ product.originalPrice | currency:'EUR':'symbol':'1.2-2' }}</s>
-            </small>
-          </td>
-          <td>{{ product.laboratoire || '—' }}</td>
-          <td>{{ product.marque || '—' }}</td>
-          <td>
-              <span class="status-badge" [ngClass]="product.status">
-                {{ getStatusLabel(product.status) }}
-              </span>
-          </td>
-          <td>
-            <i class="fas fa-prescription-bottle" *ngIf="product.requiresPrescription" style="color: red;" title="Ordonnance requise"></i>
-            <i class="fas fa-shopping-cart" *ngIf="!product.requiresPrescription" style="color: green;" title="Vente libre"></i>
-          </td>
-          <td>
-            <i class="fas fa-eye" *ngIf="product.isVisible" style="color: green;" title="Visible"></i>
-            <i class="fas fa-eye-slash" *ngIf="!product.isVisible" style="color: red;" title="Masqué"></i>
-          </td>
-          <td>
-            <i class="fas fa-star" *ngIf="product.isFeatured" style="color: gold;" title="En vedette"></i>
-            <span *ngIf="!product.isFeatured" class="text-muted">—</span>
-          </td>
-          <td>{{ product.createdAt | date: 'dd/MM/yyyy' }}</td>
-          <td>
-            <div class="action-buttons">
-              <button class="btn btn-outline-primary btn-sm"
-                      (click)="viewProductDetails(product)"
-                      title="Voir les détails">
-                <i class="fas fa-eye"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
+            </td>
+            <td>
+              <i class="fas fa-prescription-bottle" *ngIf="product.requiresPrescription" style="color: red;" title="Ordonnance requise"></i>
+              <i class="fas fa-shopping-cart" *ngIf="!product.requiresPrescription" style="color: green;" title="Vente libre"></i>
+            </td>
+            <td>
+              <i class="fas fa-eye" *ngIf="product.isVisible" style="color: green;" title="Visible"></i>
+              <i class="fas fa-eye-slash" *ngIf="!product.isVisible" style="color: red;" title="Masqué"></i>
+            </td>
+            <td>
+              <i class="fas fa-star" *ngIf="product.isFeatured" style="color: gold;" title="En vedette"></i>
+              <span *ngIf="!product.isFeatured" class="text-muted">—</span>
+            </td>
+            <td>{{ product.createdAt | date: 'dd/MM/yyyy' }}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-outline-primary btn-sm"
+                        (click)="viewProductDetails(product)"
+                        title="Voir les détails">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -1029,39 +1029,39 @@
       <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
         <table class="table table-sm table-bordered">
           <thead class="table-light">
-          <tr>
-            <th style="min-width: 150px;">Nom</th>
-            <th style="min-width: 100px;">SKU</th>
-            <th style="min-width: 80px;">Prix</th>
-            <th style="min-width: 100px;">Laboratoire</th>
-            <th style="min-width: 80px;">Statut</th>
-            <th style="min-width: 200px;">Erreurs</th>
-          </tr>
+            <tr>
+              <th style="min-width: 150px;">Nom</th>
+              <th style="min-width: 100px;">SKU</th>
+              <th style="min-width: 80px;">Prix</th>
+              <th style="min-width: 100px;">Laboratoire</th>
+              <th style="min-width: 80px;">Statut</th>
+              <th style="min-width: 200px;">Erreurs</th>
+            </tr>
           </thead>
           <tbody>
-          <tr *ngFor="let item of importPreview; let i = index"
-              [class.table-danger]="item.errors.length > 0"
-              [class.table-success]="item.errors.length === 0">
-            <td>{{item.data.name || '—'}}</td>
-            <td><code>{{item.data.sku || '—'}}</code></td>
-            <td>{{item.data.price | currency:'EUR':'symbol':'1.2-2'}}</td>
-            <td>{{item.data.laboratoire || '—'}}</td>
-            <td>
-              <span class="badge" [ngClass]="'bg-' + (item.data.status === 'active' ? 'success' : 'secondary')">
-                {{item.data.status}}
-              </span>
-            </td>
-            <td>
-              <span *ngIf="item.errors.length === 0" class="text-success">
-                <i class="fas fa-check"></i> Valide
-              </span>
-              <div *ngIf="item.errors.length > 0">
-                <small class="text-danger d-block" *ngFor="let error of item.errors">
-                  • {{error}}
-                </small>
-              </div>
-            </td>
-          </tr>
+            <tr *ngFor="let item of importPreview; let i = index"
+                [class.table-danger]="item.errors.length > 0"
+                [class.table-success]="item.errors.length === 0">
+              <td>{{item.data.name || '—'}}</td>
+              <td><code>{{item.data.sku || '—'}}</code></td>
+              <td>{{item.data.price | currency:'EUR':'symbol':'1.2-2'}}</td>
+              <td>{{item.data.laboratoire || '—'}}</td>
+              <td>
+                <span class="badge" [ngClass]="'bg-' + (item.data.status === 'active' ? 'success' : 'secondary')">
+                  {{item.data.status}}
+                </span>
+              </td>
+              <td>
+                <span *ngIf="item.errors.length === 0" class="text-success">
+                  <i class="fas fa-check"></i> Valide
+                </span>
+                <div *ngIf="item.errors.length > 0">
+                  <small class="text-danger d-block" *ngFor="let error of item.errors">
+                    • {{error}}
+                  </small>
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

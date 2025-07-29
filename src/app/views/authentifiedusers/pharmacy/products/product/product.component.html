@@ -1,0 +1,1033 @@
+
+<div class="product-detail-container" *ngIf="!isLoading">
+  <!-- Header -->
+  <div class="product-header">
+    <div class="product-title">
+      <button class="btn btn-outline-secondary" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i> Retour
+      </button>
+      <div *ngIf="product">
+        <img *ngIf="product.getMainImageUrl()"
+             [src]="internatPathUrl + product.getMainImageUrl()"
+             alt="Image produit"
+             class="product-image">
+        <div *ngIf="!product.getMainImageUrl()" class="no-image-placeholder">
+          <i class="fas fa-image"></i>
+        </div>
+        <div class="product-info">
+          <h1 class="h3 mb-1">{{ product.name }}</h1>
+          <p class="text-muted mb-0">{{ product.shortDescription }}</p>
+          <div class="product-badges mt-2">
+            <span class="badge" [ngClass]="'bg-' + (product.status === 'active' ? 'success' : 'secondary')">
+              {{ getStatusLabel(product.status) }}
+            </span>
+            <span class="badge bg-primary" *ngIf="product.isFeatured">En vedette</span>
+            <span class="badge bg-warning" *ngIf="product.isOnSale">En promotion</span>
+            <span class="badge bg-danger" *ngIf="product.requiresPrescription">Ordonnance requise</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions" *ngIf="product && permissions.editProduct">
+      <button class="btn btn-primary" (click)="toggleEdit()" [disabled]="isLoading">
+        <i class="fas" [ngClass]="isEditing ? 'fa-times' : 'fa-edit'"></i>
+        {{ isEditing ? 'Annuler' : 'Modifier' }}
+      </button>
+      <button class="btn btn-danger ms-2" (click)="deleteProduct()" *ngIf="permissions.deleteProduct">
+        <i class="fas fa-trash"></i> Supprimer
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <ul class="nav nav-tabs" id="productTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" [class.active]="activeTab === 'general'"
+              (click)="setActiveTab('general')" type="button">
+        <i class="fas fa-info-circle"></i> Général
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" [class.active]="activeTab === 'historiques'"
+              (click)="setActiveTab('historiques')" type="button">
+        <i class="fas fa-timeline"></i> Historiques
+      </button>
+
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" [class.active]="activeTab === 'product'"
+              (click)="setActiveTab('product')" type="button">
+        <i class="fas fa-barcode"></i> Produit
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" [class.active]="activeTab === 'pricing'"
+              (click)="setActiveTab('pricing')" type="button">
+        <i class="fas fa-euro-sign"></i> Prix
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" [class.active]="activeTab === 'medical'"
+              (click)="setActiveTab('medical')" type="button">
+        <i class="fas fa-prescription-bottle"></i> Médical
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" [class.active]="activeTab === 'safety'"
+              (click)="setActiveTab('safety')" type="button">
+        <i class="fas fa-exclamation-triangle"></i> Sécurité
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" [class.active]="activeTab === 'additional'"
+              (click)="setActiveTab('additional')" type="button">
+        <i class="fas fa-cog"></i> Additionnel
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" [class.active]="activeTab === 'pharmacies'"
+              (click)="setActiveTab('pharmacies')" type="button">
+        <i class="fas fa-hospital"></i> Pharmacies
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" [class.active]="activeTab === 'images'"
+              (click)="setActiveTab('images')" type="button">
+        <i class="fas fa-images"></i> Images
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content mt-4" *ngIf="product">
+    <!-- General Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'general'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Informations générales</h5>
+          <button class="btn btn-sm btn-success" *ngIf="isEditing && generalForm.valid"
+                  (click)="updateSection(1)">
+            <i class="fas fa-save"></i> Sauvegarder
+          </button>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="generalForm" *ngIf="isEditing; else generalView">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="name" class="form-label">Nom <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" formControlName="name"
+                         [class.is-valid]="isFieldValid(generalForm, 'name')"
+                         [class.is-invalid]="isFieldInvalid(generalForm, 'name')"
+                         (blur)="generateSlug()">
+                  <div class="invalid-feedback">{{ getFieldError(generalForm, 'name') }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="slug" class="form-label">Slug <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" formControlName="slug"
+                         [class.is-valid]="isFieldValid(generalForm, 'slug')"
+                         [class.is-invalid]="isFieldInvalid(generalForm, 'slug')">
+                  <div class="invalid-feedback">{{ getFieldError(generalForm, 'slug') }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" rows="3" formControlName="description"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="shortDescription" class="form-label">Description courte</label>
+              <textarea class="form-control" rows="2" formControlName="shortDescription"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="categories" class="form-label">Catégories <span class="text-danger">*</span></label>
+              <select2 multiple="multiple" class="form-control" formControlName="categories"
+                       [data]="categoriesArraySelect2"
+                       [class.is-invalid]="isFieldInvalid(generalForm, 'categories')">
+              </select2>
+              <div class="invalid-feedback">{{ getFieldError(generalForm, 'categories') }}</div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="status" class="form-label">Statut</label>
+                  <select class="form-select" formControlName="status">
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                    <option value="out_of_stock">Épuisé</option>
+                    <option value="discontinued">Discontinué</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" formControlName="isVisible">
+                    <label class="form-check-label">Visible sur le site</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" formControlName="isFeatured">
+                    <label class="form-check-label">Produit en vedette</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" formControlName="isOnSale">
+                    <label class="form-check-label">En promotion</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SEO Fields -->
+            <h6 class="mt-4">SEO</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="metaTitle" class="form-label">Meta Title</label>
+                  <input type="text" class="form-control" formControlName="metaTitle" maxlength="60">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="metaDescription" class="form-label">Meta Description</label>
+                  <textarea class="form-control" rows="2" formControlName="metaDescription" maxlength="160"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Keywords -->
+            <div class="mb-3">
+              <label class="form-label">Mots-clés SEO</label>
+              <div class="keywords-container">
+                <div *ngFor="let keyword of generalForm.get('keywords')?.value; let i = index" class="input-group mb-2">
+                  <input type="text" class="form-control" placeholder="Mot-clé"
+                         [(ngModel)]="generalForm.get('keywords')?.value[i]"
+                         [ngModelOptions]="{standalone: true}">
+                  <button type="button" class="btn btn-outline-danger" (click)="removeKeyword(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="addKeyword()">
+                  <i class="fas fa-plus"></i> Ajouter un mot-clé
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <ng-template #generalView>
+            <div class="row">
+              <div class="col-md-8">
+                <div class="info-group">
+                  <label>Nom:</label>
+                  <p>{{ product.name }}</p>
+                </div>
+                <div class="info-group">
+                  <label>Slug:</label>
+                  <p><code>{{ product.slug }}</code></p>
+                </div>
+                <div class="info-group" *ngIf="product.description">
+                  <label>Description:</label>
+                  <p>{{ product.description }}</p>
+                </div>
+                <div class="info-group" *ngIf="product.shortDescription">
+                  <label>Description courte:</label>
+                  <p>{{ product.shortDescription }}</p>
+                </div>
+                <div class="info-group">
+                  <label>Catégories:</label>
+                  <div class="d-flex flex-wrap gap-2">
+                    <span *ngFor="let category of product.categories" class="badge bg-secondary">
+                      {{ category.name }}
+                    </span>
+                  </div>
+                </div>
+                <div class="info-group" *ngIf="product.keywords?.length">
+                  <label>Mots-clés:</label>
+                  <div class="d-flex flex-wrap gap-1">
+                    <span *ngFor="let keyword of product.keywords" class="badge bg-light text-dark">
+                      {{ keyword }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="info-group">
+                  <label>Statut:</label>
+                  <p><span class="badge" [ngClass]="'bg-' + (product.status === 'active' ? 'success' : 'secondary')">
+                    {{ getStatusLabel(product.status) }}
+                  </span></p>
+                </div>
+                <div class="info-group">
+                  <label>Visibilité:</label>
+                  <p>
+                    <i class="fas fa-eye" *ngIf="product.isVisible" style="color: green;"></i>
+                    <i class="fas fa-eye-slash" *ngIf="!product.isVisible" style="color: red;"></i>
+                    {{ product.isVisible ? 'Visible' : 'Masqué' }}
+                  </p>
+                </div>
+                <div class="info-group">
+                  <label>En vedette:</label>
+                  <p>
+                    <i class="fas fa-star" *ngIf="product.isFeatured" style="color: gold;"></i>
+                    {{ product.isFeatured ? 'Oui' : 'Non' }}
+                  </p>
+                </div>
+                <div class="info-group" *ngIf="product.metaTitle">
+                  <label>Meta Title:</label>
+                  <p>{{ product.metaTitle }}</p>
+                </div>
+                <div class="info-group" *ngIf="product.metaDescription">
+                  <label>Meta Description:</label>
+                  <p>{{ product.metaDescription }}</p>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+  <!-- Historiques-->
+    <div class="tab-pane" [class.active]="activeTab === 'historiques'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-clock"></i> Historiques </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <app-activity-timeline [activites]="productsActivities" [usersInfo]="usersInfo"></app-activity-timeline>
+            <div class="col-md-12">
+              <div class="text-center py-3" *ngIf="productsActivities.length > 0">
+                <a [routerLink]="['/pharmacy/admin/logs', product._id]">Voir plus</a>
+              </div>
+              <div class="text-center py-3" *ngIf="productsActivities.length === 0">
+                <p class="text-muted">Aucune activité récente</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Product Info Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'product'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Informations produit</h5>
+          <button class="btn btn-sm btn-success" *ngIf="isEditing && productInfoForm.valid"
+                  (click)="updateSection(2)">
+            <i class="fas fa-save"></i> Sauvegarder
+          </button>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="productInfoForm" *ngIf="isEditing; else productView">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="sku" class="form-label">SKU <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" formControlName="sku"
+                         [class.is-valid]="isFieldValid(productInfoForm, 'sku')"
+                         [class.is-invalid]="isFieldInvalid(productInfoForm, 'sku')">
+                  <div class="invalid-feedback">{{ getFieldError(productInfoForm, 'sku') }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="barcode" class="form-label">Code-barres</label>
+                  <input type="text" class="form-control" formControlName="barcode">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="cipCode" class="form-label">Code CIP</label>
+                  <input type="text" class="form-control" formControlName="cipCode">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="laboratoire" class="form-label">Laboratoire</label>
+                  <input type="text" class="form-control" formControlName="laboratoire">
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="marque" class="form-label">Marque</label>
+              <input type="text" class="form-control" formControlName="marque">
+            </div>
+          </form>
+
+          <ng-template #productView>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="info-group">
+                  <label>SKU:</label>
+                  <p><code>{{ product.sku }}</code></p>
+                </div>
+                <div class="info-group" *ngIf="product.barcode">
+                  <label>Code-barres:</label>
+                  <p><code>{{ product.barcode }}</code></p>
+                </div>
+                <div class="info-group" *ngIf="product.cipCode">
+                  <label>Code CIP:</label>
+                  <p><code>{{ product.cipCode }}</code></p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-group">
+                  <label>Laboratoire:</label>
+                  <p>{{ product.laboratoire || 'Non spécifié' }}</p>
+                </div>
+                <div class="info-group">
+                  <label>Marque:</label>
+                  <p>{{ product.marque || 'Non spécifiée' }}</p>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pricing Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'pricing'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Informations de prix</h5>
+          <button class="btn btn-sm btn-success" *ngIf="isEditing && pricingForm.valid"
+                  (click)="updateSection(3)">
+            <i class="fas fa-save"></i> Sauvegarder
+          </button>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="pricingForm" *ngIf="isEditing; else pricingView">
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label for="price" class="form-label">Prix <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control" formControlName="price" min="0" step="0.01"
+                         [class.is-valid]="isFieldValid(pricingForm, 'price')"
+                         [class.is-invalid]="isFieldInvalid(pricingForm, 'price')">
+                  <div class="invalid-feedback">{{ getFieldError(pricingForm, 'price') }}</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label for="originalPrice" class="form-label">Prix original</label>
+                  <input type="number" class="form-control" formControlName="originalPrice" min="0" step="0.01">
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label for="cost" class="form-label">Coût</label>
+                  <input type="number" class="form-control" formControlName="cost" min="0" step="0.01">
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <ng-template #pricingView>
+            <div class="row">
+              <div class="col-md-4">
+                <div class="info-group">
+                  <label>Prix actuel:</label>
+                  <p class="h4 text-success">{{ product.price | currency:'EUR':'symbol':'1.2-2' }}</p>
+                </div>
+              </div>
+              <div class="col-md-4" *ngIf="product.originalPrice">
+                <div class="info-group">
+                  <label>Prix original:</label>
+                  <p class="text-muted"><s>{{ product.originalPrice | currency:'EUR':'symbol':'1.2-2' }}</s></p>
+                </div>
+              </div>
+              <div class="col-md-4" *ngIf="product.cost">
+                <div class="info-group">
+                  <label>Coût:</label>
+                  <p>{{ product.cost | currency:'EUR':'symbol':'1.2-2' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-3" *ngIf="product.originalPrice && product.originalPrice > product.price">
+              <div class="col-12">
+                <div class="alert alert-success">
+                  <i class="fas fa-percentage"></i>
+                  Réduction de {{ ((product.originalPrice - product.price) / product.originalPrice * 100) | number:'1.0-0' }}%
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Medical Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'medical'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Informations médicales</h5>
+          <button class="btn btn-sm btn-success" *ngIf="isEditing" (click)="updateSection(4)">
+            <i class="fas fa-save"></i> Sauvegarder
+          </button>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="medicalForm" *ngIf="isEditing; else medicalView">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" formControlName="requiresPrescription">
+                    <label class="form-check-label">Nécessite une ordonnance</label>
+                  </div>
+                </div>
+
+                <div class="mb-3" *ngIf="medicalForm.get('requiresPrescription')?.value">
+                  <label for="prescriptionType" class="form-label">Type d'ordonnance</label>
+                  <select class="form-select" formControlName="prescriptionType">
+                    <option *ngFor="let type of prescriptionTypes" [value]="type.value">{{ type.label }}</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label for="drugForm" class="form-label">Forme galénique</label>
+                  <select class="form-select" formControlName="drugForm">
+                    <option value="">Sélectionner une forme</option>
+                    <option *ngFor="let form of drugForms" [value]="form.value">{{ form.label }}</option>
+                  </select>
+                </div>
+
+                <div class="row">
+                  <div class="col-6">
+                    <div class="mb-3">
+                      <label for="dosage" class="form-label">Dosage</label>
+                      <input type="text" class="form-control" formControlName="dosage">
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="mb-3">
+                      <label for="packaging" class="form-label">Conditionnement</label>
+                      <input type="text" class="form-control" formControlName="packaging">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="therapeuticClass" class="form-label">Classe thérapeutique</label>
+                  <input type="text" class="form-control" formControlName="therapeuticClass">
+                </div>
+
+                <div class="mb-3">
+                  <label for="pharmacologicalClass" class="form-label">Classe pharmacologique</label>
+                  <input type="text" class="form-control" formControlName="pharmacologicalClass">
+                </div>
+
+                <h6>Restrictions d'âge</h6>
+                <div class="row">
+                  <div class="col-6">
+                    <div class="mb-3">
+                      <label for="ageRestrictionMinAge" class="form-label">Âge minimum</label>
+                      <input type="number" class="form-control" formControlName="ageRestrictionMinAge" min="0" max="120">
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="mb-3">
+                      <label for="ageRestrictionMaxAge" class="form-label">Âge maximum</label>
+                      <input type="number" class="form-control" formControlName="ageRestrictionMaxAge" min="0" max="120">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Ingredients -->
+            <div class="mb-3">
+              <label class="form-label">Principes actifs</label>
+              <div class="ingredients-container">
+                <div *ngFor="let ingredient of medicalForm.get('activeIngredients')?.value; let i = index" class="input-group mb-2">
+                  <input type="text" class="form-control" placeholder="Nom du principe actif"
+                         [(ngModel)]="ingredient.name" [ngModelOptions]="{standalone: true}">
+                  <input type="text" class="form-control" placeholder="Dosage"
+                         [(ngModel)]="ingredient.dosage" [ngModelOptions]="{standalone: true}">
+                  <button type="button" class="btn btn-outline-danger" (click)="removeActiveIngredient(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="addActiveIngredient()">
+                  <i class="fas fa-plus"></i> Ajouter un principe actif
+                </button>
+              </div>
+            </div>
+
+            <!-- Indications thérapeutiques -->
+            <div class="mb-3">
+              <label class="form-label">Indications thérapeutiques</label>
+              <div class="indications-container">
+                <div *ngFor="let indication of medicalForm.get('indicationsTherapeutiques')?.value; let i = index" class="input-group mb-2">
+                  <input type="text" class="form-control" placeholder="Indication thérapeutique"
+                         [(ngModel)]="medicalForm.get('indicationsTherapeutiques')?.value[i]"
+                         [ngModelOptions]="{standalone: true}">
+                  <button type="button" class="btn btn-outline-danger" (click)="removeIndication(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="addIndication()">
+                  <i class="fas fa-plus"></i> Ajouter une indication
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <ng-template #medicalView>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="info-group">
+                  <label>Ordonnance requise:</label>
+                  <p>
+                    <i class="fas fa-prescription-bottle" *ngIf="product.requiresPrescription" style="color: red;"></i>
+                    <i class="fas fa-shopping-cart" *ngIf="!product.requiresPrescription" style="color: green;"></i>
+                    {{ product.requiresPrescription ? 'Oui' : 'Non' }}
+                  </p>
+                </div>
+
+                <div class="info-group" *ngIf="product.requiresPrescription">
+                  <label>Type d'ordonnance:</label>
+                  <p>{{ getPrescriptionTypeLabel(product.prescriptionType) }}</p>
+                </div>
+
+                <div class="info-group" *ngIf="product.drugForm">
+                  <label>Forme:</label>
+                  <p>{{ getDrugFormLabel(product.drugForm) }}</p>
+                </div>
+
+                <div class="info-group" *ngIf="product.dosage">
+                  <label>Dosage:</label>
+                  <p>{{ product.dosage }}</p>
+                </div>
+
+                <div class="info-group" *ngIf="product.packaging">
+                  <label>Conditionnement:</label>
+                  <p>{{ product.packaging }}</p>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="info-group" *ngIf="product.therapeuticClass">
+                  <label>Classe thérapeutique:</label>
+                  <p>{{ product.therapeuticClass }}</p>
+                </div>
+
+                <div class="info-group" *ngIf="product.pharmacologicalClass">
+                  <label>Classe pharmacologique:</label>
+                  <p>{{ product.pharmacologicalClass }}</p>
+                </div>
+
+                <div class="info-group" *ngIf="product.ageRestriction?.minAge || product.ageRestriction?.maxAge">
+                  <label>Restrictions d'âge:</label>
+                  <p>
+                    <span *ngIf="product.ageRestriction.minAge">À partir de {{ product.ageRestriction.minAge }} ans</span>
+                    <span *ngIf="product.ageRestriction.minAge && product.ageRestriction.maxAge"> - </span>
+                    <span *ngIf="product.ageRestriction.maxAge">Jusqu'à {{ product.ageRestriction.maxAge }} ans</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-3" *ngIf="product.activeIngredients?.length">
+              <div class="col-12">
+                <h6>Principes actifs</h6>
+                <div class="ingredient-list">
+                  <span *ngFor="let ingredient of product.activeIngredients" class="badge bg-info me-2 mb-2">
+                    {{ ingredient.name }}
+                    <span *ngIf="ingredient.dosage"> - {{ ingredient.dosage }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-3" *ngIf="product.indicationsTherapeutiques?.length">
+              <div class="col-12">
+                <h6>Indications thérapeutiques</h6>
+                <ul class="list-unstyled">
+                  <li *ngFor="let indication of product.indicationsTherapeutiques" class="mb-1">
+                    <i class="fas fa-check text-success me-2"></i>{{ indication }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Safety Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'safety'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Informations de sécurité</h5>
+          <button class="btn btn-sm btn-success" *ngIf="isEditing" (click)="updateSection(5)">
+            <i class="fas fa-save"></i> Sauvegarder
+          </button>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="safetysForm" *ngIf="isEditing; else safetyView">
+            <div class="row">
+              <div class="col-md-4">
+                <h6>Contre-indications</h6>
+                <div class="contraindications-container">
+                  <div *ngFor="let contraindication of safetysForm.get('contraindications')?.value; let i = index" class="input-group mb-2">
+                    <input type="text" class="form-control" placeholder="Contre-indication"
+                           [(ngModel)]="safetysForm.get('contraindications')?.value[i]"
+                           [ngModelOptions]="{standalone: true}">
+                    <button type="button" class="btn btn-outline-danger" (click)="removeContraindication(i)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="addContraindication()">
+                    <i class="fas fa-plus"></i> Ajouter
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <h6>Effets secondaires</h6>
+                <div class="side-effects-container">
+                  <div *ngFor="let effect of safetysForm.get('sideEffects')?.value; let i = index" class="input-group mb-2">
+                    <input type="text" class="form-control" placeholder="Effet secondaire"
+                           [(ngModel)]="safetysForm.get('sideEffects')?.value[i]"
+                           [ngModelOptions]="{standalone: true}">
+                    <button type="button" class="btn btn-outline-danger" (click)="removeSideEffect(i)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="addSideEffect()">
+                    <i class="fas fa-plus"></i> Ajouter
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <h6>Avertissements</h6>
+                <div class="warnings-container">
+                  <div *ngFor="let warning of safetysForm.get('warnings')?.value; let i = index" class="input-group mb-2">
+                    <input type="text" class="form-control" placeholder="Avertissement"
+                           [(ngModel)]="safetysForm.get('warnings')?.value[i]"
+                           [ngModelOptions]="{standalone: true}">
+                    <button type="button" class="btn btn-outline-danger" (click)="removeWarning(i)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="addWarning()">
+                    <i class="fas fa-plus"></i> Ajouter
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <ng-template #safetyView>
+            <div class="row">
+              <div class="col-md-4" *ngIf="product.contraindications?.length">
+                <h6 class="text-danger">
+                  <i class="fas fa-ban"></i> Contre-indications
+                </h6>
+                <ul class="list-unstyled">
+                  <li *ngFor="let contraindication of product.contraindications" class="mb-2">
+                    <span class="badge bg-danger me-2">!</span>{{ contraindication }}
+                  </li>
+                </ul>
+              </div>
+
+              <div class="col-md-4" *ngIf="product.sideEffects?.length">
+                <h6 class="text-warning">
+                  <i class="fas fa-exclamation-triangle"></i> Effets secondaires
+                </h6>
+                <ul class="list-unstyled">
+                  <li *ngFor="let effect of product.sideEffects" class="mb-2">
+                    <span class="badge bg-warning me-2">⚠</span>{{ effect }}
+                  </li>
+                </ul>
+              </div>
+
+              <div class="col-md-4" *ngIf="product.warnings?.length">
+                <h6 class="text-info">
+                  <i class="fas fa-info-circle"></i> Avertissements
+                </h6>
+                <ul class="list-unstyled">
+                  <li *ngFor="let warning of product.warnings" class="mb-2">
+                    <span class="badge bg-info me-2">i</span>{{ warning }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="alert alert-light mt-3" *ngIf="!product.contraindications?.length && !product.sideEffects?.length && !product.warnings?.length">
+              <i class="fas fa-info-circle"></i>
+              Aucune information de sécurité spécifiée pour ce produit.
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'additional'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Informations additionnelles</h5>
+          <button class="btn btn-sm btn-success" *ngIf="isEditing" (click)="updateSection(6)">
+            <i class="fas fa-save"></i> Sauvegarder
+          </button>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="additionalForm" *ngIf="isEditing; else additionalView">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="weight" class="form-label">Poids (grammes)</label>
+                  <input type="number" class="form-control" formControlName="weight" min="0" step="0.1">
+                </div>
+
+                <div class="mb-3">
+                  <label for="origin" class="form-label">Origine</label>
+                  <input type="text" class="form-control" formControlName="origin" placeholder="Pays de fabrication">
+                </div>
+
+                <div class="mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" formControlName="isFragile">
+                    <label class="form-check-label">Produit fragile</label>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" formControlName="requiresColdChain">
+                    <label class="form-check-label">Chaîne du froid requise</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="instructions" class="form-label">Instructions d'utilisation</label>
+                  <textarea class="form-control" rows="4" formControlName="instructions"
+                            placeholder="Mode d'emploi, posologie, etc."></textarea>
+                </div>
+
+                <div class="mb-3">
+                  <label for="storage" class="form-label">Conditions de stockage</label>
+                  <textarea class="form-control" rows="3" formControlName="storage"
+                            placeholder="Température, humidité, lumière, etc."></textarea>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <ng-template #additionalView>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="info-group" *ngIf="product.weight">
+                  <label>Poids:</label>
+                  <p>{{ product.weight }}g</p>
+                </div>
+
+                <div class="info-group" *ngIf="product.origin">
+                  <label>Origine:</label>
+                  <p>{{ product.origin }}</p>
+                </div>
+
+                <div class="info-group">
+                  <label>Propriétés de livraison:</label>
+                  <div class="d-flex gap-3">
+                    <span class="badge" [ngClass]="product.deliveryInfo?.isFragile ? 'bg-warning' : 'bg-secondary'">
+                      <i class="fas fa-fragile"></i>
+                      {{ product.deliveryInfo?.isFragile ? 'Fragile' : 'Non fragile' }}
+                    </span>
+                    <span class="badge" [ngClass]="product.deliveryInfo?.requiresColdChain ? 'bg-info' : 'bg-secondary'">
+                      <i class="fas fa-snowflake"></i>
+                      {{ product.deliveryInfo?.requiresColdChain ? 'Chaîne du froid' : 'Température ambiante' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="info-group" *ngIf="product.instructions">
+                  <label>Instructions d'utilisation:</label>
+                  <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    {{ product.instructions }}
+                  </div>
+                </div>
+
+                <div class="info-group" *ngIf="product.storage">
+                  <label>Conditions de stockage:</label>
+                  <div class="alert alert-warning">
+                    <i class="fas fa-thermometer-half"></i>
+                    {{ product.storage }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pharmacies Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'pharmacies'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Pharmacies associées</h5>
+          <button class="btn btn-sm btn-success" *ngIf="isEditing && pharmaciesForm.valid"
+                  (click)="updateSection(7)">
+            <i class="fas fa-save"></i> Sauvegarder
+          </button>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="pharmaciesForm" *ngIf="isEditing; else pharmaciesView">
+            <div class="mb-3">
+              <label for="pharmacies" class="form-label">Pharmacies <span class="text-danger">*</span></label>
+              <select2 multiple="multiple" class="form-control" formControlName="pharmacies"
+                       [data]="pharmaciesListArray"
+                       [class.is-invalid]="isFieldInvalid(pharmaciesForm, 'pharmacies')">
+              </select2>
+              <div class="invalid-feedback">{{ getFieldError(pharmaciesForm, 'pharmacies') }}</div>
+            </div>
+          </form>
+
+          <ng-template #pharmaciesView>
+            <div class="row" *ngIf="product.pharmacies?.length; else noPharmacies">
+              <div class="col-md-6 mb-3" *ngFor="let pharmacyData of product.pharmacies">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <h6 class="card-title">{{ pharmacyData.pharmacy.name }}</h6>
+                        <p class="card-text text-muted">{{ pharmacyData.pharmacy.address }}</p>
+                        <div class="pharmacy-info">
+                          <small class="text-muted">
+                            <i class="fas fa-phone"></i> {{ pharmacyData.pharmacy.phoneNumber }}
+                          </small>
+                        </div>
+                      </div>
+                      <div class="text-end">
+                        <span class="badge" [ngClass]="pharmacyData.isAvailable ? 'bg-success' : 'bg-danger'">
+                          {{ pharmacyData.isAvailable ? 'Disponible' : 'Indisponible' }}
+                        </span>
+                        <div class="mt-2" *ngIf="pharmacyData.price">
+                          <strong>{{ pharmacyData.price | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noPharmacies>
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                Aucune pharmacie associée à ce produit.
+              </div>
+            </ng-template>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Images Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'images'">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Images du produit</h5>
+        </div>
+        <div class="card-body">
+          <div class="row" *ngIf="isEditing">
+            <div class="col-md-6">
+              <h6>Image principale</h6>
+              <div class="mb-3">
+                <input type="file" class="form-control" accept="image/jpeg,image/jpg,image/png"
+                       (change)="onFileSelected($event, 'mainImage')">
+                <small class="form-text text-muted">Formats acceptés: JPG, PNG (max 5MB)</small>
+              </div>
+
+              <div class="preview-container" *ngIf="previewUrls.mainImage">
+                <img [src]="previewUrls.mainImage" alt="Aperçu" class="img-thumbnail" style="max-width: 200px;">
+                <div class="mt-2">
+                  <button type="button" class="btn btn-sm btn-success" (click)="uploadFile('mainImage')">
+                    <i class="fas fa-upload"></i> Uploader
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="removeFile('mainImage')">
+                    <i class="fas fa-times"></i> Supprimer
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <h6>Images additionnelles</h6>
+              <div class="mb-3">
+                <input type="file" class="form-control" accept="image/jpeg,image/jpg,image/png" multiple
+                       (change)="onFileSelected($event, 'images')">
+                <small class="form-text text-muted">Formats acceptés: JPG, PNG (max 5MB par image)</small>
+              </div>
+
+              <div class="preview-grid" *ngIf="previewUrls.images && previewUrls.images.length">
+                <div class="row">
+                  <div class="col-4 mb-2" *ngFor="let url of previewUrls.images; let i = index">
+                    <img [src]="url" alt="Aperçu" class="img-thumbnail w-100" style="height: 100px; object-fit: cover;">
+                    <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-1" (click)="removeFile('images', i)">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-success" (click)="uploadFile('images')">
+                  <i class="fas fa-upload"></i> Uploader toutes
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Images Display -->
+          <div class="current-images">
+            <h6>Images actuelles</h6>
+            <div class="row">
+              <div class="col-md-4" *ngIf="product.getMainImageUrl()">
+                <div class="image-card">
+                  <img [src]="internatPathUrl + product.getMainImageUrl()" alt="Image principale"
+                       class="img-thumbnail w-100" style="height: 200px; object-fit: cover;">
+                  <div class="image-overlay">
+                    <span class="badge bg-primary">Image principale</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4" *ngFor="let image of product.images">
+                <div class="image-card">
+                  <img [src]="internatPathUrl + image.url" alt="Image additionnelle"
+                       class="img-thumbnail w-100" style="height: 200px; object-fit: cover;">
+                </div>
+              </div>
+            </div>
+
+            <div class="alert alert-info mt-3" *ngIf="!product.getMainImageUrl() && !product.images?.length">
+              <i class="fas fa-info-circle"></i>
+              Aucune image disponible pour ce produit.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

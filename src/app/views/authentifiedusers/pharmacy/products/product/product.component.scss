@@ -1,0 +1,705 @@
+.product-detail-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+
+  .product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-bottom: 3px solid #007bff;
+
+    .product-title {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+
+      .product-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        transition: transform 0.2s ease;
+
+        &:hover {
+          transform: scale(1.05);
+        }
+      }
+
+      .no-image-placeholder {
+        width: 80px;
+        height: 80px;
+        background-color: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 24px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: #e9ecef;
+          border-color: #adb5bd;
+        }
+      }
+
+      .product-info {
+        h1 {
+          margin: 0;
+          color: #333;
+          font-weight: 600;
+        }
+
+        p {
+          margin: 5px 0;
+          color: #6c757d;
+        }
+
+        .product-badges {
+          .badge {
+            margin-right: 8px;
+            margin-bottom: 4px;
+            font-size: 0.85em;
+            padding: 0.4em 0.6em;
+
+            &.bg-success {
+              background-color: #28a745 !important;
+            }
+
+            &.bg-primary {
+              background-color: #007bff !important;
+            }
+
+            &.bg-warning {
+              background-color: #ffc107 !important;
+              color: #212529;
+            }
+
+            &.bg-danger {
+              background-color: #dc3545 !important;
+            }
+          }
+        }
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+
+      .btn {
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
+  }
+
+  // Tabs styling
+  .nav-tabs {
+    background-color: white;
+    border-radius: 10px 10px 0 0;
+    padding: 10px 10px 0 10px;
+    border-bottom: 1px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+    .nav-item {
+      margin-bottom: -1px;
+
+      .nav-link {
+        color: #666;
+        border: none;
+        border-radius: 8px 8px 0 0;
+        margin-right: 5px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        position: relative;
+
+        i {
+          margin-right: 8px;
+        }
+
+        &:hover {
+          color: #007bff;
+          background-color: #f8f9fa;
+        }
+
+        &.active {
+          color: #007bff;
+          background-color: white;
+          border: 1px solid #dee2e6;
+          border-bottom-color: white;
+
+          &::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #007bff;
+          }
+        }
+      }
+    }
+  }
+
+  // Tab content
+  .tab-content {
+    .tab-pane {
+      display: none;
+
+      &.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+      }
+    }
+
+    .card {
+      border: none;
+      border-radius: 0 10px 10px 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+      .card-header {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        border-bottom: none;
+        border-radius: 0 10px 0 0;
+
+        h5 {
+          margin: 0;
+          font-weight: 600;
+        }
+
+        .btn {
+          border-color: rgba(255, 255, 255, 0.3);
+
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+          }
+        }
+      }
+
+      .card-body {
+        padding: 25px;
+        background-color: white;
+
+        // Form styling
+        .form-group, .mb-3 {
+          margin-bottom: 20px;
+        }
+
+        .form-label {
+          font-weight: 600;
+          color: #495057;
+          margin-bottom: 8px;
+
+          .text-danger {
+            font-size: 0.9em;
+          }
+        }
+
+        .form-control, .form-select {
+          border-radius: 8px;
+          border: 1px solid #ced4da;
+          padding: 10px 12px;
+          transition: all 0.2s ease;
+
+          &:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+          }
+
+          &.is-valid {
+            border-color: #28a745;
+
+            &:focus {
+              border-color: #28a745;
+              box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+            }
+          }
+
+          &.is-invalid {
+            border-color: #dc3545;
+
+            &:focus {
+              border-color: #dc3545;
+              box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+            }
+          }
+        }
+
+        textarea.form-control {
+          resize: vertical;
+          min-height: 80px;
+        }
+
+        .form-check {
+          margin-bottom: 12px;
+
+          .form-check-input {
+            margin-top: 0.25em;
+
+            &:checked {
+              background-color: #007bff;
+              border-color: #007bff;
+            }
+          }
+
+          .form-check-label {
+            font-weight: 500;
+            color: #495057;
+            margin-left: 8px;
+          }
+        }
+
+        // Button styling
+        .btn {
+          border-radius: 8px;
+          font-weight: 500;
+          padding: 8px 16px;
+          transition: all 0.2s ease;
+
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+          }
+
+          &.btn-sm {
+            padding: 4px 8px;
+            font-size: 0.875rem;
+          }
+
+          &.btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+
+            &:hover {
+              background-color: #218838;
+              border-color: #1e7e34;
+            }
+          }
+
+          &.btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+
+            &:hover {
+              background-color: #0069d9;
+              border-color: #0062cc;
+            }
+          }
+
+          &.btn-outline-primary {
+            color: #007bff;
+            border-color: #007bff;
+
+            &:hover {
+              background-color: #007bff;
+              border-color: #007bff;
+            }
+          }
+
+          &.btn-outline-danger {
+            color: #dc3545;
+            border-color: #dc3545;
+
+            &:hover {
+              background-color: #dc3545;
+              border-color: #dc3545;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Info display styling
+  .info-group {
+    margin-bottom: 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f3f4;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    label {
+      font-weight: 600;
+      color: #495057;
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    p {
+      margin: 0;
+      color: #212529;
+      font-size: 1.05em;
+      line-height: 1.4;
+
+      code {
+        background-color: #f8f9fa;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
+        color: #e83e8c;
+      }
+    }
+
+    .badge {
+      font-size: 0.85em;
+      padding: 0.4em 0.6em;
+      margin-right: 6px;
+      margin-bottom: 4px;
+    }
+  }
+
+  // Special elements styling
+  .ingredient-list, .ingredient-tag {
+    .badge {
+      font-size: 0.9em;
+      margin-right: 8px;
+      margin-bottom: 6px;
+      padding: 0.5em 0.8em;
+
+      &.bg-info {
+        background-color: #17a2b8 !important;
+      }
+    }
+  }
+
+  // Dynamic arrays styling
+  .input-group {
+    margin-bottom: 10px;
+
+    .form-control {
+      border-right: none;
+
+      &:focus {
+        z-index: 3;
+      }
+    }
+
+    .btn-outline-danger {
+      border-left: none;
+      border-color: #ced4da;
+
+      &:hover {
+        border-color: #dc3545;
+      }
+    }
+  }
+
+  // Image styling
+  .image-card {
+    position: relative;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
+
+    .image-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+
+      .badge {
+        background-color: rgba(0, 123, 255, 0.9) !important;
+        backdrop-filter: blur(4px);
+      }
+    }
+  }
+
+  .preview-container {
+    margin-top: 15px;
+
+    img {
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .preview-grid {
+    .row > div {
+      margin-bottom: 15px;
+    }
+
+    img {
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease;
+
+      &:hover {
+        transform: scale(1.02);
+      }
+    }
+  }
+
+  // Pharmacy cards
+  .card.h-100 {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #e9ecef;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-body {
+      padding: 20px;
+
+      .card-title {
+        color: #007bff;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .card-text {
+        font-size: 0.9em;
+        line-height: 1.4;
+      }
+
+      .pharmacy-info {
+        margin-top: 10px;
+
+        small {
+          color: #6c757d;
+
+          i {
+            margin-right: 5px;
+            width: 14px;
+          }
+        }
+      }
+    }
+  }
+
+  // Alerts styling
+  .alert {
+    border-radius: 10px;
+    border: none;
+    padding: 15px 20px;
+
+    &.alert-info {
+      background-color: #e3f2fd;
+      color: #1976d2;
+      border-left: 4px solid #2196f3;
+
+      i {
+        color: #2196f3;
+        margin-right: 8px;
+      }
+    }
+
+    &.alert-warning {
+      background-color: #fff3e0;
+      color: #f57c00;
+      border-left: 4px solid #ff9800;
+
+      i {
+        color: #ff9800;
+        margin-right: 8px;
+      }
+    }
+
+    &.alert-light {
+      background-color: #f8f9fa;
+      color: #6c757d;
+      border: 1px solid #e9ecef;
+    }
+  }
+
+  // Loading state
+  .spinner-border {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  // Safety section special styling
+  .tab-pane[class*="safety"] {
+    .col-md-4 {
+      h6 {
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid currentColor;
+
+        i {
+          margin-right: 8px;
+        }
+
+        &.text-danger {
+          color: #dc3545 !important;
+        }
+
+        &.text-warning {
+          color: #ffc107 !important;
+        }
+
+        &.text-info {
+          color: #17a2b8 !important;
+        }
+      }
+
+      ul {
+        padding-left: 0;
+
+        li {
+          padding: 8px 12px;
+          margin-bottom: 8px;
+          background-color: #f8f9fa;
+          border-radius: 6px;
+          border-left: 3px solid;
+
+          .badge {
+            margin-right: 10px;
+            font-size: 0.8em;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .product-detail-container {
+    padding: 10px;
+
+    .product-header {
+      flex-direction: column;
+      gap: 15px;
+      text-align: center;
+      padding: 15px;
+
+      .product-title {
+        flex-direction: column;
+        text-align: center;
+
+        .product-image, .no-image-placeholder {
+          width: 60px;
+          height: 60px;
+        }
+      }
+
+      .header-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+    }
+
+    .nav-tabs {
+      padding: 5px;
+
+      .nav-link {
+        font-size: 0.85rem;
+        padding: 8px 12px;
+        margin-right: 2px;
+
+        i {
+          display: none;
+        }
+      }
+    }
+
+    .card-body {
+      padding: 15px !important;
+    }
+
+    .row > [class*="col-"] {
+      margin-bottom: 15px;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .product-detail-container {
+    .nav-tabs {
+      .nav-link {
+        font-size: 0.8rem;
+        padding: 6px 8px;
+      }
+    }
+
+    .btn {
+      font-size: 0.85rem;
+      padding: 6px 12px;
+    }
+
+    .info-group {
+      margin-bottom: 15px;
+      padding: 8px 0;
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .product-detail-container {
+    .header-actions,
+    .btn,
+    .nav-tabs {
+      display: none !important;
+    }
+
+    .tab-content {
+      .tab-pane {
+        display: block !important;
+        page-break-inside: avoid;
+        margin-bottom: 30px;
+      }
+    }
+
+    .card {
+      box-shadow: none !important;
+      border: 1px solid #000 !important;
+    }
+  }
+}
