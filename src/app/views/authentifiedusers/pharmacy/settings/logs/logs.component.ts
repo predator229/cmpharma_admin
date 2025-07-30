@@ -15,6 +15,7 @@ import {PharmacyClass} from "../../../../../models/Pharmacy.class";
 import {UserDetails} from "../../../../../models/UserDatails";
 import {Validators} from "@angular/forms";
 import {ActivatedRoute, Router} from "@angular/router";
+import {Category} from "../../../../../models/Category.class";
 
 @Component({
   selector: 'app-pharmacy-logs',
@@ -52,11 +53,22 @@ export class PharmacyLogsComponent implements OnInit {
     },
   };
   searchText: string;
-  prePage: string = '50';
   pharmacyActivities: ActivityLoged[] = [];
   usersInfo: { [key: string]:{  name: string;  img: string;  } } | null = null;
   pharmacies: PharmacyClass[] = [];
   usersArray: Array<{ key: string, name:string}> = [];
+  permissions: {
+    viewLogs: boolean,
+    exportLogs: boolean
+  };
+
+  itemsPerPage: number = 10;
+  totalPages: number = 1;
+  paginationStart: number = 0;
+  paginationEnd: number = 0;
+  currentPage: number = 1;
+
+  pharmacyActivitiesFilter: ActivityLoged[] = [];
 
   constructor(private router: Router, private route: ActivatedRoute, private authUser: AuthService, private loadingService: LoadingService, private apiService: ApiService)  {
   }
@@ -71,6 +83,8 @@ export class PharmacyLogsComponent implements OnInit {
           .pipe(takeUntil(this.destroy$))
           .subscribe(loaded => {
             this.userDetails = this.authUser.getUserDetails();
+            this.permissions.viewLogs = this.userDetails.hasPermission('admin_pharmacy.logs.view');
+            this.permissions.exportLogs = this.userDetails.hasPermission('admin_pharmacy.export');
             this.userDetails.loadAllPermissions();
             if (this.userDetails?.onlyShowListPharm.length) {
               this.handleError("Une ou plusieurs de vos pharmacies sont en attente de compléments d'informations. Veuillez compléter toutes les informations requises pour poursuivre le processus d'enregistrement.\n");
@@ -141,7 +155,6 @@ export class PharmacyLogsComponent implements OnInit {
     const user_ = this.userSelected;
     const token = await this.authUser.getRealToken();
     const uid = await this.authUser.getUid();
-    const prePage = parseInt(this.prePage);
     if (!token) {
       this.handleError('Vous n\'êtes pas autorisé à effectuer cette action');
       return;
@@ -154,13 +167,15 @@ export class PharmacyLogsComponent implements OnInit {
     });
 
     const pharmacyId = this.pharmacyId;
-    this.apiService.post(endpoint, { uid, prePage, id:pharmacyId }, headers)
+    const all = 1;
+    this.apiService.post(endpoint, { uid, id:pharmacyId, all, user_ }, headers)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
           if (response && !response.error && response.data){
             this.pharmacyActivities = response?.data || [];
             this.usersInfo = response?.usersMap || [];
+            this.filterLogs();
           }else{
             this.handleError( response.message ?? (response.errorMessage ?? `Erreur lors du chargement des logs d'activites`));
           }
@@ -180,7 +195,34 @@ export class PharmacyLogsComponent implements OnInit {
     });
   }
 
-  filterLogs() {
+  filterLogs(): void {
+    let filtered = [...this.pharmacyActivities];
 
+    if (this.searchText) {
+      const searchTerms = this.searchText.toLowerCase().trim();
+      filtered = filtered.filter(c =>
+        c.author?.toLowerCase().includes(searchTerms) ||
+        c.description?.toLowerCase().includes(searchTerms) ||
+        c.type?.toLowerCase().includes(searchTerms) ||
+        c.title?.toLowerCase().includes(searchTerms)
+      );
+    }
+
+    this.pharmacyActivitiesFilter = filtered;
+    this.totalPages = Math.max(1, Math.ceil(this.pharmacyActivitiesFilter.length / this.itemsPerPage));
+    this.currentPage = Math.min(this.currentPage, this.totalPages);
+    this.updatePaginationInfo();
+  }
+  updatePaginationInfo(): void {
+    this.paginationStart = (this.currentPage - 1) * this.itemsPerPage;
+    this.paginationEnd = Math.min(
+      this.currentPage * this.itemsPerPage,
+      this.pharmacyActivitiesFilter.length
+    );
+  }
+  getPaginatedCategories(): ActivityLoged[] {
+    const start = this.permissions.viewLogs ? this.paginationStart : 0;
+    const end = this.permissions.viewLogs ? this.paginationEnd : 0;
+    return this.pharmacyActivitiesFilter.slice(start, end);
   }
 }

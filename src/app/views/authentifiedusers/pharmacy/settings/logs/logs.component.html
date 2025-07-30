@@ -2,11 +2,11 @@
   <div class="page-header">
     <span class="h1-badge">Logs</span>
     <div class="header-actions">
-      <div class="search-box">
-        <input type="text" class="form-control" placeholder="Rechercher..."
-               [(ngModel)]="searchText" (keyup)="filterLogs()">
-        <i class="fas fa-search"></i>
-      </div>
+<!--      <div class="search-box">-->
+<!--        <input type="text" class="form-control" placeholder="Rechercher..."-->
+<!--               [(ngModel)]="searchText" (keyup)="filterLogs()">-->
+<!--        <i class="fas fa-search"></i>-->
+<!--      </div>-->
     </div>
   </div>
   <div class="category-list-container">
@@ -23,13 +23,14 @@
           <option [value]="user.key" *ngFor="let user of usersArray"> {{user.name}} </option>
         </select>
       </div>
-      <div class="filter-group">
-        <label> Periode  </label>
-        <input type="number" class="form-control" [(ngModel)]="prePage" (change)="loadPharmacyActivities()">
-      </div>
+<!--      <div class="filter-group">-->
+<!--        <label> Periode  </label>-->
+<!--        <input type="number" class="form-control" [(ngModel)]="prePage" (change)="loadPharmacyActivities()">-->
+<!--      </div>-->
     </div>
   </div>
-  <div class="row" style="margin-bottom: 0;">
+  <div class="row" style="margin-bottom: 0;" *ngIf="pharmacyActivitiesFilter.length > 0">
     <app-activity-timeline [activites]="pharmacyActivities" [usersInfo]="usersInfo"></app-activity-timeline>
   </div>
+
 </div>

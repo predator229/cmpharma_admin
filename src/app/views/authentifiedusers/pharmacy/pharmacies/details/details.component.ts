@@ -44,7 +44,14 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
   internatPathUrl = environment.internalPathUrl;
   baseUrl = environment.baseUrl;
   isLoading = false;
+
   canIEdit: boolean = false;
+  permissions = {
+    editPharmacy: false,
+    deltePharmacy: false,
+    viewPharmacy: false,
+  };
+
   recentOrders: any[] = [];
   pharmacyActivities: ActivityLoged[] = [];
   commonsFunction: CommonFunctions;
@@ -126,6 +133,12 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
           .pipe(takeUntil(this.destroy$))
           .subscribe(loaded => {
             this.userDetail = this.auth.getUserDetails();
+            this.canIEdit = this.userDetail.hasPermission('pharmacies.edit', pharmacyId);
+
+            this.permissions.viewPharmacy = this.userDetail.hasPermission('pharmacies.view');
+            this.permissions.editPharmacy = this.userDetail.hasPermission('pharmacies.edit');
+            this.permissions.deltePharmacy = this.userDetail.hasPermission('pharmacies.delete');
+
             if (loaded && !this.userDetail) {
               alert('User details not found');
             }
@@ -134,7 +147,6 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
 
       if (pharmacyId) {
         await this.loadPharmacyDetails(pharmacyId);
-        this.canIEdit = this.userDetail.hasPermission('pharmacies.edit', pharmacyId);
 
         this.pharmacyForm = this.createFormInfoPharmacy();
         this.initializeWorkingHours();

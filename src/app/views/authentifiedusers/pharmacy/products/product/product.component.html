@@ -303,9 +303,6 @@
           <div class="row">
             <app-activity-timeline [activites]="productsActivities" [usersInfo]="usersInfo"></app-activity-timeline>
             <div class="col-md-12">
-              <div class="text-center py-3" *ngIf="productsActivities.length > 0">
-                <a [routerLink]="['/pharmacy/admin/logs', product._id]">Voir plus</a>
-              </div>
               <div class="text-center py-3" *ngIf="productsActivities.length === 0">
                 <p class="text-muted">Aucune activité récente</p>
               </div>

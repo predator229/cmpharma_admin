@@ -1,25 +1,23 @@
 <div class="pharmacy-details-container">
-  <div class="page-header" *ngIf="pharmacy">
-    <div class="header-content">
+  <div class="product-header">
+    <div class="product-title">
       <button class="btn btn-outline-secondary" [routerLink]="['/pharmacy/pharmacies/list']">
-        <i class="fas fa-arrow-left"></i> Retour à la liste
+        <i class="fas fa-arrow-left"></i> Retour
       </button>
-      <h1 *ngIf="pharmacy">{{ pharmacy.name }}</h1>
-      <br>
+      <div *ngIf="pharmacy">
+        <div class="product-info">
+          <h1 class="h3 mb-1">{{ pharmacy.name }}</h1>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions" *ngIf="pharmacy && pharmacy.status === 'pending'">
       <span *ngIf="pharmacy.status === 'pending'" style="color: crimson">
         {{ pharmacy.commentaire !='' ? pharmacy.commentaire : (pharmacy.status === 'pending' ? "Nous avons besoin d'information complémentaire" : 'pff') }}
       </span>
     </div>
   </div>
+
   <div class="card mb-4"></div>
-
-  <div class="loading-spinner" *ngIf="!pharmacy">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Chargement...</span>
-    </div>
-    <p>Chargement des informations...</p>
-  </div>
-
   <div class="pharmacy-content" *ngIf="pharmacy">
     <div class="row">
       <!-- Colonne principale -->
@@ -616,7 +614,7 @@
                     [type]="'country'"
                     [countriesListArray]="countriesListArray"
                     [value]="pharmacyForm.get('country')?.value"
-                    (selected)="onCountrySelected($event, 1)">
+                    (selected)="onCountrySelected($event, 0)">
                   </app-select2-ajax>
                   <div class="invalid-feedback" *ngIf="pharmacyForm.get('country')?.invalid && pharmacyForm.get('country')?.touched">
                     Le pays est requis
@@ -634,7 +632,7 @@
                     placeholder="Sélectionner une ville"
                     [value]="pharmacyForm.get('city')?.value"
                     [style.display]="pharmacyForm.get('country')?.value ? 'block' : 'none'"
-                    (selected)="onCitySelected($event, 1)">
+                    (selected)="onCitySelected($event, 0)">
                   </app-select2-ajax>
                   <input
                     *ngIf="!pharmacyForm.get('country')?.value"

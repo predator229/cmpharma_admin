@@ -16,7 +16,8 @@ export class Select2AjaxComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() apiUrl!: string;
   @Input() country!: string;
   @Input() type!: string;
-  @Input() countriesListArray: { [id: string]: Country | Category } | null;
+  @Input() countriesListArray: { [id: string]: Country } | null;
+  @Input() categoriesListArray: { [id: string]: Category } | null;
   @Input() value?: string;
   @Input() placeholder = 'Sélectionner une option';
 
@@ -81,13 +82,13 @@ export class Select2AjaxComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.value) {
       let optionText = this.value;
 
-      if (this.type === 'country' && this.countriesListArray?.[this.value] && this.countriesListArray[this.value] instanceof Country) {
-        const country = this.countriesListArray[this.value] as Country;
+      if (this.type === 'country' && this.countriesListArray?.[this.value]) {
+        const country = this.countriesListArray[this.value];
         optionText = `${country.emoji ?? ''} ${country.name} (${country.code})`;
       }
 
-      if (this.type === 'category' && this.countriesListArray?.[this.value] && this.countriesListArray[this.value] instanceof Category) {
-        const country = this.countriesListArray[this.value] as Category;
+      if (this.type === 'category' && this.categoriesListArray?.[this.value]) {
+        const country = this.categoriesListArray[this.value];
         optionText = `${country.name} (${country.slug})`;
       }
 
