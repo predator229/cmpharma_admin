@@ -394,7 +394,7 @@
                     </div>
                   </div>
                   <div class="form-group">
-                    <label for="country" class="form-label">Ville *</label>
+                    <label for="city" class="form-label">Ville *</label>
                     <app-select2-ajax *ngIf="partnerForm.get('country')?.value != ''" #slectCityModalGenInfo [apiUrl]="'https://countriesnow.space/api/v0.1/countries/cities'" [country]="partnerForm.get('country')?.value" [countriesListArray]="countriesListArray" [type]="'city'" [value]="partnerForm.get('city')?.value" placeholder="Sélectionner une ville" formControlName="city" (selected)="onCitySelected($event)"></app-select2-ajax>
                     <input
                       *ngIf="partnerForm.get('country')?.value == ''"

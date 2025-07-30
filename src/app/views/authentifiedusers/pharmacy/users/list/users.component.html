@@ -1,0 +1,545 @@
+<div class="users-list-container">
+  <!-- Header -->
+  <div class="page-header">
+    <span class="h1-badge">Utilisateurs</span>
+    <div class="header-actions">
+      <div class="search-box">
+        <input type="text" class="form-control" placeholder="Rechercher ..." [(ngModel)]="searchTerm" (keyup)="filterProducts()">
+        <i class="fas fa-search"></i>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" style="margin-right: 5px;" (click)="openCreateModal()" *ngIf="permissions.createUser">
+          <i class="fas fa-plus"></i> Ajouter
+        </button>
+<!--        <button class="btn btn-outline-primary" style="background-color: #4caf50; color: white"-->
+<!--                (click)="exportProductsList()" *ngIf="permissions.exportProducts">-->
+<!--          <i class="fas fa-download"></i> Exporter-->
+<!--        </button>-->
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="filters-section">
+    <div class="row">
+      <div class="col-md-3">
+        <div class="search-box">
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-search"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-2">
+        <select class="form-select" [(ngModel)]="selectedStatus" (change)="onStatusFilterChange()">
+          <option *ngFor="let status of userStatuses" [value]="status.value">{{ status.label }}</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <select class="form-select" [(ngModel)]="selectedRole" (change)="onRoleFilterChange()">
+          <option *ngFor="let role of userRoles" [value]="role.value">{{ role.label }}</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <select class="form-select" [(ngModel)]="selectedPharmacy" (change)="onPharmacyFilterChange()">
+          <option value="">Toutes les pharmacies</option>
+          <option *ngFor="let pharmacy of pharmaciesArraySelect2" [value]="pharmacy.value">{{ pharmacy.label }}</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <select class="form-select" [(ngModel)]="sortBy" (change)="onSortChange()">
+          <option *ngFor="let option of sortOptions" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </div>
+
+      <div class="col-md-1">
+        <button class="btn btn-outline-secondary" (click)="toggleSortOrder()" [title]="'Tri ' + (sortOrder === 'asc' ? 'croissant' : 'décroissant')">
+          <i class="fas" [ngClass]="sortOrder === 'asc' ? 'fa-sort-up' : 'fa-sort-down'"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="row mt-2">
+      <div class="col-12">
+        <div class="filter-actions">
+          <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+            <i class="fas fa-times"></i> Effacer les filtres
+          </button>
+          <button class="btn btn-outline-success btn-sm ms-2" (click)="exportUsers()" *ngIf="permissions.viewUsers">
+            <i class="fas fa-download"></i> Exporter
+          </button>
+          <button class="btn btn-outline-primary btn-sm ms-2" (click)="openBulkActionModal()"
+                  data-bs-toggle="modal" data-bs-target="#bulkActionModal"
+                  *ngIf="permissions.bulkActions && selectedUsers.size > 0">
+            <i class="fas fa-cogs"></i> Actions en lot ({{ selectedUsers.size }})
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users Stats -->
+  <div class="stats-section">
+    <div class="row">
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-primary">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ totalUsers }}</div>
+            <div class="stat-label">Total utilisateurs</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-success">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ getUsersActivate(1) }}</div>
+            <div class="stat-label">Utilisateurs actifs</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-warning">
+            <i class="fas fa-user-times"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ getUsersActivate(2) }}</div>
+            <div class="stat-label">Utilisateurs désactivés</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-info">
+            <i class="fas fa-user-plus"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ getUsersActivate(3) }}</div>
+            <div class="stat-label">Non activés</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div class="table-section">
+    <div class="card">
+      <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Liste des utilisateurs</h5>
+          <div class="table-controls">
+            <select class="form-select form-select-sm" [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()">
+              <option value="10">10 par page</option>
+              <option value="25">25 par page</option>
+              <option value="50">50 par page</option>
+              <option value="100">100 par page</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive" *ngIf="!isLoading; else loadingTemplate">
+          <table class="table table-hover mb-0" *ngIf="users.length > 0; else noUsersTemplate">
+            <thead class="table-header">
+            <tr>
+              <th width="40">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                         [checked]="selectAll" (change)="toggleSelectAll()">
+                </div>
+              </th>
+              <th width="60">Avatar</th>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Rôles</th>
+              <th>Pharmacies</th>
+              <th>Statut</th>
+              <th>Dernière connexion</th>
+              <th width="200">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let user of users; trackBy: trackByUserId" class="user-row">
+              <td>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                         [checked]="isUserSelected(user._id!)"
+                         (change)="toggleUserSelection(user._id!)">
+                </div>
+              </td>
+
+              <td>
+                <div class="user-avatar-container">
+                  <img *ngIf="user.photoURL"
+                       [src]=" user.photoURL"
+                       [alt]="user.getFullName()"
+                       class="user-avatar">
+                  <div *ngIf="!user.photoURL" class="avatar-placeholder">
+                    {{ user.getInitials() }}
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                <div class="user-info">
+                  <div class="user-name">{{ user.getFullName() }}</div>
+                  <small class="text-muted" *ngIf="user.phone">{{ user.phone.digits }}</small>
+                </div>
+              </td>
+
+              <td>
+                <span class="user-email">{{ user.email }}</span>
+              </td>
+
+              <td>
+                <div class="roles-container">
+                    <span *ngFor="let role of getRoleLabels(user.groups); let i = index"
+                          class="badge bg-primary me-1 mb-1">
+                      {{ role }}
+                    </span>
+                  <span *ngIf="user.groups.length === 0" class="text-muted">Aucun rôle</span>
+                </div>
+              </td>
+
+              <td>
+                <div class="pharmacies-container">
+                    <span *ngIf="user.pharmaciesManaged.length > 0"
+                          class="badge bg-info">
+                      {{ user.pharmaciesManaged.length }} pharmacie(s)
+                    </span>
+                  <span *ngIf="user.pharmaciesManaged.length === 0" class="text-muted">Aucune</span>
+                </div>
+              </td>
+
+              <td>
+                  <span class="badge" [ngClass]="getUserStatusClass(user)">
+                    {{ getUserStatusLabel(user) }}
+                  </span>
+              </td>
+
+              <td>
+                  <span *ngIf="user.lastLogin" class="last-login">
+                    {{ user.getLastLoginFormatted() }}
+                  </span>
+                <span *ngIf="!user.lastLogin" class="text-muted">Jamais</span>
+              </td>
+
+              <td>
+                <div class="action-buttons">
+                  <button class="btn btn-sm btn-outline-primary" (click)="viewUser(user._id!)"
+                          [title]="'Voir ' + user.getFullName()">
+                    <i class="fas fa-eye"></i>
+                  </button>
+
+                  <button class="btn btn-sm btn-outline-secondary ms-1" (click)="editUser(user._id!)"
+                          *ngIf="permissions.editUser" [title]="'Modifier ' + user.getFullName()">
+                    <i class="fas fa-edit"></i>
+                  </button>
+
+                  <button class="btn btn-sm"
+                          [ngClass]="user.disabled ? 'btn-outline-success' : 'btn-outline-warning'"
+                          (click)="toggleUserStatus(user)"
+                          *ngIf="permissions.editUser"
+                          [title]="user.disabled ? 'Activer' : 'Désactiver'">
+                    <i class="fas" [ngClass]="user.disabled ? 'fa-check' : 'fa-ban'"></i>
+                  </button>
+
+                  <button class="btn btn-sm btn-outline-danger ms-1" (click)="deleteUser(user)"
+                          *ngIf="permissions.deleteUser" [title]="'Supprimer ' + user.getFullName()">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+
+          <ng-template #noUsersTemplate>
+            <div class="no-data-container">
+              <div class="no-data-content">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucun utilisateur trouvé</h5>
+                <p class="text-muted">Aucun utilisateur ne correspond à vos critères de recherche.</p>
+                <button class="btn btn-primary" (click)="clearFilters()" *ngIf="searchTerm || selectedStatus || selectedRole">
+                  <i class="fas fa-times"></i> Effacer les filtres
+                </button>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+
+        <ng-template #loadingTemplate>
+          <div class="loading-container">
+            <div class="d-flex justify-content-center align-items-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
+              </div>
+              <span class="ms-2">Chargement des utilisateurs...</span>
+            </div>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Pagination -->
+      <div class="card-footer" *ngIf="totalPages > 1">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="pagination-info">
+            Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à
+            {{ Math.min(currentPage * itemsPerPage, totalUsers) }} sur {{ totalUsers }} utilisateurs
+          </div>
+
+          <nav aria-label="Pagination des utilisateurs">
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <button class="page-link" (click)="onPageChange(1)" [disabled]="currentPage === 1">
+                  <i class="fas fa-angle-double-left"></i>
+                </button>
+              </li>
+
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <button class="page-link" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
+                  <i class="fas fa-angle-left"></i>
+                </button>
+              </li>
+
+              <li *ngFor="let page of getPaginationArray()"
+                  class="page-item" [class.active]="page === currentPage">
+                <button class="page-link" (click)="onPageChange(page)">{{ page }}</button>
+              </li>
+
+              <li class="page-item" [class.disabled]="currentPage === totalPages">
+                <button class="page-link" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages">
+                  <i class="fas fa-angle-right"></i>
+                </button>
+              </li>
+
+              <li class="page-item" [class.disabled]="currentPage === totalPages">
+                <button class="page-link" (click)="onPageChange(totalPages)" [disabled]="currentPage === totalPages">
+                  <i class="fas fa-angle-double-right"></i>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createUserModalLabel">
+          <i class="fas fa-user-plus"></i> Créer un utilisateur
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form [formGroup]="createUserForm" (ngSubmit)="createUser()">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="name" class="form-label">Prénom <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" formControlName="name"
+                       [class.is-valid]="isFieldValid(createUserForm, 'name')"
+                       [class.is-invalid]="isFieldInvalid(createUserForm, 'name')">
+                <div class="invalid-feedback">{{ getFieldError(createUserForm, 'name') }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="surname" class="form-label">Nom <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" formControlName="surname"
+                       [class.is-valid]="isFieldValid(createUserForm, 'surname')"
+                       [class.is-invalid]="isFieldInvalid(createUserForm, 'surname')">
+                <div class="invalid-feedback">{{ getFieldError(createUserForm, 'surname') }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" formControlName="email"
+                   [class.is-valid]="isFieldValid(createUserForm, 'email')"
+                   [class.is-invalid]="isFieldInvalid(createUserForm, 'email')">
+            <div class="invalid-feedback">{{ getFieldError(createUserForm, 'email') }}</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="phone" class="form-label">Téléphone</label>
+            <input type="tel" class="form-control" formControlName="phone"
+                   [class.is-valid]="isFieldValid(createUserForm, 'phone')"
+                   [class.is-invalid]="isFieldInvalid(createUserForm, 'phone')"
+                   placeholder="+33 1 23 45 67 89">
+            <div class="invalid-feedback">{{ getFieldError(createUserForm, 'phone') }}</div>
+          </div>
+
+<!--          <div class="row">-->
+<!--            <div class="col-md-6">-->
+<!--              <div class="mb-3">-->
+<!--                <label for="country" class="form-label">Pays</label>-->
+<!--                <select2-->
+<!--                  class="form-control"-->
+<!--                  formControlName="country"-->
+<!--                  [data]="countriesArraySelect2"-->
+<!--                  [class.is-invalid]="isFieldInvalid(createUserForm, 'country')"-->
+<!--                  (valueChanged)="onCountryChange($event)">-->
+<!--                </select2>-->
+<!--                <div class="invalid-feedback" *ngIf="isFieldInvalid(createUserForm, 'country')">-->
+<!--                  {{ getFieldError(createUserForm, 'country') }}-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--            <div class="col-md-6">-->
+<!--              <div class="mb-3">-->
+<!--                <label for="city" class="form-label">Ville</label>-->
+<!--                <select2-->
+<!--                  class="form-control"-->
+<!--                  formControlName="city"-->
+<!--                  [data]="citiesArraySelect2"-->
+<!--                  [class.is-invalid]="isFieldInvalid(createUserForm, 'city')"-->
+<!--                  placeholder="Sélectionner une ville">-->
+<!--                </select2>-->
+<!--                <div class="invalid-feedback" *ngIf="isFieldInvalid(createUserForm, 'city')">-->
+<!--                  {{ getFieldError(createUserForm, 'city') }}-->
+<!--                </div>-->
+<!--                <small class="form-text text-muted" *ngIf="!createUserForm.get('country')?.value">-->
+<!--                  Sélectionnez d'abord un pays-->
+<!--                </small>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+          <div class="mb-3">
+            <label for="address" class="form-label">Adresse</label>
+            <textarea class="form-control" rows="2" formControlName="address"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="groups" class="form-label">Groupes et Rôles <span class="text-danger">*</span></label>
+            <select2 multiple="multiple" class="form-control" formControlName="groups"
+                     [data]="groupsArraySelect2"
+                     [class.is-invalid]="isFieldInvalid(createUserForm, 'groups')">
+            </select2>
+            <div class="invalid-feedback">{{ getFieldError(createUserForm, 'groups') }}</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="pharmaciesManaged" class="form-label">Pharmacies gérées</label>
+            <select2 multiple="multiple" class="form-control" formControlName="pharmaciesManaged"
+                     [data]="pharmaciesArraySelect2">
+            </select2>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" formControlName="sendWelcomeEmail">
+                  <label class="form-check-label">Envoyer un email de bienvenue</label>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" formControlName="isActivated">
+                  <label class="form-check-label">Compte activé</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!createUserForm.valid || isLoading">
+            <i class="fas fa-save"></i> Créer l'utilisateur
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Action Modal -->
+<div class="modal fade" id="bulkActionModal" tabindex="-1" aria-labelledby="bulkActionModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="bulkActionModalLabel">
+          <i class="fas fa-cogs"></i> Actions en lot
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form [formGroup]="bulkActionForm" (ngSubmit)="executeBulkAction()">
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            Cette action sera appliquée à {{ selectedUsers.size }} utilisateur(s) sélectionné(s).
+          </div>
+
+          <div class="mb-3">
+            <label for="action" class="form-label">Action à exécuter <span class="text-danger">*</span></label>
+            <select class="form-select" formControlName="action"
+                    [class.is-invalid]="isFieldInvalid(bulkActionForm, 'action')">
+              <option value="">Sélectionner une action</option>
+              <option value="activate">Activer les comptes</option>
+              <option value="deactivate">Désactiver les comptes</option>
+              <option value="change_status">Changer le statut</option>
+              <option value="assign_groups">Assigner des groupes</option>
+              <option value="assign_pharmacy">Assigner une pharmacie</option>
+              <option value="send_email">Envoyer un email</option>
+            </select>
+            <div class="invalid-feedback">{{ getFieldError(bulkActionForm, 'action') }}</div>
+          </div>
+
+          <div class="mb-3" *ngIf="bulkActionForm.get('action')?.value === 'change_status'">
+            <label for="newStatus" class="form-label">Nouveau statut</label>
+            <select class="form-select" formControlName="newStatus">
+              <option value="active">Actif</option>
+              <option value="disabled">Désactivé</option>
+            </select>
+          </div>
+
+          <div class="mb-3" *ngIf="bulkActionForm.get('action')?.value === 'assign_groups'">
+            <label for="newGroups" class="form-label">Groupes à assigner</label>
+            <select2 multiple="multiple" class="form-control" formControlName="newGroups"
+                     [data]="groupsArraySelect2">
+            </select2>
+          </div>
+
+          <div class="mb-3" *ngIf="bulkActionForm.get('action')?.value === 'assign_pharmacy'">
+            <label for="newPharmacy" class="form-label">Pharmacie à assigner</label>
+            <select2 class="form-control" formControlName="newPharmacy"
+                     [data]="pharmaciesArraySelect2">
+            </select2>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!bulkActionForm.valid || isLoading">
+            <i class="fas fa-check"></i> Exécuter l'action
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

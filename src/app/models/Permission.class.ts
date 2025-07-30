@@ -29,7 +29,7 @@ export class Permission implements IPermission {
     this._id = data._id;
     this.module = data.module || '';
     this.label = data.label || '';
-    this.permissions = data.permissions.map((perm: any) => perm.toString()) || [];
+    this.permissions = data.permissions?.map((perm: any) => perm.toString()) || [];
     this.plateform = data.plateform || Platform.ADMIN;
     this.description = data.description || '';
     this.createdBy = data.createdBy || 'System';

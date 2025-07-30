@@ -169,12 +169,7 @@ export class UserDetails {
     this.loadAllPermissions();
   }
 
-  getPermissionStats(): {
-    totalPermissions: number;
-    groupsCount: number;
-    activeGroupsCount: number;
-    moduleCount: number;
-  } {
+  getPermissionStats(): { totalPermissions: number; groupsCount: number; activeGroupsCount: number; moduleCount: number; } {
     const modules = new Set<string>();
 
     this.groups

@@ -54,15 +54,15 @@ export class Group implements IGroup {
     this.plateform = data.plateform || Platform.ADMIN;
     this.createdBy = data.createdBy || 'System';
 
-    if (data.permissions && Array.isArray(data.permissions) && data.permissions.length > 0) {
-      this.permissions = data.permissions.map((perm: any) => new Permission(perm));
-    } else {
-      this.permissions = [];
-    }
+    this.permissions = data.permissions?.map((perm: any) => new Permission(perm)) ?? [];
+
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
   }
   isGroupActive(): boolean {
     return this.isActive;
   }
+
+
+
 }
