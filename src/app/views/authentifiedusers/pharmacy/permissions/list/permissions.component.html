@@ -1,0 +1,848 @@
+<div class="permissions-management-container">
+  <!-- Header -->
+  <div class="page-header">
+    <span class="h1-badge">Permissions</span>
+    <div class="header-actions">
+        <div class="btn-group me-2">
+          <button class="btn"
+                  [ngClass]="viewMode === 'list' ? 'btn-primary' : 'btn-outline-primary'"
+                  (click)="toggleViewMode()"
+                  title="Vue liste">
+            <i class="fas fa-list"></i>
+          </button>
+          <button class="btn"
+                  [ngClass]="viewMode === 'matrix' ? 'btn-primary' : 'btn-outline-primary'"
+                  (click)="toggleViewMode()"
+                  title="Vue matrice">
+            <i class="fas fa-th"></i>
+          </button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-outline-primary"
+                  (click)="openGroupManagementModal()"
+                  data-bs-toggle="modal"
+                  data-bs-target="#groupManagementModal"
+                  *ngIf="permissions_.manageGroups">
+            <i class="fas fa-users-cog"></i> Groupes
+          </button>
+          <button class="btn btn-outline-success"
+                  (click)="openPermissionModal()"
+                  data-bs-toggle="modal"
+                  data-bs-target="#permissionModal"
+                  *ngIf="permissions_.editPermissions">
+            <i class="fas fa-key"></i> Permissions
+          </button>
+        </div>
+  </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs-section">
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [ngClass]="activeTab === 'users' ? 'active' : ''"
+                (click)="switchTab('users')">
+          <i class="fas fa-users"></i> Utilisateurs
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [ngClass]="activeTab === 'groups' ? 'active' : ''"
+                (click)="switchTab('groups')">
+          <i class="fas fa-users-cog"></i> Groupes
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [ngClass]="activeTab === 'permissions' ? 'active' : ''"
+                (click)="switchTab('permissions')">
+          <i class="fas fa-key"></i> Permissions
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section" *ngIf="activeTab === 'users'">
+    <div class="row">
+      <div class="col-md-3">
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="fas fa-search"></i>
+          </span>
+          <input type="text"
+                 class="form-control"
+                 placeholder="Rechercher un utilisateur..."
+                 [(ngModel)]="searchTerm">
+<!--                 (keyup)="onSearch($event)"-->
+        </div>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select"
+                [(ngModel)]="selectedGroup"
+                (change)="onGroupFilterChange()">
+          <option value="">Tous les groupes</option>
+          <option *ngFor="let group of groupOptions" [value]="group.value">
+            {{ group.label }}
+          </option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select"
+                [(ngModel)]="selectedPlatform"
+                (change)="onPlatformFilterChange()">
+          <option *ngFor="let platform of platformOptions" [value]="platform.value">
+            {{ platform.label }}
+          </option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <div class="form-check mt-2">
+          <input class="form-check-input"
+                 type="checkbox"
+                 [(ngModel)]="showOnlyWithChanges"
+                 (change)="filterUsers()">
+          <label class="form-check-label">
+            Modifications en attente
+          </label>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary btn-sm"
+                  (click)="openBulkPermissionModal()"
+                  data-bs-toggle="modal"
+                  data-bs-target="#bulkPermissionModal"
+                  *ngIf="permissions_.assignPermissions && selectedUsers.size > 0">
+            <i class="fas fa-cogs"></i> Actions en lot ({{ selectedUsers.size }})
+          </button>
+          <span class="badge bg-warning" *ngIf="hasUserChanges()">
+            {{ getUsersWithChanges() }} modification(s) en attente
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+
+    <!-- Users Tab -->
+    <div class="tab-pane" [ngClass]="activeTab === 'users' ? 'active show' : ''">
+      <div class="users-permissions-section" *ngIf="!isLoading;">
+
+        <!-- List View -->
+        <div class="card" *ngIf="viewMode === 'list'">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">Permissions des Utilisateurs</h5>
+              <div class="form-check">
+                <input class="form-check-input"
+                       type="checkbox"
+                       [checked]="selectAll"
+                       (change)="toggleSelectAll()">
+                <label class="form-check-label">Tout sélectionner</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body p-0">
+            <div class="table-responsive" *ngIf="userPermissions.length > 0; else noUsersTemplate">
+              <table class="table table-hover mb-0">
+                <thead class="table-header">
+                <tr>
+                  <th width="40">
+                    <div class="form-check">
+                      <input class="form-check-input"
+                             type="checkbox"
+                             [checked]="selectAll"
+                             (change)="toggleSelectAll()">
+                    </div>
+                  </th>
+                  <th>Utilisateur</th>
+                  <th>Groupes actuels</th>
+                  <th>Permissions héritées</th>
+                  <th>Statut</th>
+                  <th width="200">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <ng-container *ngFor="let userView of userPermissions; trackBy: trackByUserId">
+                  <!-- Main user row -->
+                  <tr class="user-row" [ngClass]="{'table-warning': userView.hasChanges}">
+                    <td>
+                      <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               [checked]="isUserSelected(userView.user._id!)"
+                               (change)="toggleUserSelection(userView.user._id!)">
+                      </div>
+                    </td>
+
+                    <td>
+                      <div class="user-info">
+                        <div class="d-flex align-items-center">
+                          <div class="user-avatar-container me-2">
+                            <img *ngIf="userView.user.photoURL"
+                                 [src]="userView.user.photoURL"
+                                 [alt]="userView.user.getFullName()"
+                                 class="user-avatar">
+                            <div *ngIf="!userView.user.photoURL" class="avatar-placeholder">
+                              {{ userView.user.getInitials() }}
+                            </div>
+                          </div>
+                          <div>
+                            <div class="user-name">{{ userView.user.getFullName() }}</div>
+                            <small class="text-muted">{{ userView.user.email }}</small>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div class="groups-container">
+                          <span *ngFor="let group of userView.currentGroups; let i = index"
+                                class="badge me-1 mb-1"
+                                [ngClass]="getGroupBadgeClass(group.plateform)">
+                            {{ group.name }}
+                          </span>
+                        <span *ngIf="userView.currentGroups.length === 0" class="text-muted">
+                            Aucun groupe
+                          </span>
+                      </div>
+                    </td>
+
+                    <td>
+                        <span class="badge bg-info">
+                          {{ userView.inheritedPermissions.length }} permission(s)
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="badge"
+                              [ngClass]="userView.user.isActive() ? 'bg-success' : 'bg-danger'">
+                          {{ userView.user.isActive() ? 'Actif' : 'Inactif' }}
+                        </span>
+                      <span class="badge bg-warning ms-1" *ngIf="userView.hasChanges">
+                          Modifié
+                        </span>
+                    </td>
+
+                    <td>
+                      <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline-primary"
+                                (click)="toggleUserExpansion(userView)"
+                                [title]="userView.isExpanded ? 'Réduire' : 'Développer'">
+                          <i class="fas"
+                             [ngClass]="userView.isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                        </button>
+
+                        <button class="btn btn-sm btn-success ms-1"
+                                (click)="saveUserPermissions(userView)"
+                                *ngIf="userView.hasChanges && permissions_.assignPermissions"
+                                title="Sauvegarder">
+                          <i class="fas fa-save"></i>
+                        </button>
+
+                        <button class="btn btn-sm btn-secondary ms-1"
+                                (click)="cancelUserChanges(userView)"
+                                *ngIf="userView.hasChanges"
+                                title="Annuler">
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Expanded details row -->
+                  <tr *ngIf="userView.isExpanded" class="expanded-row">
+                    <td colspan="6">
+                      <div class="expanded-content p-3">
+                        <div class="row">
+                          <!-- Current Groups -->
+                          <div class="col-md-6">
+                            <h6>Groupes actuels</h6>
+                            <div class="groups-list">
+                              <div *ngFor="let group of userView.currentGroups"
+                                   class="group-item d-flex justify-content-between align-items-center mb-2">
+                                  <span class="badge" [ngClass]="getGroupBadgeClass(group.plateform)">
+                                    {{ group.name }} ({{ group.plateform }})
+                                  </span>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        (click)="removeGroupFromUser(userView, group._id!)"
+                                        *ngIf="permissions_.assignPermissions">
+                                  <i class="fas fa-times"></i>
+                                </button>
+                              </div>
+                              <div *ngIf="userView.currentGroups.length === 0" class="text-muted">
+                                Aucun groupe assigné
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Available Groups -->
+                          <div class="col-md-6" *ngIf="permissions_.assignPermissions">
+                            <h6>Ajouter des groupes</h6>
+                            <div class="available-groups">
+                              <select class="form-select mb-2"
+                                      [ngModel]="userView.pendingGroups[0]"
+                                      (change)="addGroupToUser(userView, $event);">
+                                <option value="">Sélectionner un groupe...</option>
+                                <option *ngFor="let group of userView.availableGroups"
+                                        [value]="group._id">
+                                  {{ group.name }} ({{ group.plateform }})
+                                </option>
+                              </select>
+
+                              <!-- Pending groups -->
+                              <div *ngIf="userView.pendingGroups.length > 0">
+                                <h6 class="text-warning">Groupes à ajouter:</h6>
+                                <div *ngFor="let groupId of userView.pendingGroups"
+                                     class="badge bg-warning me-1">
+<!--                                  {{ (groups.f(): '_id': groupId)?.[0]?.name }}-->
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Inherited Permissions -->
+                        <div class="row mt-3">
+                          <div class="col-12">
+                            <h6>Permissions héritées des groupes</h6>
+                            <div class="permissions-grid">
+                              <div *ngFor="let permission of userView.inheritedPermissions"
+                                   class="permission-item">
+                                <div class="card card-sm">
+                                  <div class="card-body p-2">
+                                    <h6 class="card-title mb-1">{{ permission.module }}</h6>
+                                    <div class="permission-badges">
+                                        <span *ngFor="let perm of permission.permissions"
+                                              class="badge bg-secondary me-1 mb-1">
+                                          {{ perm }}
+                                        </span>
+                                    </div>
+                                    <small class="text-muted">
+                                      {{ getPermissionDescription(permission) }}
+                                    </small>
+                                  </div>
+                                </div>
+                              </div>
+                              <div *ngIf="userView.inheritedPermissions.length === 0"
+                                   class="text-muted">
+                                Aucune permission héritée
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
+                </tbody>
+              </table>
+            </div>
+
+            <ng-template #noUsersTemplate>
+              <div class="no-data-container">
+                <div class="no-data-content">
+                  <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                  <h5 class="text-muted">Aucun utilisateur trouvé</h5>
+                  <p class="text-muted">Aucun utilisateur ne correspond à vos critères.</p>
+                </div>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- Pagination -->
+          <div class="card-footer" *ngIf="totalPages > 1">
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="pagination-info">
+                Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à
+                {{ Math.min(currentPage * itemsPerPage, totalUsers) }} sur {{ totalUsers }} utilisateurs
+              </div>
+
+              <nav aria-label="Pagination">
+                <ul class="pagination pagination-sm mb-0">
+                  <li class="page-item" [class.disabled]="currentPage === 1">
+                    <button class="page-link" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
+                      <i class="fas fa-chevron-left"></i>
+                    </button>
+                  </li>
+
+                  <li *ngFor="let page of getPaginationArray()"
+                      class="page-item" [class.active]="page === currentPage">
+                    <button class="page-link" (click)="onPageChange(page)">{{ page }}</button>
+                  </li>
+
+                  <li class="page-item" [class.disabled]="currentPage === totalPages">
+                    <button class="page-link" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages">
+                      <i class="fas fa-chevron-right"></i>
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matrix View -->
+        <div class="permissions-matrix" *ngIf="viewMode === 'matrix'">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">Matrice des Permissions</h5>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                  <thead>
+                  <tr>
+                    <th class="sticky-col">Utilisateur</th>
+                    <th *ngFor="let group of groups; trackBy: trackByGroupId"
+                        class="text-center group-header"
+                        [ngClass]="getGroupBadgeClass(group.plateform)">
+                      {{ group.name }}
+                    </th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr *ngFor="let userView of userPermissions; trackBy: trackByUserId">
+                    <td class="sticky-col user-cell">
+                      <div class="user-info">
+                        <div class="user-name">{{ userView.user.getFullName() }}</div>
+                        <small class="text-muted">{{ userView.user.email }}</small>
+                      </div>
+                    </td>
+                    <td *ngFor="let group of groups; trackBy: trackByGroupId"
+                        class="text-center permission-cell">
+                      <div class="form-check d-flex justify-content-center">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               [checked]="checkPermission(userView, group)"
+                               (change)="checkPermission(userView, group) ?
+                                          removeGroupFromUser(userView, group._id!) :
+                                          addGroupToUser(userView, group._id!)"
+                               [disabled]="!permissions_.assignPermissions">
+                      </div>
+                    </td>
+                  </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Groups Tab -->
+    <div class="tab-pane" [ngClass]="activeTab === 'groups' ? 'active show' : ''">
+      <div class="groups-management-section">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h5 class="mb-0">Gestion des Groupes</h5>
+                  <button class="btn btn-primary"
+                          (click)="openGroupManagementModal()"
+                          data-bs-toggle="modal"
+                          data-bs-target="#groupManagementModal"
+                          *ngIf="permissions_.manageGroups">
+                    <i class="fas fa-plus"></i> Nouveau Groupe
+                  </button>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-4" *ngFor="let group of groups; trackBy: trackByGroupId">
+                    <div class="card group-card mb-3">
+                      <div class="card-header" [ngClass]="getGroupBadgeClass(group.plateform)">
+                        <div class="d-flex justify-content-between align-items-center text-white">
+                          <h6 class="mb-0">{{ group.name }}</h6>
+                          <span class="badge badge-light">{{ group.plateform }}</span>
+                        </div>
+                      </div>
+
+                      <div class="card-body">
+                        <p class="card-text">{{ group.description || 'Aucune description' }}</p>
+
+                        <div class="mb-2">
+                          <small class="text-muted">Code:</small>
+                          <span class="badge bg-secondary ms-1">{{ group.code }}</span>
+                        </div>
+
+                        <div class="mb-2">
+                          <small class="text-muted">Permissions:</small>
+                          <span class="badge bg-info ms-1">{{ group.permissions.length }}</span>
+                        </div>
+
+                        <div class="mb-3">
+                          <small class="text-muted">Statut:</small>
+                          <span class="badge ms-1"
+                                [ngClass]="group.isActive ? 'bg-success' : 'bg-danger'">
+                            {{ group.isActive ? 'Actif' : 'Inactif' }}
+                          </span>
+                        </div>
+
+                        <div class="btn-group w-100" *ngIf="permissions_.manageGroups">
+                          <button class="btn btn-sm btn-outline-primary"
+                                  (click)="updateGroup(group)">
+                            <i class="fas fa-edit"></i> Modifier
+                          </button>
+                          <button class="btn btn-sm btn-outline-danger"
+                                  (click)="deleteGroup(group)">
+                            <i class="fas fa-trash"></i> Supprimer
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Permissions Tab -->
+    <div class="tab-pane" [ngClass]="activeTab === 'permissions' ? 'active show' : ''">
+      <div class="permissions-management-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">Gestion des Permissions</h5>
+              <button class="btn btn-primary"
+                      (click)="openPermissionModal()"
+                      data-bs-toggle="modal"
+                      data-bs-target="#permissionModal"
+                      *ngIf="permissions_.editPermissions">
+                <i class="fas fa-plus"></i> Nouvelle Permission
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Filters -->
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <select class="form-select" [(ngModel)]="selectedModule">
+                  <option *ngFor="let module of moduleOptions" [value]="module.value">
+                    {{ module.label }}
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <select class="form-select" [(ngModel)]="selectedPlatform">
+                  <option *ngFor="let platform of platformOptions" [value]="platform.value">
+                    {{ platform.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Permissions by Module -->
+            <div class="accordion" id="permissionsAccordion">
+              <div class="accordion-item" *ngFor="let module of permissionModules; let i = index">
+                <h2 class="accordion-header" [id]="'heading' + i">
+                  <button class="accordion-button"
+                          [class.collapsed]="!module.isExpanded"
+                          type="button"
+                          (click)="module.isExpanded = !module.isExpanded">
+                    <strong>{{ module.module }}</strong>
+                    <span class="badge bg-primary ms-2">{{ module.permissions.length }}</span>
+                  </button>
+                </h2>
+
+                <div class="accordion-collapse collapse"
+                     [class.show]="module.isExpanded"
+                     [id]="'collapse' + i">
+                  <div class="accordion-body">
+                    <div class="row">
+                      <div class="col-md-6" *ngFor="let permission of module.permissions; trackBy: trackByPermissionId">
+                        <div class="card permission-card mb-3">
+                          <div class="card-body">
+                            <h6 class="card-title">
+                              {{ permission.label || permission.module }}
+                              <span class="badge ms-2" [ngClass]="getGroupBadgeClass(permission.plateform)">
+                                {{ permission.plateform }}
+                              </span>
+                            </h6>
+
+                            <p class="card-text text-muted small">
+                              {{ getPermissionDescription(permission) }}
+                            </p>
+
+                            <div class="permission-actions">
+                              <strong>Actions:</strong>
+                              <div class="mt-1">
+                                <span *ngFor="let perm of permission.permissions"
+                                      class="badge bg-secondary me-1 mb-1">
+                                  {{ perm }}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #bulkPermissionModal let-modal>
+<!--<ng-template #bulkPermissionModal let-modal>-->
+  <div class="modal-header">
+    <h5 class="modal-title" id="bulkPermissionModalLabel">
+      <i class="fas fa-cogs"></i> Actions en lot sur les permissions
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+      <form [formGroup]="bulkPermissionForm" (ngSubmit)="executeBulkPermissions()">
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            Cette action sera appliquée à {{ selectedUsers.size }} utilisateur(s) sélectionné(s).
+          </div>
+
+          <div class="mb-3">
+            <label for="action" class="form-label">Action à exécuter <span class="text-danger">*</span></label>
+            <select class="form-select" formControlName="action"
+                    [class.is-invalid]="isFieldInvalid(bulkPermissionForm, 'action')">
+              <option value="">Sélectionner une action</option>
+              <option value="add_groups">Ajouter des groupes</option>
+              <option value="remove_groups">Retirer des groupes</option>
+              <option value="replace_groups">Remplacer les groupes</option>
+              <option value="add_permissions">Ajouter des permissions</option>
+              <option value="remove_permissions">Retirer des permissions</option>
+            </select>
+            <div class="invalid-feedback">{{ getFieldError(bulkPermissionForm, 'action') }}</div>
+          </div>
+
+          <div class="mb-3" *ngIf="bulkPermissionForm.get('action')?.value?.includes('groups')">
+            <label class="form-label">Groupes cibles</label>
+            <select2 multiple="multiple" class="form-control" formControlName="newGroups"
+                     [data]="groupOptions">
+            </select2>
+          </div>
+
+          <div class="mb-3" *ngIf="bulkPermissionForm.get('action')?.value?.includes('permissions')">
+            <label class="form-label">Permissions cibles</label>
+            <select2 multiple="multiple" class="form-control" formControlName="newPermissions"
+                     [data]="moduleOptions">
+            </select2>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!bulkPermissionForm.valid || isLoading">
+            <i class="fas fa-check"></i> Exécuter l'action
+          </button>
+        </div>
+      </form>
+  </div>
+</ng-template>
+<ng-template #groupManagementModalTemplate let-modal>>
+  <div class="modal-header">
+    <h5 class="modal-title" id="groupManagementModalLabel">
+      <i class="fas fa-users-cog"></i> Créer un groupe
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+      <form [formGroup]="groupManagementForm" (ngSubmit)="createGroup()">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="name" class="form-label">Nom du groupe <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" formControlName="name"
+                       [class.is-valid]="isFieldValid(groupManagementForm, 'name')"
+                       [class.is-invalid]="isFieldInvalid(groupManagementForm, 'name')"
+                       placeholder="Ex: Gestionnaire Principal">
+                <div class="invalid-feedback">{{ getFieldError(groupManagementForm, 'name') }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="code" class="form-label">Code <span class="text-danger">*</span></label>
+                <select class="form-select" formControlName="code"
+                        [class.is-valid]="isFieldValid(groupManagementForm, 'code')"
+                        [class.is-invalid]="isFieldInvalid(groupManagementForm, 'code')">
+                  <option value="">Sélectionner un code</option>
+                  <option value="superadmin">Super Admin</option>
+                  <option value="manager_admin">Manager Admin</option>
+                  <option value="admin_technique">Admin Technique</option>
+                  <option value="support_admin">Support Admin</option>
+                  <option value="manager_pharmacy">Manager Pharmacie</option>
+                  <option value="pharmacien">Pharmacien</option>
+                  <option value="preparateur">Préparateur</option>
+                  <option value="caissier">Caissier</option>
+                  <option value="consultant">Consultant</option>
+                </select>
+                <div class="invalid-feedback">{{ getFieldError(groupManagementForm, 'code') }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="platform" class="form-label">Plateforme <span class="text-danger">*</span></label>
+            <select class="form-select" formControlName="platform"
+                    [class.is-valid]="isFieldValid(groupManagementForm, 'platform')"
+                    [class.is-invalid]="isFieldInvalid(groupManagementForm, 'platform')">
+              <option value="">Sélectionner une plateforme</option>
+              <option value="Admin">Administration</option>
+              <option value="Pharmacy">Pharmacie</option>
+              <option value="Deliver">Livraison</option>
+            </select>
+            <div class="invalid-feedback">{{ getFieldError(groupManagementForm, 'platform') }}</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" rows="3" formControlName="description"
+                      placeholder="Description du groupe et de ses responsabilités..."></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="permissions" class="form-label">Permissions</label>
+            <select2 multiple="multiple" class="form-control" formControlName="permissions"
+                     [data]="moduleOptions"
+                     placeholder="Sélectionner les permissions...">
+            </select2>
+            <small class="form-text text-muted">
+              Sélectionnez les modules de permissions à associer à ce groupe
+            </small>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" formControlName="isActive">
+              <label class="form-check-label">Groupe actif</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!groupManagementForm.valid || isLoading">
+            <i class="fas fa-save"></i> Créer le groupe
+          </button>
+        </div>
+    </form>
+  </div>
+</ng-template>
+<ng-template #permissionModalTemplate let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title" id="permissionModalLabel">
+      <i class="fas fa-key"></i> Créer une permission
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form [formGroup]="permissionForm" (ngSubmit)="createPermission()">
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="module" class="form-label">Module <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" formControlName="module"
+                     [class.is-valid]="isFieldValid(permissionForm, 'module')"
+                     [class.is-invalid]="isFieldInvalid(permissionForm, 'module')"
+                     placeholder="Ex: utilisateurs, produits, commandes">
+              <div class="invalid-feedback">{{ getFieldError(permissionForm, 'module') }}</div>
+              <small class="form-text text-muted">
+                Le nom du module (ex: utilisateurs, produits, commandes)
+              </small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="platform" class="form-label">Plateforme <span class="text-danger">*</span></label>
+              <select class="form-select" formControlName="platform"
+                      [class.is-valid]="isFieldValid(permissionForm, 'platform')"
+                      [class.is-invalid]="isFieldInvalid(permissionForm, 'platform')">
+                <option value="">Sélectionner une plateforme</option>
+                <option value="Admin">Administration</option>
+                <option value="Pharmacy">Pharmacie</option>
+                <option value="Deliver">Livraison</option>
+              </select>
+              <div class="invalid-feedback">{{ getFieldError(permissionForm, 'platform') }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="label" class="form-label">Libellé</label>
+          <input type="text" class="form-control" formControlName="label"
+                 placeholder="Ex: Gestion des utilisateurs">
+          <small class="form-text text-muted">
+            Nom d'affichage de la permission
+          </small>
+        </div>
+
+        <div class="mb-3">
+          <label for="description" class="form-label">Description</label>
+          <textarea class="form-control" rows="2" formControlName="description"
+                    placeholder="Description de ce que permet cette permission..."></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Actions de permission <span class="text-danger">*</span></label>
+          <div class="permission-actions-container">
+            <div formArrayName="permissions">
+              <div *ngFor="let control of permissionControls.controls; let i = index"
+                   class="d-flex align-items-center mb-2">
+                <input type="text"
+                       class="form-control"
+                       [formControlName]="i"
+                       placeholder="Ex: view, create, edit, delete">
+                <button type="button"
+                        class="btn btn-outline-danger btn-sm ms-2"
+                        (click)="removePermissionControl(i)"
+                        [disabled]="permissionControls.length <= 1">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="button"
+                    class="btn btn-outline-primary btn-sm"
+                    (click)="addPermissionControl()">
+              <i class="fas fa-plus"></i> Ajouter une action
+            </button>
+
+            <small class="form-text text-muted d-block mt-2">
+              Exemples d'actions: view, create, edit, delete, export, import
+            </small>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          <strong>Convention de nommage:</strong> Les permissions seront générées sous la forme
+          <code>module.action</code> (ex: utilisateurs.view, utilisateurs.create)
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary" [disabled]="!permissionForm.valid || isLoading">
+          <i class="fas fa-save"></i> Créer la permission
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

@@ -1,0 +1,773 @@
+// Variables héritées du système de catégories
+$primary-color: #4caf50;
+$secondary-color: #2196f3;
+$accent-color: #ff6b6b;
+$warning-color: #ff9800;
+$success-color: #4caf50;
+$danger-color: #f44336;
+$info-color: #2196f3;
+
+$text-primary: #2c3e50;
+$text-secondary: #546e7a;
+$text-muted: #90a4ae;
+$bg-light: #f8fafc;
+$bg-soft: #f1f5f9;
+$bg-card: #ffffff;
+
+$neutral-100: #f8fafc;
+$neutral-200: #e2e8f0;
+$neutral-300: #cbd5e1;
+$neutral-400: #94a3b8;
+$neutral-500: #64748b;
+$neutral-600: #475569;
+$neutral-700: #334155;
+$neutral-800: #1e293b;
+
+$border-radius: 12px;
+$border-radius-lg: 20px;
+$border-radius-sm: 6px;
+$box-shadow: 0 10px 25px rgba(44, 62, 80, 0.08);
+$box-shadow-lg: 0 20px 40px rgba(44, 62, 80, 0.12);
+$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+$font-small: 0.8125rem;
+$font-base: 0.9375rem;
+$font-large: 1.25rem;
+
+// Mixins
+@mixin badge-variant($bg-color, $text-color: #fff) {
+  background: linear-gradient(135deg, $bg-color, darken($bg-color, 10%));
+  color: $text-color;
+  padding: 0.375rem 0.75rem;
+  border-radius: $border-radius-sm;
+  font-size: $font-small;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  text-align: center;
+  white-space: nowrap;
+  border: 1px solid rgba($bg-color, 0.3);
+  box-shadow: 0 2px 4px rgba($bg-color, 0.2);
+  transition: $transition;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba($bg-color, 0.3);
+  }
+}
+
+@mixin glass-effect {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+// Container principal
+.permissions-management-container {
+  padding: 1.5rem;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  margin: 1rem 0;
+  background: $bg-card;
+
+  // Header de page
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid $neutral-200;
+
+    .h1-badge {
+      font-size: 1.875rem;
+      font-weight: 700;
+      color: $text-primary;
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(135deg, $primary-color, $secondary-color);
+        border-radius: 2px;
+      }
+
+      + p {
+        margin-top: 0.5rem;
+        color: $text-secondary;
+        font-size: $font-base;
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+
+      .btn-group {
+        .btn {
+          height: 2.75rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: $font-small;
+          border-radius: $border-radius-sm;
+          padding: 0 1rem;
+          font-weight: 500;
+          transition: $transition;
+
+          i {
+            margin-right: 0.375rem;
+          }
+
+          &.btn-primary {
+            background: linear-gradient(135deg, $primary-color, darken($primary-color, 10%));
+            border-color: $primary-color;
+            box-shadow: 0 2px 8px rgba($primary-color, 0.3);
+
+            &:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba($primary-color, 0.4);
+            }
+          }
+
+          &.btn-outline-primary {
+            border-color: $primary-color;
+            color: $primary-color;
+
+            &:hover {
+              background: $primary-color;
+              transform: translateY(-1px);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Section des onglets
+  .tabs-section {
+    margin-bottom: 1.5rem;
+
+    .nav-tabs {
+      border-bottom: 2px solid $neutral-200;
+      gap: 0.5rem;
+
+      .nav-item {
+        .nav-link {
+          border: none;
+          background: transparent;
+          color: $text-secondary;
+          font-weight: 500;
+          padding: 0.75rem 1.5rem;
+          border-radius: $border-radius-sm $border-radius-sm 0 0;
+          transition: $transition;
+          position: relative;
+
+          i {
+            margin-right: 0.5rem;
+          }
+
+          &:hover {
+            background: rgba($primary-color, 0.1);
+            color: $primary-color;
+          }
+
+          &.active {
+            background: linear-gradient(135deg, $primary-color, darken($primary-color, 5%));
+            color: white;
+            border-bottom: 3px solid darken($primary-color, 20%);
+
+            &::after {
+              content: '';
+              position: absolute;
+              bottom: -2px;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 0;
+              height: 0;
+              border-left: 8px solid transparent;
+              border-right: 8px solid transparent;
+              border-bottom: 8px solid $bg-card;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Section des filtres
+  .filters-section {
+    @include glass-effect;
+    padding: 1.25rem;
+    border-radius: $border-radius;
+    margin-bottom: 1.5rem;
+
+    .input-group {
+      .input-group-text {
+        background: white;
+        border-color: $neutral-300;
+        color: $text-secondary;
+      }
+
+      .form-control {
+        border-color: $neutral-300;
+        transition: $transition;
+
+        &:focus {
+          border-color: $primary-color;
+          box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+        }
+      }
+    }
+
+    .form-select {
+      border-color: $neutral-300;
+      transition: $transition;
+
+      &:focus {
+        border-color: $primary-color;
+        box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+      }
+    }
+
+    .form-check {
+      .form-check-input {
+        &:checked {
+          background-color: $primary-color;
+          border-color: $primary-color;
+        }
+      }
+
+      .form-check-label {
+        color: $text-primary;
+        font-weight: 500;
+      }
+    }
+
+    .badge {
+      &.bg-warning {
+        @include badge-variant($warning-color, white);
+      }
+    }
+  }
+
+  // États de chargement et vide
+  .loading-container {
+    text-align: center;
+    padding: 4rem 0;
+
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+      color: $primary-color;
+    }
+  }
+
+  .no-data-container {
+    text-align: center;
+    padding: 4rem 0;
+
+    .no-data-content {
+      i {
+        color: $neutral-300;
+        margin-bottom: 1rem;
+      }
+
+      h5 {
+        color: $text-secondary;
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        color: $text-muted;
+      }
+    }
+  }
+
+  // Styles des cartes
+  .card {
+    border: none;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow;
+    overflow: hidden;
+    transition: $transition;
+
+    &:hover {
+      box-shadow: $box-shadow-lg;
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, $bg-light, $neutral-100);
+      border-bottom: 1px solid $neutral-200;
+      padding: 1.25rem;
+
+      h5 {
+        color: $text-primary;
+        font-weight: 600;
+        margin: 0;
+      }
+    }
+
+    .card-body {
+      padding: 1.25rem;
+    }
+
+    .card-footer {
+      background: $bg-light;
+      border-top: 1px solid $neutral-200;
+      padding: 1rem 1.25rem;
+    }
+  }
+
+  // Styles des tableaux
+  .table {
+    margin-bottom: 0;
+
+    .table-header {
+      background: $bg-light;
+
+      th {
+        padding: 1rem 1.25rem;
+        font-weight: 600;
+        color: $text-secondary;
+        font-size: $font-small;
+        border: none;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+    }
+
+    tbody {
+      tr {
+        transition: $transition;
+
+        &:hover {
+          background: rgba($primary-color, 0.05);
+        }
+
+        &.table-warning {
+          background: rgba($warning-color, 0.1);
+          border-left: 4px solid $warning-color;
+        }
+
+        &.user-row {
+          border-bottom: 2px solid $neutral-200;
+        }
+
+        &.expanded-row {
+          background: $bg-soft;
+
+          .expanded-content {
+            border-radius: $border-radius-sm;
+            background: white;
+            margin: 0.5rem;
+            border: 1px solid $neutral-200;
+          }
+        }
+      }
+
+      td {
+        padding: 1rem 1.25rem;
+        vertical-align: middle;
+        font-size: $font-small;
+        color: $text-primary;
+        border-bottom: 1px solid $neutral-200;
+      }
+    }
+  }
+
+  // Informations utilisateur
+  .user-info {
+    .user-avatar-container {
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .avatar-placeholder {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, $primary-color, $secondary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.875rem;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: $text-primary;
+      margin-bottom: 0.125rem;
+    }
+
+    .text-muted {
+      color: $text-muted !important;
+      font-size: 0.875rem;
+    }
+  }
+
+  // Conteneurs de groupes et badges
+  .groups-container {
+    .badge {
+      margin: 0.125rem;
+      font-size: 0.75rem;
+
+      &.bg-primary {
+        @include badge-variant($primary-color);
+      }
+
+      &.bg-secondary {
+        @include badge-variant($secondary-color);
+      }
+
+      &.bg-info {
+        @include badge-variant($info-color);
+      }
+
+      &.bg-success {
+        @include badge-variant($success-color);
+      }
+
+      &.bg-warning {
+        @include badge-variant($warning-color, $text-primary);
+      }
+
+      &.bg-danger {
+        @include badge-variant($danger-color);
+      }
+    }
+  }
+
+  // Boutons d'action
+  .action-buttons {
+    display: flex;
+    gap: 0.25rem;
+
+    .btn {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+      border-radius: $border-radius-sm;
+      transition: $transition;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+
+      &.btn-outline-primary {
+        border-color: $primary-color;
+        color: $primary-color;
+
+        &:hover {
+          background: $primary-color;
+          color: white;
+        }
+      }
+
+      &.btn-success {
+        background: linear-gradient(135deg, $success-color, darken($success-color, 10%));
+        border-color: $success-color;
+      }
+
+      &.btn-secondary {
+        background: linear-gradient(135deg, $neutral-500, darken($neutral-500, 10%));
+        border-color: $neutral-500;
+      }
+    }
+  }
+
+  // Cartes de groupes
+  .group-card {
+    transition: $transition;
+    border: none;
+    box-shadow: $box-shadow;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: $box-shadow-lg;
+    }
+
+    .card-header {
+      &.bg-primary {
+        background: linear-gradient(135deg, $primary-color, darken($primary-color, 10%)) !important;
+      }
+
+      &.bg-secondary {
+        background: linear-gradient(135deg, $secondary-color, darken($secondary-color, 10%)) !important;
+      }
+
+      &.bg-info {
+        background: linear-gradient(135deg, $info-color, darken($info-color, 10%)) !important;
+      }
+
+      .badge-light {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+    }
+  }
+
+  // Cartes de permissions
+  .permission-card {
+    border-left: 4px solid $primary-color;
+    transition: $transition;
+
+    &:hover {
+      transform: translateX(4px);
+      box-shadow: $box-shadow;
+    }
+
+    .card-title {
+      color: $text-primary;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .permission-actions {
+      .badge {
+        font-size: 0.7rem;
+        margin: 0.125rem;
+      }
+    }
+  }
+
+  // Vue matrice
+  .permissions-matrix {
+    .table-bordered {
+      border-color: $neutral-300;
+
+      .sticky-col {
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 10;
+        box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .group-header {
+        background: $bg-light;
+        font-weight: 600;
+        font-size: 0.75rem;
+        transform: rotate(-45deg);
+        white-space: nowrap;
+      }
+
+      .permission-cell {
+        .form-check-input {
+          &:checked {
+            background-color: $success-color;
+            border-color: $success-color;
+          }
+        }
+      }
+
+      .user-cell {
+        border-right: 2px solid $neutral-300;
+      }
+    }
+  }
+
+  // Grille de permissions
+  .permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+
+    .permission-item {
+      .card-sm {
+        .card-body {
+          padding: 1rem;
+        }
+
+        .card-title {
+          font-size: 0.875rem;
+          color: $text-primary;
+        }
+
+        .permission-badges {
+          .badge {
+            font-size: 0.7rem;
+            margin: 0.125rem;
+          }
+        }
+      }
+    }
+  }
+
+  // Accordéon
+  .accordion {
+    .accordion-item {
+      border: 1px solid $neutral-200;
+      border-radius: $border-radius-sm;
+      margin-bottom: 0.5rem;
+      overflow: hidden;
+
+      .accordion-button {
+        background: $bg-light;
+        color: $text-primary;
+        font-weight: 600;
+        padding: 1rem 1.25rem;
+        border: none;
+
+        &:not(.collapsed) {
+          background: linear-gradient(135deg, $primary-color, darken($primary-color, 5%));
+          color: white;
+        }
+
+        &:focus {
+          box-shadow: none;
+        }
+      }
+
+      .accordion-body {
+        padding: 1.25rem;
+        background: white;
+      }
+    }
+  }
+
+  // Pagination
+  .pagination {
+    .page-item {
+      .page-link {
+        color: $text-secondary;
+        border-color: $neutral-300;
+        padding: 0.5rem 0.75rem;
+        margin: 0 0.125rem;
+        border-radius: $border-radius-sm;
+        transition: $transition;
+
+        &:hover {
+          background: $primary-color;
+          border-color: $primary-color;
+          color: white;
+          transform: translateY(-1px);
+        }
+      }
+
+      &.active .page-link {
+        background: linear-gradient(135deg, $primary-color, darken($primary-color, 10%));
+        border-color: $primary-color;
+        color: white;
+      }
+
+      &.disabled .page-link {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+    }
+  }
+
+  .pagination-info {
+    color: $text-secondary;
+    font-size: $font-small;
+  }
+}
+
+// Animations
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// Animation pour les éléments qui apparaissent
+.permission-card,
+.group-card,
+.user-row {
+  animation: fadeIn 0.5s ease-out;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .permissions-management-container {
+    padding: 1rem;
+
+    .page-header {
+      flex-direction: column;
+      gap: 1rem;
+
+      .header-actions {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    .filters-section {
+      .row {
+        > div {
+          margin-bottom: 1rem;
+        }
+      }
+    }
+
+    .table-responsive {
+      font-size: 0.875rem;
+    }
+
+    .permissions-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .group-card {
+      margin-bottom: 1rem;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .permissions-management-container {
+    .tabs-section {
+      .nav-tabs {
+        flex-direction: column;
+
+        .nav-item {
+          width: 100%;
+
+          .nav-link {
+            text-align: center;
+          }
+        }
+      }
+    }
+
+    .action-buttons {
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .btn {
+        width: 100%;
+      }
+    }
+  }
+}

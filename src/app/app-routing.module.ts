@@ -44,6 +44,8 @@ const routes: Routes = [{
 
       { path: 'users/list', loadComponent: () =>import('./views/authentifiedusers/pharmacy/users/list/users.component').then((c) => c.PharmacyUsersListComponent), },
 
+      { path: 'users/permissions', loadComponent: () =>import('./views/authentifiedusers/pharmacy/permissions/list/permissions.component').then((c) => c.PharmacyPermissionsManagementComponent), },
+
       { path: 'admin/logs',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/logs/logs.component').then((c) => c.PharmacyLogsComponent), },
       { path: 'admin/logs/:idPharmacy',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/logs/logs.component').then((c) => c.PharmacyLogsComponent), },
 
