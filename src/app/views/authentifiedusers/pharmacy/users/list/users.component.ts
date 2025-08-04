@@ -19,6 +19,7 @@ import {PharmacyClass} from "../../../../../models/Pharmacy.class";
 import {Admin} from "../../../../../models/Admin.class";
 import {CommonFunctions} from "../../../../../controllers/comonsfunctions";
 import {Select2AjaxComponent} from "../../../sharedComponents/select2-ajax/select2-ajax.component";
+import {Product} from "../../../../../models/Product";
 
 @Component({
   selector: 'app-pharmacy-users-list',
@@ -99,7 +100,7 @@ export class PharmacyUsersListComponent implements OnInit, OnDestroy {
   userDetail: UserDetails;
   internatPathUrl = environment.internalPathUrl;
 
-  @ViewChild('createUserModal') createUserModal: ElementRef | undefined;
+  @ViewChild('editCategoryModal') editCategoryModal: ElementRef | undefined;
   @ViewChild('bulkActionModal') bulkActionModal: ElementRef | undefined;
 
   constructor( private modalService: NgbModal,  private auth: AuthService,  private router: Router,  private apiService: ApiService,  private loadingService: LoadingService,  private fb: FormBuilder) {
@@ -187,7 +188,7 @@ export class PharmacyUsersListComponent implements OnInit, OnDestroy {
       // city: [''],
       address: [''],
       groups: [[], [Validators.required]],
-      pharmaciesManaged: [[]],
+      pharmaciesManaged: [[], Validators.required],
       sendWelcomeEmail: [true],
       isActivated: [true],
     });
@@ -247,16 +248,6 @@ export class PharmacyUsersListComponent implements OnInit, OnDestroy {
           next: (response: any) => {
             if (response && response.data && !response.error) {
 
-              // data: {
-              //   users: users,
-              //     total: totalUsers,
-              //     page: pageNum,
-              //     limit: limitNum,
-              //     totalPages: totalPages,
-              //     hasNextPage: pageNum < totalPages,
-              //     hasPrevPage: pageNum > 1
-              // },
-
               this.users = response.data.users.map((user: any) => new Admin(user)) ?? [];
               this.filteredUsers = [...this.users];
 
@@ -271,7 +262,8 @@ export class PharmacyUsersListComponent implements OnInit, OnDestroy {
                 label: group.name
               }));
 
-              this.pharmacies = response.pharmaciesList.map((item: any) => CommonFunctions.mapToPharmacy(item));
+              this.pharmacies = response.pharmsFullInfos.map((item: any) => CommonFunctions.mapToPharmacy(item));
+              console.log(this.pharmacies);
               this.pharmaciesArraySelect2 =
                 this.pharmacies.
                 filter(pharmacy => pharmacy != null).
@@ -322,6 +314,7 @@ export class PharmacyUsersListComponent implements OnInit, OnDestroy {
       const searchTerms = this.searchTerm.toLowerCase().trim();
       filtered = filtered.filter(p =>
         p.name?.toLowerCase().includes(searchTerms) ||
+        p.surname?.toLowerCase().includes(searchTerms) ||
         p.email?.toLowerCase().includes(searchTerms) ||
         p.address?.toLowerCase().includes(searchTerms) ||
         p.city?.toLowerCase().includes(searchTerms) ||
@@ -331,31 +324,6 @@ export class PharmacyUsersListComponent implements OnInit, OnDestroy {
         p.groups?.some( g => g.name.toLowerCase().includes(searchTerms) )
       );
     }
-
-    // if (this.categoryFilter) {
-    //   filtered = filtered.filter(p =>
-    //     p.categories.some(cat => cat._id === this.categoryFilter)
-    //   );
-    // }
-    //
-    // if (this.pharmacyFilter) {
-    //   filtered = filtered.filter(p =>
-    //     p.pharmacies.some(pharmacy => pharmacy.pharmacy.id === this.pharmacyFilter)
-    //   );
-    // }
-    //
-    // if (this.statusFilter) {
-    //   filtered = filtered.filter(p => p.status === this.statusFilter);
-    // }
-    //
-    // if (this.prescriptionFilter) {
-    //   if (this.prescriptionFilter === 'required') {
-    //     filtered = filtered.filter(p => p.requiresPrescription);
-    //   } else if (this.prescriptionFilter === 'not_required') {
-    //     filtered = filtered.filter(p => !p.requiresPrescription);
-    //   }
-    // }
-
     this.filteredUsers = filtered;
     this.totalPages = Math.max(1, Math.ceil(this.filteredUsers.length / this.itemsPerPage));
     this.currentPage = Math.min(this.currentPage, this.totalPages);
@@ -712,13 +680,23 @@ export class PharmacyUsersListComponent implements OnInit, OnDestroy {
   }
 
   openCreateModal(): void {
+    this.modalService.dismissAll('ok');
     this.createUserForm.reset();
     this.createUserForm.patchValue({
       sendWelcomeEmail: true,
       isActivated: true
     });
+    setTimeout(() => {
+      this.modalService.open(this.editCategoryModal, {
+        size: 'xl',
+        backdrop: 'static',
+        centered: true
+      });
+    }, 0);
   }
-
+  closeModal(): void {
+    this.modalService.dismissAll('ok');
+  }
   openBulkActionModal(): void {
     if (this.selectedUsers.size === 0) {
       this.handleError('Veuillez sélectionner au moins un utilisateur');

@@ -18,6 +18,7 @@ import { Permission } from "../../../../../models/Permission.class";
 import { Admin } from "../../../../../models/Admin.class";
 import { CommonFunctions } from "../../../../../controllers/comonsfunctions";
 import {group} from "@angular/animations";
+import {icon} from "leaflet";
 
 interface UserPermissionView {
   user: Admin;
@@ -68,8 +69,10 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
 
   // Forms
   bulkPermissionForm: FormGroup;
-  groupManagementForm: FormGroup;
+  addMemberForm: FormGroup;
   permissionForm: FormGroup;
+
+  showGroupPermission: boolean = false;
 
   // Selection
   selectedUsers: Set<string> = new Set();
@@ -82,9 +85,7 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
   // Platform and group options
   platformOptions = [
     { value: '', label: 'Toutes les plateformes' },
-    // { value: Platform.ADMIN, label: 'Administration' },
     { value: Platform.PHARMACY, label: 'Pharmacie' },
-    // { value: Platform.DELIVER, label: 'Livraison' }
   ];
 
   groupOptions: Array<{value: string, label: string}> = [];
@@ -94,8 +95,18 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
     viewPermissions: false,
     editPermissions: false,
     manageGroups: false,
+    viewGroup: false,
     assignPermissions: false,
   };
+
+  currentGroup: Group | null = null;
+  groupMembers: Admin[] = [];
+  filteredMembers: Admin[] = [];
+  availableUsers: any[] = [];
+  memberSearchTerm: string = '';
+  isLoadingMembers: boolean = false;
+  isAddingMembers: boolean = false;
+  isRemovingMember: string | null = null;
 
   protected readonly Math = Math;
   private destroy$ = new Subject<void>();
@@ -104,9 +115,8 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
   private modalService: NgbModal;
 
   @ViewChild('bulkPermissionModal') bulkPermissionModal: ElementRef | undefined;
-  // @ViewChild('categoryDetailsModal') categoryDetailsModal: ElementRef | undefined;
-  @ViewChild('groupManagementModal') groupManagementModal: ElementRef | undefined;
-  @ViewChild('permissionModal') permissionModal: ElementRef | undefined;
+  @ViewChild('groupMembersModalTemplate') groupMembersModalTemplate: ElementRef | undefined;
+  // @ViewChild('permissionModalTemplate') permissionModalTemplate: ElementRef | undefined;
 
   constructor(
     modalService: NgbModal,
@@ -117,8 +127,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
     private fb: FormBuilder
   ) {
     this.initializeForms();
-    this.setupSearch();
-
     this.loadingService.isLoading$.subscribe((loading) => {
       this.isLoading = loading;
     });
@@ -132,12 +140,16 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
         this.userDetail = this.auth.getUserDetails();
         this.permissions_.viewPermissions = this.userDetail.hasPermission('utilisateurs.permissions');
         this.permissions_.editPermissions = this.userDetail.hasPermission('utilisateurs.permissions');
-        this.permissions_.manageGroups = this.userDetail.hasPermission('utilisateurs.permissions');
+        this.permissions_.manageGroups = this.userDetail.hasPermission('groups.edit');
         this.permissions_.assignPermissions = this.userDetail.hasPermission('utilisateurs.permissions');
-
-        if (loaded && this.userDetail) {
-          await this.loadInitialData();
-        }
+        this.permissions_.viewGroup = this.userDetail.hasPermission('groups.view');
+        await this.loadInitialData();
+        this.setupSearch();
+        // if (loaded && this.userDetail) {
+        //   setTimeout(async () => {
+        //
+        //   });
+        // }
       });
   }
 
@@ -155,15 +167,10 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       newPermissions: [[]]
     });
 
-    this.groupManagementForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      code: ['', [Validators.required]],
-      description: [''],
-      platform: ['', [Validators.required]],
-      isActive: [true],
-      permissions: [[]]
+    this.addMemberForm = this.fb.group({
+      _id: ['', [Validators.required]],
+      selectedUsers: [[], Validators.required]
     });
-
     this.permissionForm = this.fb.group({
       module: ['', [Validators.required]],
       label: [''],
@@ -172,7 +179,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       permissions: this.fb.array([])
     });
   }
-
   private setupSearch(): void {
     this.searchSubject.pipe(
       debounceTime(300),
@@ -184,7 +190,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       this.filterUsers();
     });
   }
-
   private async loadInitialData(): Promise<void> {
     this.loadingService.setLoading(true);
     try {
@@ -192,14 +197,13 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
         this.loadPermissions(),
         this.loadUsers()
       ]);
-      this.buildUserPermissionViews();
+      // this.buildUserPermissionViews();
     } catch (error) {
       this.handleError('Erreur lors du chargement des données');
     } finally {
       this.loadingService.setLoading(false);
     }
   }
-
   private async loadUsers(): Promise<void> {
     const token = await this.auth.getRealToken();
     const uid = await this.auth.getUid();
@@ -238,7 +242,7 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
               value: group._id!,
               label: `${group.name} (${group.plateform})`
             }));
-
+            this.buildUserPermissionViews();
           } else {
             this.handleError(response.errorMessage ?? 'Erreur lors du chargement des utilisateurs');
           }
@@ -248,7 +252,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
         }
       });
   }
-
   private async loadPermissions(): Promise<void> {
     const token = await this.auth.getRealToken();
     const uid = await this.auth.getUid();
@@ -258,13 +261,12 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     });
-
     this.apiService.post('pharmacy-management/permissions/list', { uid }, headers)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
-          if (response && response.data && !response.error) {
-            this.permissions = response.data.map((perm: any) => new Permission(perm)) ?? [];
+          if (response && response.permissions && !response.error) {
+            this.permissions = response.permissions.map((perm: any) => new Permission(perm)) ?? [];
             this.buildPermissionModules();
           }
         },
@@ -273,7 +275,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
         }
       });
   }
-
   private buildPermissionModules(): void {
     const moduleMap = new Map<string, Permission[]>();
 
@@ -283,7 +284,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       }
       moduleMap.get(permission.module)!.push(permission);
     });
-
     this.permissionModules = Array.from(moduleMap.entries()).map(([module, permissions]) => ({
       module,
       permissions,
@@ -298,8 +298,8 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       }))
     ];
   }
-
   private buildUserPermissionViews(): void {
+    console.log(this.users);
     this.userPermissions = this.users.map(user => {
       const currentGroups = user.groups || [];
       const availableGroups = this.groups.filter(group =>
@@ -315,55 +315,56 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
           }
         });
       });
-
-      return {
-        user,
-        currentGroups,
-        availableGroups,
-        directPermissions: [], // Direct permissions would be loaded separately if supported
-        inheritedPermissions,
-        isExpanded: false,
-        hasChanges: false,
-        pendingGroups: [],
-        pendingPermissions: []
+      return {user, currentGroups, availableGroups, directPermissions: [], inheritedPermissions, isExpanded: false, hasChanges: false, pendingGroups: [], pendingPermissions: []
       };
     });
   }
 
-  // Filter and search methods
+  viewMemberDetails(member: Admin): void {
+    Swal.fire({
+      title: `${member.name} ${member.surname}`,
+      html: `
+      <div class="text-start">
+        <p><strong>Email : </strong> ${member.email}</p>
+        <p><strong>Téléphone : </strong> ${member.phone ? (member.phone.indicatif+' '+member.phone?.digits) : 'Non renseigné'}</p>
+        <p><strong>Groupes : </strong> ${member.groups.length >= 1 ? (member.groups.map(g => g.name).join(', ')) : 'Pas de groupe'}</p>
+      </div>
+    `,
+      icon: 'info',
+      confirmButtonText: 'Fermer'
+    });
+  }
+  getInitials(firstName: string, lastName: string): string {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  }
+  trackByMemberId(index: number, member: Admin): string {
+    return member._id;
+  }
+
   onSearch(term: string): void {
     this.searchSubject.next(term);
   }
-
   filterUsers(): void {
     // Implementation for filtering users based on search term and filters
     this.buildUserPermissionViews();
   }
-
   onGroupFilterChange(): void {
     this.currentPage = 1;
     this.loadUsers();
   }
-
   onPlatformFilterChange(): void {
     this.currentPage = 1;
     this.loadUsers();
   }
-
-  // Tab and view management
   switchTab(tab: 'users' | 'groups' | 'permissions'): void {
     this.activeTab = tab;
   }
-
   toggleViewMode(): void {
     this.viewMode = this.viewMode === 'list' ? 'matrix' : 'list';
   }
-
-  // User permission management
   toggleUserExpansion(userView: UserPermissionView): void {
     userView.isExpanded = !userView.isExpanded;
   }
-
   addGroupToUser(userView: UserPermissionView, groupId: any): void {
     groupId = groupId.value;
     const group = this.groups.find(g => g._id === groupId);
@@ -372,7 +373,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       userView.hasChanges = true;
     }
   }
-
   removeGroupFromUser(userView: UserPermissionView, groupId: string): void {
     const index = userView.pendingGroups.indexOf(groupId);
     if (index > -1) {
@@ -386,7 +386,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
     }
     userView.hasChanges = true;
   }
-
   async saveUserPermissions(userView: UserPermissionView): Promise<void> {
     if (!userView.hasChanges) return;
 
@@ -414,7 +413,7 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
         removePermissions: []
       };
 
-      this.apiService.post('permissions/update-user-permissions', requestData, headers)
+      this.apiService.post('pharmacy-management/groups/manage', requestData, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -436,7 +435,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       this.handleError('Une erreur s\'est produite');
     }
   }
-
   cancelUserChanges(userView: UserPermissionView): void {
     userView.hasChanges = false;
     userView.pendingGroups = [];
@@ -452,7 +450,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
     }
     this.selectAll = !this.selectAll;
   }
-
   toggleUserSelection(userId: string): void {
     if (this.selectedUsers.has(userId)) {
       this.selectedUsers.delete(userId);
@@ -461,7 +458,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
     }
     this.selectAll = this.selectedUsers.size === this.users.length;
   }
-
   isUserSelected(userId: string): boolean {
     return this.selectedUsers.has(userId);
   }
@@ -524,145 +520,110 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       this.handleError('Une erreur s\'est produite');
     }
   }
-
-  // Group management
-  async createGroup(): Promise<void> {
-    if (!this.groupManagementForm.valid) {
-      this.handleError('Veuillez remplir tous les champs obligatoires');
+  async updateGroup(group: Group): Promise<void> {
+    if (!this.permissions_.manageGroups) {
+      this.handleError('Vous ne disposez pas des permissions pour effectuer cette action.');
       return;
     }
 
-    try {
-      const token = await this.auth.getRealToken();
-      const uid = await this.auth.getUid();
+    const iamAlreadyInside = this.checkInGroup(group._id);
+    if (iamAlreadyInside){
+      if (this.userDetail.groups.length <= 1){
+        this.handleError('Impossible de quitter le groupe. Vous devez encore avoir au moins un groupe.');
+        return;
+      }else{
+        const confirmed = await this.showConfirmation(
+          'Quitter le groupe',
+          `Êtes-vous sûr de vouloir quitter le groupe "${group.name}" ?`,
+          'Quitter'
+        );
+        if (!confirmed) return;
+        try {
+          this.loadingService.setLoading(true);
+          const token = await this.auth.getRealToken();
+          const uid = await this.auth.getUid();
 
-      const headers = new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      });
+          const headers = new HttpHeaders({
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          });
 
-      const formData = { ...this.groupManagementForm.value, uid };
+          this.apiService.post('pharmacy-management/groups/leave', { id: group._id, uid }, headers)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: async (response: any) => {
+                if (response && !response.error) {
+                  this.showSuccess('Groupe quitter avec succès. Recharger la page pour voir les modifications.');
+                  this.userDetail = await this.auth.getUpdatedUserDetails();
+                  this.loadUsers();
+                } else {
+                  this.handleError(response.errorMessage || 'Erreur lors de la communication avec nos serveurs');
+                }
+                this.loadingService.setLoading(false);
+              },
+              error: (error) => {
+                this.handleError('Erreur lors de la communication avec nos serveurs');
+                this.loadingService.setLoading(false);
+              }
+            });
+        } catch (error) {
+          this.handleError('Une erreur s\'est produite');
+          this.loadingService.setLoading(false);
+        }
+        return;
+      }
+    }else{
 
-      this.apiService.post('permissions/create-group', formData, headers)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (response: any) => {
-            if (response && !response.error) {
-              this.showSuccess('Groupe créé avec succès');
-              this.groupManagementForm.reset();
-              this.modalService.dismissAll();
-            } else {
-              this.handleError(response.errorMessage || 'Erreur lors de la création');
-            }
-          },
-          error: (error) => {
-            this.handleError('Erreur lors de la création du groupe');
-          }
+      const confirmed = await this.showConfirmation(
+        'Rjoindre le groupe',
+        `Êtes-vous sûr de vouloir rejoindre le groupe "${group.name}" ?`,
+        'Rejoindre'
+      );
+      if (!confirmed) return;
+      this.loadingService.setLoading(true);
+      try {
+        const token = await this.auth.getRealToken();
+        const uid = await this.auth.getUid();
+
+        const headers = new HttpHeaders({
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
         });
-    } catch (error) {
-      this.handleError('Une erreur s\'est produite');
+
+        this.apiService.post('pharmacy-management/groups/join', { id: group._id, uid }, headers)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: async (response: any) => {
+              if (response && !response.error) {
+                this.showSuccess('Groupe rejoint avec succès. Recharger la page pour voir les modifications.');
+                this.userDetail = await this.auth.getUpdatedUserDetails();
+                this.loadUsers();
+              } else {
+                this.handleError(response.errorMessage || 'Erreur lors de la communication avec nos serveurs');
+              }
+              this.loadingService.setLoading(false);
+            },
+            error: (error) => {
+              this.handleError('Erreur lors de la communication avec nos serveurs');
+              this.loadingService.setLoading(false);
+            }
+          });
+      } catch (error) {
+        this.handleError('Une erreur s\'est produite');
+        this.loadingService.setLoading(false);
+      }
+      return;
     }
   }
+  manageGroup(group: Group) {
 
-  async updateGroup(group: Group): Promise<void> {
-    // Implementation for updating a group
   }
-
-  async deleteGroup(group: Group): Promise<void> {
-    const confirmed = await this.showConfirmation(
-      'Supprimer le groupe',
-      `Êtes-vous sûr de vouloir supprimer le groupe "${group.name}" ?`,
-      'Supprimer'
-    );
-
-    if (!confirmed) return;
-
-    try {
-      const token = await this.auth.getRealToken();
-      const uid = await this.auth.getUid();
-
-      const headers = new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      });
-
-      this.apiService.post('permissions/delete-group', { id: group._id, uid }, headers)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (response: any) => {
-            if (response && !response.error) {
-              this.showSuccess('Groupe supprimé avec succès');
-              this.loadUsers();
-            } else {
-              this.handleError(response.errorMessage || 'Erreur lors de la suppression');
-            }
-          },
-          error: (error) => {
-            this.handleError('Erreur lors de la suppression du groupe');
-          }
-        });
-    } catch (error) {
-      this.handleError('Une erreur s\'est produite');
-    }
-  }
-
   // Permission management
   get permissionControls(): FormArray {
     return this.permissionForm.get('permissions') as FormArray;
   }
-
-  addPermissionControl(): void {
-    const control = this.fb.control('', [Validators.required]);
-    this.permissionControls.push(control);
-  }
-
-  removePermissionControl(index: number): void {
-    this.permissionControls.removeAt(index);
-  }
-
-  async createPermission(): Promise<void> {
-    if (!this.permissionForm.valid) {
-      this.handleError('Veuillez remplir tous les champs obligatoires');
-      return;
-    }
-
-    try {
-      const token = await this.auth.getRealToken();
-      const uid = await this.auth.getUid();
-
-      const headers = new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      });
-
-      const formData = { ...this.permissionForm.value, uid };
-
-      this.apiService.post('permissions/create-permission', formData, headers)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (response: any) => {
-            if (response && !response.error) {
-              this.showSuccess('Permission créée avec succès');
-              this.permissionForm.reset();
-              this.modalService.dismissAll();
-              this.loadPermissions();
-            } else {
-              this.handleError(response.errorMessage || 'Erreur lors de la création');
-            }
-          },
-          error: (error) => {
-            this.handleError('Erreur lors de la création de la permission');
-          }
-        });
-    } catch (error) {
-      this.handleError('Une erreur s\'est produite');
-    }
-  }
-
-  // Utility methods
   getGroupBadgeClass(platform: Platform): string {
     switch (platform) {
       case Platform.ADMIN: return 'bg-primary';
@@ -671,27 +632,21 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       default: return 'bg-secondary';
     }
   }
-
   getPermissionDescription(permission: Permission): string {
     return permission.description || permission.label || 'Aucune description';
   }
-
   hasUserChanges(): boolean {
     return this.userPermissions.some(uv => uv.hasChanges);
   }
-
   getUsersWithChanges(): number {
     return this.userPermissions.filter(uv => uv.hasChanges).length;
   }
-
-  // Pagination
   onPageChange(page: number): void {
     if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
       this.currentPage = page;
       this.loadUsers();
     }
   }
-
   getPaginationArray(): number[] {
     const maxVisible = 5;
     const start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
@@ -699,7 +654,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   }
 
-  // Form validation helpers
   getFieldError(form: FormGroup, fieldName: string): string {
     const control = form.get(fieldName);
     if (control && control.errors && control.touched) {
@@ -709,12 +663,10 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
     }
     return '';
   }
-
   isFieldValid(form: FormGroup, fieldName: string): boolean {
     const control = form.get(fieldName);
     return control ? control.valid && control.touched : false;
   }
-
   isFieldInvalid(form: FormGroup, fieldName: string): boolean {
     const control = form.get(fieldName);
     return control ? control.invalid && control.touched : false;
@@ -737,37 +689,244 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       });
     }, 0);
   }
+  async openGroupMembersModal(group: Group): Promise<void> {
+    this.currentGroup = group;
+    this.addMemberForm.patchValue({_id:group._id});
+    try {
+      this.modalService.dismissAll('ok');
+      setTimeout(() => {
+        this.modalService.open(this.groupMembersModalTemplate, {
+          size: 'xl',
+          backdrop: 'static',
+          centered: true
+        });
+      }, 0);
 
-  openGroupManagementModal(): void {
-    this.modalService.dismissAll('ok');
-    this.groupManagementForm.reset();
-    this.groupManagementForm.patchValue({ isActive: true });
-    setTimeout(() => {
-      this.modalService.open(this.groupManagementModal, {
-        size: 'xl',
-        backdrop: 'static',
-        centered: true
-      });
-    }, 0);
-  }
-
-  openPermissionModal(): void {
-    this.modalService.dismissAll('ok');
-    this.permissionForm.reset();
-    // Clear the permissions FormArray
-    while (this.permissionControls.length > 0) {
-      this.permissionControls.removeAt(0);
+      await this.loadGroupMembers(group._id);
+      await this.loadAvailableUsers();
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite lors du chargement');
     }
-    // Add one initial permission control
-    this.addPermissionControl();
-    setTimeout(() => {
-      this.modalService.open(this.permissionModal, {
-        size: 'xl',
-        backdrop: 'static',
-        centered: true
-      });
-    }, 0);
   }
+
+  private async loadGroupMembers(groupId: string): Promise<void> {
+    try {
+      this.loadingService.setLoading(true);
+
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('pharmacy-management/groups/getMembers', { id: groupId, uid }, headers)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error && response.members) {
+              this.groupMembers = response.members.map((member: any) => ({
+                ...member,
+                joinedAt: member.joinedAt || new Date() // Date d'ajout au groupe
+              }));
+              this.applyMemberFilter();
+            } else {
+              this.handleError(response.errorMessage || 'Erreur lors du chargement des membres');
+              this.groupMembers = [];
+            }
+            this.loadingService.setLoading(false);
+          },
+          error: (error) => {
+            this.handleError('Erreur lors de la communication avec nos serveurs');
+            this.groupMembers = [];
+            this.loadingService.setLoading(false);
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.loadingService.setLoading(false);
+    }
+  }
+  private async loadAvailableUsers(): Promise<void> {
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('pharmacy-management/groups/getAvailableUsers', {
+        groupId: this.currentGroup?._id,
+        uid
+      }, headers)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error && response.members) {
+              this.availableUsers = response.members.map((user: any) => ({
+                value: user._id,
+                label: `${user.name} ${user.surname} (${user.email})`
+              }));
+            }
+          },
+          error: (error) => {
+            console.error('Erreur lors du chargement des utilisateurs disponibles:', error);
+          }
+        });
+    } catch (error) {
+      console.error('Erreur lors du chargement des utilisateurs disponibles:', error);
+    }
+  }
+
+  async addMemberToGroup(): Promise<void> {
+    if (!this.addMemberForm.valid || !this.currentGroup) return;
+
+    this.isAddingMembers = true;
+    const selectedUserIds = this.addMemberForm.get('selectedUsers')?.value || [];
+
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('pharmacy-management/groups/addMembers', {
+        groupId: this.currentGroup._id,
+        userIds: selectedUserIds,
+        uid
+      }, headers)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: async (response: any) => {
+            if (response && !response.error) {
+              this.showSuccess('Membres ajoutés avec succès');
+              this.userDetail = await this.auth.getUpdatedUserDetails();
+              this.addMemberForm.reset();
+              this.loadGroupMembers(this.currentGroup!._id);
+              this.loadAvailableUsers();
+              this.modalService.dismissAll();
+            } else {
+              this.handleError(response.errorMessage || 'Erreur lors de l\'ajout des membres');
+            }
+            this.isAddingMembers = false;
+          },
+          error: (error) => {
+            this.handleError('Erreur lors de la communication avec nos serveurs');
+            this.isAddingMembers = false;
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.isAddingMembers = false;
+    }
+  }
+
+// Retirer un membre du groupe
+  async removeMemberFromGroup(member: Admin): Promise<void> {
+    if (!this.currentGroup) return;
+
+    const confirmResult = await Swal.fire({
+      title: 'Confirmer la suppression',
+      text: `Êtes-vous sûr de vouloir retirer ${member.name} ${member.surname} de ce groupe ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, retirer',
+      cancelButtonText: 'Annuler'
+    });
+
+    if (!confirmResult.isConfirmed) return;
+
+    this.isRemovingMember = member._id;
+
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('pharmacy-management/groups/removeMember', {
+        groupId: this.currentGroup._id,
+        userId: member._id,
+        uid
+      }, headers)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: async (response: any) => {
+            if (response && !response.error) {
+              this.userDetail = await this.auth.getUpdatedUserDetails();
+              this.showSuccess('Membre retiré avec succès');
+              this.loadGroupMembers(this.currentGroup!._id);
+              this.loadAvailableUsers();
+            } else {
+              this.handleError(response.errorMessage || 'Erreur lors de la suppression du membre');
+            }
+            this.isRemovingMember = null;
+          },
+          error: (error) => {
+            this.handleError('Erreur lors de la communication avec nos serveurs');
+            this.isRemovingMember = null;
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.isRemovingMember = null;
+    }
+  }
+
+// Actualiser la liste des membres
+  refreshMembers(): void {
+    if (this.currentGroup) {
+      this.loadGroupMembers(this.currentGroup._id);
+      this.loadAvailableUsers();
+    }
+  }
+
+// Appliquer le filtre de recherche
+  applyMemberFilter(): void {
+    if (!this.memberSearchTerm.trim()) {
+      this.filteredMembers = this.groupMembers;
+    } else {
+      const searchTerm = this.memberSearchTerm.toLowerCase();
+      this.filteredMembers = this.groupMembers.filter(member =>
+        member.name.toLowerCase().includes(searchTerm) ||
+        member.surname.toLowerCase().includes(searchTerm) ||
+        member.email.toLowerCase().includes(searchTerm)
+      );
+    }
+  }
+
+
+  // openPermissionModal(): void {
+  //   this.modalService.dismissAll('ok');
+  //   this.permissionForm.reset();
+  //   // Clear the permissions FormArray
+  //   while (this.permissionControls.length > 0) {
+  //     this.permissionControls.removeAt(0);
+  //   }
+  //   // Add one initial permission control
+  //   this.addPermissionControl();
+  //   setTimeout(() => {
+  //     this.modalService.open(this.permissionModalTemplate, {
+  //       size: 'xl',
+  //       backdrop: 'static',
+  //       centered: true
+  //     });
+  //   }, 0);
+  // }
 
   // Error handling
   private handleError(message: string): void {
@@ -777,7 +936,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       text: message
     });
   }
-
   private async showConfirmation(title: string, text: string, confirmButtonText: string): Promise<boolean> {
     const result = await Swal.fire({
       title,
@@ -789,7 +947,6 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
     });
     return result.isConfirmed;
   }
-
   private showSuccess(message: string): void {
     Swal.fire({
       icon: 'success',
@@ -799,20 +956,26 @@ export class PharmacyPermissionsManagementComponent implements OnInit, OnDestroy
       showConfirmButton: false
     });
   }
-
   trackByUserId(index: number, userView: UserPermissionView): string {
     return userView.user._id || index.toString();
   }
-
   trackByGroupId(index: number, group: Group): string {
     return group._id || index.toString();
   }
-
   trackByPermissionId(index: number, permission: Permission): string {
     return permission._id || index.toString();
   }
-
   checkPermission(userView, group) {
     return userView.currentGroups.some(ug => ug._id === group._id)
+  }
+  closeModal(): void {
+    this.modalService.dismissAll('ok');
+    this.isLoading = false;
+  }
+  checkInGroup(_id: string) {
+    return this.userDetail.groups.some(g=> _id == g._id);
+  }
+  messEditGroup (_id: string) {
+    return this.checkInGroup(_id) ? "Quitter" : 'Rejoindre';
   }
 }

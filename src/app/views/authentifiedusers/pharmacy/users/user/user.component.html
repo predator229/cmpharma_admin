@@ -1,0 +1,608 @@
+<div class="user-detail-container" *ngIf="!isLoading; else loadingTemplate">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <button class="btn btn-outline-secondary" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i> Retour à la liste
+      </button>
+    </div>
+      <div class="action-buttons" *ngIf="user">
+        <button class="btn btn-modern btn-primary-modern" (click)="toggleEditMode()" *ngIf="permissions.editUser">
+          <i class="fas" [ngClass]="editMode ? 'fa-times' : 'fa-edit'"></i>
+          {{ editMode ? 'Annuler' : 'Modifier' }}
+        </button>
+        <button class="btn btn-modern btn-warning-modern" (click)="openResetPasswordModal()" *ngIf="permissions.resetPassword">
+          <i class="fas fa-key"></i> Réinitialiser mot de passe
+        </button>
+        <button class="btn btn-modern"
+                [ngClass]="user.disabled ? 'btn-primary-modern' : 'btn-danger-modern'"
+                (click)="toggleAccountStatus()" *ngIf="permissions.editUser">
+          <i class="fas" [ngClass]="user.disabled ? 'fa-user-check' : 'fa-user-times'"></i>
+          {{ user.disabled ? 'Activer' : 'Désactiver' }}
+        </button>
+      </div>
+  </div>
+  <div class="user-profile-header" *ngIf="user">
+    <div class="position-relative">
+      <img *ngIf="user.photoURL"
+           [src]="user.photoURL"
+           [alt]="user.getFullName()"
+           class="user-avatar-large">
+      <div *ngIf="!user.photoURL" class="avatar-placeholder-large">
+        {{ user.getInitials() }}
+      </div>
+    </div>
+
+    <div class="user-info-header flex-grow-1">
+      <h1>{{ user.getFullName() }}</h1>
+      <div class="user-email">{{ user.email }}</div>
+      <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge badge-modern" [ngClass]="getStatusBadgeClass()">
+                            <i class="fas fa-circle"></i> {{ getStatusLabel() }}
+                        </span>
+        <span class="badge badge-modern badge-info" *ngIf="user.twoFactorEnabled">
+                            <i class="fas fa-shield-alt"></i> 2FA Activé
+                        </span>
+        <span class="badge badge-modern badge-warning" *ngIf="user.isAccountLocked()">
+                            <i class="fas fa-lock"></i> Compte bloqué
+                        </span>
+      </div>
+      <div class="quick-stats">
+        <div class="quick-stat">
+          <div class="quick-stat-number">{{ user.groups.length }}</div>
+          <div class="quick-stat-label">Groupes</div>
+        </div>
+        <div class="quick-stat">
+          <div class="quick-stat-number">{{ getInheritedPermissions().length }}</div>
+          <div class="quick-stat-label">Permissions</div>
+        </div>
+        <div class="quick-stat">
+          <div class="quick-stat-number">{{ user.pharmaciesManaged.length }}</div>
+          <div class="quick-stat-label">Pharmacies</div>
+        </div>
+        <div class="quick-stat" *ngIf="user.lastLogin">
+          <div class="quick-stat-number">{{ user.getLastLoginFormatted() }}</div>
+          <div class="quick-stat-label">Dernière connexion</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <ul class="nav nav-tabs nav-tabs-modern">
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'profile'" (click)="switchTab('profile')">
+        <i class="fas fa-user"></i> Profil
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'permissions'" (click)="switchTab('permissions')">
+        <i class="fas fa-shield-alt"></i> Permissions
+      </button>
+    </li>
+    <li class="nav-item" *ngIf="permissions.viewSecurity">
+      <button class="nav-link" [class.active]="activeTab === 'security'" (click)="switchTab('security')">
+        <i class="fas fa-lock"></i> Sécurité
+      </button>
+    </li>
+    <li class="nav-item" *ngIf="permissions.viewActivity">
+      <button class="nav-link" [class.active]="activeTab === 'activity'" (click)="switchTab('activity')">
+        <i class="fas fa-history"></i> Activité
+      </button>
+    </li>
+    <li class="nav-item" *ngIf="user && user.pharmaciesManaged.length > 0">
+      <button class="nav-link" [class.active]="activeTab === 'pharmacies'" (click)="switchTab('pharmacies')">
+        <i class="fas fa-pills"></i> Pharmacies
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+    <!-- Profile Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'profile'" *ngIf="activeTab === 'profile' && user">
+      <div class="content-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h3 class="section-title">
+            <i class="fas fa-user"></i> Informations personnelles
+          </h3>
+          <button class="btn btn-modern btn-primary-modern" (click)="saveProfile()"
+                  *ngIf="editMode && hasChanges && permissions.editUser" [disabled]="!profileForm.valid || isSaving">
+            <i class="fas fa-save"></i> Sauvegarder
+          </button>
+        </div>
+
+        <form [formGroup]="profileForm" *ngIf="editMode; else viewModeTemplate">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input type="text" class="form-control" formControlName="name"
+                       [class.is-valid]="isFieldValid(profileForm, 'name')"
+                       [class.is-invalid]="isFieldInvalid(profileForm, 'name')"
+                       placeholder="Prénom">
+                <label>Prénom *</label>
+                <div class="invalid-feedback">{{ getFieldError(profileForm, 'name') }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input type="text" class="form-control" formControlName="surname"
+                       [class.is-valid]="isFieldValid(profileForm, 'surname')"
+                       [class.is-invalid]="isFieldInvalid(profileForm, 'surname')"
+                       placeholder="Nom">
+                <label>Nom *</label>
+                <div class="invalid-feedback">{{ getFieldError(profileForm, 'surname') }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input type="email" class="form-control" formControlName="email"
+                       [class.is-valid]="isFieldValid(profileForm, 'email')"
+                       [class.is-invalid]="isFieldInvalid(profileForm, 'email')"
+                       placeholder="Email">
+                <label>Email *</label>
+                <div class="invalid-feedback">{{ getFieldError(profileForm, 'email') }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input type="tel" class="form-control" formControlName="phone"
+                       [class.is-valid]="isFieldValid(profileForm, 'phone')"
+                       [class.is-invalid]="isFieldInvalid(profileForm, 'phone')"
+                       placeholder="Téléphone">
+                <label>Téléphone</label>
+                <div class="invalid-feedback">{{ getFieldError(profileForm, 'phone') }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-floating">
+                <select class="form-select" formControlName="country">
+                  <option value="">Sélectionner un pays</option>
+                  <option *ngFor="let country of countryOptions" [value]="country.value">
+                    {{ country.label }}
+                  </option>
+                </select>
+                <label>Pays</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input type="text" class="form-control" formControlName="city" placeholder="Ville">
+                <label>Ville</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-floating">
+            <textarea class="form-control" formControlName="address" placeholder="Adresse" style="height: 100px"></textarea>
+            <label>Adresse</label>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" formControlName="isActivated">
+                <label class="form-check-label">Compte activé</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" formControlName="disabled">
+                <label class="form-check-label">Compte désactivé</label>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <ng-template #viewModeTemplate>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Prénom</div>
+              <div class="info-value">{{ user.name || 'Non renseigné' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Nom</div>
+              <div class="info-value">{{ user.surname || 'Non renseigné' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Email</div>
+              <div class="info-value">{{ user.email || 'Non renseigné' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Téléphone</div>
+              <div class="info-value">{{ user.phone?.digits || 'Non renseigné' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Pays</div>
+              <div class="info-value">{{ user.country?.name || 'Non renseigné' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Ville</div>
+              <div class="info-value">{{ user.city || 'Non renseigné' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Adresse</div>
+              <div class="info-value">{{ user.address || 'Non renseigné' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Date de création</div>
+              <div class="info-value">{{ formatDate(user.createdAt) }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Dernière modification</div>
+              <div class="info-value">{{ formatDate(user.updatedAt) }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Dernière connexion</div>
+              <div class="info-value">{{ user.lastLogin ? formatDate(user.lastLogin) : 'Jamais connecté' }}</div>
+            </div>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Permissions Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'permissions'" *ngIf="activeTab === 'permissions' && user">
+      <!-- User Groups -->
+      <div class="content-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h3 class="section-title">
+            <i class="fas fa-users-cog"></i> Groupes assignés
+          </h3>
+          <button class="btn btn-modern btn-primary-modern" (click)="savePermissions()"
+                  *ngIf="editMode && hasChanges && permissions.editPermissions" [disabled]="isSaving">
+            <i class="fas fa-save"></i> Sauvegarder
+          </button>
+        </div>
+
+        <div class="groups-grid" *ngIf="!editMode">
+          <div class="group-card" *ngFor="let group of user.groups; trackBy: trackByGroupId">
+            <div class="card-header" [ngClass]="getRoleBadgeClass(group.plateform)">
+              <div class="d-flex justify-content-between align-items-center text-white">
+                <h6 class="mb-0">{{ group.name }}</h6>
+                <span class="badge badge-light">{{ group.plateform }}</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-text">{{ group.description || 'Aucune description' }}</p>
+              <div class="mb-2">
+                <small class="text-muted">Code:</small>
+                <span class="badge bg-secondary ms-1">{{ group.code }}</span>
+              </div>
+              <div class="mb-2">
+                <small class="text-muted">Permissions:</small>
+                <span class="badge bg-info ms-1">{{ group.permissions.length }}</span>
+              </div>
+<!--              (click)="removeGroupFromUser(group._id!)"-->
+              <button class="btn btn-sm btn-outline-danger mt-2"
+                      *ngIf="permissions.editPermissions">
+                <i class="fas fa-times"></i> Retirer
+              </button>
+            </div>
+          </div>
+          <div *ngIf="user.groups.length === 0" class="text-center text-muted p-4">
+            <i class="fas fa-users fa-3x mb-3"></i>
+            <h5>Aucun groupe assigné</h5>
+            <p>Cet utilisateur n'appartient à aucun groupe.</p>
+          </div>
+        </div>
+
+        <div *ngIf="editMode && permissions.editPermissions">
+          <form [formGroup]="permissionsForm">
+            <div class="mb-3">
+              <label class="form-label">Groupes</label>
+              <select2 multiple="multiple" class="form-control" formControlName="groups"
+                       [data]="groupOptions">
+              </select2>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Inherited Permissions -->
+      <div class="content-card">
+        <h3 class="section-title">
+          <i class="fas fa-key"></i> Permissions héritées
+        </h3>
+
+        <div class="permissions-grid">
+          <div class="permission-card" *ngFor="let permission of getInheritedPermissions(); trackBy: trackByPermissionId">
+            <h6 class="mb-2">{{ permission.module }}</h6>
+            <div class="mb-2">
+                                <span *ngFor="let perm of permission.permissions"
+                                      class="badge bg-secondary me-1 mb-1">
+                                    {{ perm }}
+                                </span>
+            </div>
+            <small class="text-muted">{{ getPermissionDescription(permission) }}</small>
+            <div class="mt-2">
+                                <span class="badge" [ngClass]="getRoleBadgeClass(permission.plateform)">
+                                    {{ permission.plateform }}
+                                </span>
+            </div>
+          </div>
+          <div *ngIf="getInheritedPermissions().length === 0" class="text-center text-muted p-4">
+            <i class="fas fa-key fa-3x mb-3"></i>
+            <h5>Aucune permission héritée</h5>
+            <p>Cet utilisateur n'a aucune permission via les groupes.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'security'" *ngIf="activeTab === 'security' && permissions.viewSecurity && user">
+      <div class="content-card">
+        <h3 class="section-title">
+          <i class="fas fa-shield-alt"></i> Paramètres de sécurité
+        </h3>
+
+        <div class="security-metrics">
+          <div class="security-metric">
+            <div class="security-metric-icon" [ngClass]="getTwoFactorStatusClass()">
+              <i class="fas fa-mobile-alt"></i>
+            </div>
+            <div class="security-metric-value" [ngClass]="getTwoFactorStatusClass()">
+              {{ getTwoFactorStatusText() }}
+            </div>
+            <div class="security-metric-label">Authentification à deux facteurs</div>
+          </div>
+
+          <div class="security-metric">
+            <div class="security-metric-icon" [ngClass]="getPasswordStrengthClass()">
+              <i class="fas fa-key"></i>
+            </div>
+            <div class="security-metric-value" [ngClass]="getPasswordStrengthClass()">
+              {{ user.getPasswordAge() }}j
+            </div>
+            <div class="security-metric-label">Âge du mot de passe</div>
+          </div>
+
+          <div class="security-metric">
+            <div class="security-metric-icon" [ngClass]="getFailedAttemptsClass()">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="security-metric-value" [ngClass]="getFailedAttemptsClass()">
+              {{ user.failedLoginAttempts || 0 }}
+            </div>
+            <div class="security-metric-label">Tentatives échouées</div>
+          </div>
+
+          <div class="security-metric">
+            <div class="security-metric-icon" [ngClass]="user.isAccountLocked() ? 'text-danger' : 'text-success'">
+              <i class="fas" [ngClass]="user.isAccountLocked() ? 'fa-lock' : 'fa-unlock'"></i>
+            </div>
+            <div class="security-metric-value" [ngClass]="user.isAccountLocked() ? 'text-danger' : 'text-success'">
+              {{ user.isAccountLocked() ? 'Bloqué' : 'Libre' }}
+            </div>
+            <div class="security-metric-label">Statut du compte</div>
+          </div>
+        </div>
+
+        <div class="row mt-4">
+          <div class="col-md-12">
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Dernier changement de mot de passe</div>
+                <div class="info-value" [ngClass]="getPasswordStrengthClass()">
+                  {{ user.passwordLastChanged ? formatDate(user.passwordLastChanged) : 'Jamais changé' }}
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Statut du compte</div>
+                <div class="info-value">{{ getAccountLockStatus() }}</div>
+              </div>
+              <div class="info-item" *ngIf="user.accountLockedUntil">
+                <div class="info-label">Déblocage automatique</div>
+                <div class="info-value">{{ formatDate(user.accountLockedUntil) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-buttons mt-4" *ngIf="permissions.resetPassword">
+          <button class="btn btn-modern btn-warning-modern" (click)="openResetPasswordModal()">
+            <i class="fas fa-key"></i> Réinitialiser mot de passe
+          </button>
+          <button class="btn btn-modern btn-danger-modern" (click)="unlockAccount()" *ngIf="user.isAccountLocked()">
+            <i class="fas fa-unlock"></i> Débloquer le compte
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'activity'" *ngIf="activeTab === 'activity' && permissions.viewActivity">
+      <div class="content-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h3 class="section-title">
+            <i class="fas fa-history"></i> Journal d'activité
+          </h3>
+          <button class="btn btn-modern btn-secondary-modern" (click)="openAuditLogModal()">
+            <i class="fas fa-search"></i> Voir l'audit complet
+          </button>
+        </div>
+
+        <div class="activity-timeline" *ngIf="!isLoadingActivity; else loadingActivityTemplate">
+          <div class="activity-item" *ngFor="let activity of userActivityLogs; trackBy: trackByActivityId">
+            <div class="activity-icon" [ngClass]="getActivityBadgeClass(activity.action)">
+              <i class="fas" [ngClass]="getActivityIcon(activity.action)"></i>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between align-items-start mb-1">
+                <strong>{{ activity.description }}</strong>
+                <small class="text-muted">{{ formatDate(activity.timestamp) }}</small>
+              </div>
+              <div class="text-muted small" *ngIf="activity.ip">
+                <i class="fas fa-globe"></i> {{ activity.ip }}
+              </div>
+            </div>
+          </div>
+          <div *ngIf="userActivityLogs.length === 0" class="text-center text-muted p-4">
+            <i class="fas fa-history fa-3x mb-3"></i>
+            <h5>Aucune activité récente</h5>
+            <p>Aucune activité enregistrée pour cet utilisateur.</p>
+          </div>
+        </div>
+
+        <ng-template #loadingActivityTemplate>
+          <div class="text-center p-4">
+            <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+            <p class="mt-2">Chargement de l'activité...</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Pharmacies Tab -->
+    <div class="tab-pane" [class.active]="activeTab === 'pharmacies'" *ngIf="activeTab === 'pharmacies' && user && user.pharmaciesManaged.length > 0">
+      <div class="content-card">
+        <h3 class="section-title">
+          <i class="fas fa-pills"></i> Pharmacies gérées
+        </h3>
+
+        <div class="row">
+          <div class="col-md-6" *ngFor="let pharmacy of user.pharmaciesManaged; trackBy: trackByPharmacyId">
+            <div class="card group-card mb-3">
+              <div class="card-header bg-info">
+                <div class="d-flex justify-content-between align-items-center text-white">
+                  <h6 class="mb-0">{{ pharmacy.name }}</h6>
+                  <span class="badge badge-light">
+                                            <i class="fas fa-pills"></i>
+                                        </span>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="info-grid">
+                  <div class="info-item" *ngIf="pharmacy.address">
+                    <div class="info-label">Adresse</div>
+                    <div class="info-value">{{ pharmacy.address }}</div>
+                  </div>
+                  <div class="info-item" *ngIf="pharmacy.phoneNumber">
+                    <div class="info-label">Téléphone</div>
+                    <div class="info-value">{{ pharmacy.phoneNumber }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Changes Indicator -->
+  <div class="changes-indicator" *ngIf="hasChanges">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>Modifications non sauvegardées</span>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Template -->
+<ng-template #loadingTemplate>
+  <div class="user-detail-container">
+    <div class="text-center p-5">
+      <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+      <h4 class="mt-3">Chargement des détails de l'utilisateur...</h4>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Reset Password Modal -->
+<ng-template #resetPasswordModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="fas fa-key"></i> Réinitialiser le mot de passe
+    </h5>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <form [formGroup]="passwordForm" (ngSubmit)="resetPassword()">
+      <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        Cette action réinitialisera le mot de passe de <strong>{{ user?.getFullName() }}</strong>.
+      </div>
+
+      <div class="form-floating mb-3">
+        <input type="password" class="form-control" formControlName="newPassword"
+               [class.is-valid]="isFieldValid(passwordForm, 'newPassword')"
+               [class.is-invalid]="isFieldInvalid(passwordForm, 'newPassword')"
+               placeholder="Nouveau mot de passe">
+        <label>Nouveau mot de passe *</label>
+        <div class="invalid-feedback">{{ getFieldError(passwordForm, 'newPassword') }}</div>
+      </div>
+
+      <div class="form-floating mb-3">
+        <input type="password" class="form-control" formControlName="confirmPassword"
+               [class.is-valid]="isFieldValid(passwordForm, 'confirmPassword')"
+               [class.is-invalid]="isFieldInvalid(passwordForm, 'confirmPassword')"
+               placeholder="Confirmer le mot de passe">
+        <label>Confirmer le mot de passe *</label>
+        <div class="invalid-feedback">{{ getFieldError(passwordForm, 'confirmPassword') }}</div>
+      </div>
+
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" formControlName="sendEmail">
+        <label class="form-check-label">Envoyer un email à l'utilisateur</label>
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+    <button type="button" class="btn btn-warning" (click)="resetPassword()"
+            [disabled]="!passwordForm.valid || isSaving">
+      <i class="fas fa-key"></i> Réinitialiser
+    </button>
+  </div>
+</ng-template>
+
+<!-- Audit Log Modal -->
+<ng-template #auditLogModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="fas fa-search"></i> Audit complet - {{ user?.getFullName() }}
+    </h5>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+        <tr>
+          <th>Date</th>
+          <th>Action</th>
+          <th>Description</th>
+          <th>IP</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let activity of userActivityLogs">
+          <td>{{ formatDate(activity.timestamp) }}</td>
+          <td>
+            <span class="badge" [ngClass]="getActivityBadgeClass(activity.action)">
+              <i class="fas" [ngClass]="getActivityIcon(activity.action)"></i>
+              {{ activity.action }}
+            </span>
+          </td>
+          <td>{{ activity.description }}</td>
+          <td>{{ activity.ip || 'N/A' }}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
+    <button type="button" class="btn btn-primary" (click)="exportUserData()">
+      <i class="fas fa-download"></i> Exporter les données
+    </button>
+  </div>
+</ng-template>

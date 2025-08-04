@@ -142,6 +142,11 @@ export class AuthService {
     return this.userDetails;
   }
 
+  public async getUpdatedUserDetails(): Promise<UserDetails | null> {
+    await this.tryLoadUserDetails();
+    return this.userDetails;
+  }
+
   public async editprofilInfos (name: string, surname: string) {
 
     if (!name || !surname) throw new Error('Veuillez remplir tous les champs');
