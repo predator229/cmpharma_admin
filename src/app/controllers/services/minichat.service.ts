@@ -7,6 +7,8 @@ import { ChatAttaschment } from "../../models/ChatAttaschment.class";
 import {environment} from "../../../environments/environment";
 import {AuthService} from "./auth.service";
 import {ApiService} from "./api.service";
+import {Conversation} from "../../models/Conversation.class";
+import {ActivityLoged} from "../../models/Activity.class";
 
 @Injectable({
   providedIn: 'root'
@@ -14,6 +16,9 @@ import {ApiService} from "./api.service";
 export class MiniChatService {
   private socket: Socket | null = null;
   private messagesSubject = new Subject<MiniChatMessage>();
+  private conversationsSubject = new Subject<Conversation>();
+  private notificationsSubject = new Subject<ActivityLoged>()
+
   private connectionStatusSubject = new BehaviorSubject<boolean>(false);
   private typingUsersSubject = new Subject<boolean>();
   private unreadCountSubject = new BehaviorSubject<number>(0);
@@ -31,16 +36,12 @@ export class MiniChatService {
   /**
    * Connexion au namespace admin via Socket.IO
    */
-  connect(token: string, pharmacyId:string): void {
+  connect(token: string, pharmacyId:string, otherlink:string = ''): void {
     if (this.socket?.connected) {
-      console.log('⚠️ Socket déjà connecté');
       return;
     }
 
-    console.log('🔄 Tentative de connexion au socket...', `${this.API_BASE_SOCKET}`);
-
-    // CORRECTION 1: Connexion au bon namespace
-    this.socket = io(`${this.API_BASE_SOCKET}`, {
+    this.socket = io(`${this.API_BASE_SOCKET+(otherlink ? '/'+otherlink : '')}`, {
       path: `${environment.pathWebsocket}`,
       auth: { token: token },
       transports: ['websocket', 'polling'],
@@ -89,6 +90,27 @@ export class MiniChatService {
       this.messagesSubject.next(message);
       if (data.pharmacyId === this.currentPharmacyId) {
         if (message.senderId !== this.currentUserId) {
+          this.updateUnreadCount();
+        }
+      }
+    });
+
+    this.socket.on('new_conv_message', (data: {conversation: any, userID: string}) => {
+      const message = new Conversation(data.conversation);
+      this.conversationsSubject.next(message);
+      if (data.userID === this.currentPharmacyId) {
+        if (message.participants.some(part => part._id == this.currentUserId)) {
+          this.updateUnreadCount();
+        }
+      }
+    });
+
+    this.socket.on('new_conv_message', (data: {notification: any, userID: string}) => {
+      console.log('📩 Nouvelle notification reçu:', data);
+      const notif = new ActivityLoged(data.notification);
+      this.notificationsSubject.next(notif);
+      if (data.userID === this.currentPharmacyId) {
+        if (notif.author == this.currentUserId) {
           this.updateUnreadCount();
         }
       }
@@ -225,6 +247,49 @@ export class MiniChatService {
       return null;
     }
   }
+  async getConvHistory(userID: string): Promise<any | null> {
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      if (!token || !uid) {
+        console.error('❌ Token ou UID manquant');
+        return null;
+      }
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      console.log('📜 Récupération des dernieres conversations et notifications pour:', userID);
+
+      const response: any = await firstValueFrom(
+        this.apiService.post('chat/pharmacy/messages/conversation', { uid, userID, limit:5 }, headers)
+      );
+
+      if (response && !response.error && response.data && response.activities) {
+        return {
+          conversations : response.data.map((conv: any) => new Conversation(conv)),
+          activities : response.activities.map((log: any) => new ActivityLoged(log)),
+        };
+      } else {
+        console.log('📭 Aucune conversation trouvée');
+        return {
+          conversations : [],
+          activities : [],
+        };
+      }
+
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des dernieres conversation et notifications:', error);
+      return {
+        conversations : [],
+        activities : [],
+      };
+    }
+  }
 
   sendMessage(pharmacyId: string, newMessage: MiniChatMessage, attachments: string | null): boolean {
     if (!this.socket?.connected) {
@@ -289,6 +354,13 @@ export class MiniChatService {
   getMessages(){
     return this.messagesSubject.asObservable();
   }
+  getConversation(){
+    return this.conversationsSubject.asObservable();
+  }
+  getActivities(){
+    return this.notificationsSubject.asObservable();
+  }
+
 
   getConnectionStatus(): Observable<boolean> {
     return this.connectionStatusSubject.asObservable();

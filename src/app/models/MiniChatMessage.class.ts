@@ -6,7 +6,8 @@ export class MiniChatMessage {
   senderName: string;
   senderType: 'admin' | 'pharmacy';
   message: string;
-  for: string;
+  for?: string;
+  conversation? : string;
   attachments?: FileClass | null;
   isActivated:boolean;
   isDeleted: boolean;
@@ -16,6 +17,7 @@ export class MiniChatMessage {
   createdAt: Date;
   updatedAt: Date;
   showMoreInfo? : boolean;
+  isGroup?: boolean;
 
   constructor(data: Partial<MiniChatMessage>) {
     this._id = data._id;
@@ -24,6 +26,7 @@ export class MiniChatMessage {
     this.senderType = data.senderType;
     this.message = data.message;
     this.for = data.for;
+    this.conversation = data.conversation ?? null;
     this.attachments = data.attachments || null;
     this.isActivated = data.isActivated || false;
     this.isDeleted = data.isDeleted || false;
@@ -34,5 +37,6 @@ export class MiniChatMessage {
     this.createdAt = data.createdAt || new Date();
     this.updatedAt = data.updatedAt || new Date();
     this.showMoreInfo = data.showMoreInfo || false;
+    this.isGroup = data.isGroup || false;
   }
 }

@@ -1,3 +1,4 @@
+<!-- nav-right.component.html modifié -->
 <div class="ms-auto">
   <ul class="list-unstyled">
     <li>
@@ -7,103 +8,148 @@
           data-bs-toggle="dropdown"
           href="javascript:"
           ngbDropdownToggle
+          (click)="!isConnected && connectToChat()"
         >
           <i class="ti ti-bell"></i>
+          <!-- Badge pour le compteur de notifications non lues -->
+          <span *ngIf="unreadCount > 0" class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle">
+            {{ unreadCount > 99 ? '99+' : unreadCount }}
+          </span>
         </a>
         <div class="dropdown-menu dropdown-notification dropdown-menu-end pc-h-dropdown" ngbDropdownMenu>
           <div class="dropdown-header">
             <br>
             <h5>
-              Toutes les Notification
-              <span class="badge bg-warning rounded-pill ms-1">01</span>
+              Toutes les Notifications
+              <span class="badge bg-warning rounded-pill ms-1">{{ unreadCount }}</span>
             </h5>
           </div>
+
+          <!-- Indicateur de connexion -->
+          <div class="px-3 py-2">
+            <div class="d-flex align-items-center">
+              <div class="status-indicator me-2">
+                <span class="badge" [class]="isConnected ? 'bg-success' : 'bg-secondary'">
+                  {{ isConnected ? 'Connecté' : 'Déconnecté' }}
+                </span>
+              </div>
+              <small class="text-muted">{{ isLoading ? 'Connexion...' : '' }}</small>
+            </div>
+            <!-- Affichage des erreurs -->
+            <div *ngIf="errorMessage" class="alert alert-warning alert-sm mt-2 mb-0" role="alert">
+              {{ errorMessage }}
+            </div>
+          </div>
+
           <ng-scrollbar style="height: 300px; overflow-y: auto;" visibility="hover">
             <div class="dropdown-header px-0 text-wrap">
               <div class="list-group list-group-flush w-100">
+                <!-- Filtre des notifications -->
                 <div class="list-group-item">
-                  <select class="form-select">
-                    <option value="all">Toutes les notifications</option>
-                    <option value="new">Novelles</option>
-                    <option value="unread">Non lues</option>
-                    <option value="other">Autre</option>
+                  <select class="form-select" (change)="onFilterChange($event)">
+                    <option value="all">Notifications et messages</option>
+                    <option value="notif">Notifications</option>
+                    <option value="message">Messages</option>
                   </select>
                 </div>
-                <a class="list-group-item list-group-item-action">
-                  <div class="d-flex">
-                    <div class="flex-grow-1 ms-1">
-                      <span class="float-end text-muted">2 min ago</span>
-                      <h5>    {{ userDetails ? userDetails.name+' '+userDetails.surname : '' }}</h5>
-                      <p class="text-body fs-6">It is a long established fact that a reader will be distracted</p>
-                      <div class="badge rounded-pill bg-light-danger">Unread</div>
-                      <div class="badge rounded-pill bg-light-warning">New</div>
-                    </div>
-                  </div>
-                </a>
-                <a class="list-group-item list-group-item-action">
-                  <div class="d-flex">
-                    <div class="flex-shrink-0">
-                      <div class="user-avtar bg-light-success"><i class="ti ti-building-store"></i></div>
-                    </div>
-                    <div class="flex-grow-1 ms-1">
-                      <span class="float-end text-muted">3 min ago</span>
-                      <h5>Store Verification Done</h5>
-                      <p class="text-body fs-6">We have successfully received your request.</p>
-                      <div class="badge rounded-pill bg-light-danger">Unread</div>
-                    </div>
-                  </div>
-                </a>
-                <a class="list-group-item list-group-item-action">
-                  <div class="d-flex">
-                    <div class="flex-shrink-0">
-                      <div class="user-avtar bg-light-primary"><i class="ti ti-mailbox"></i></div>
-                    </div>
-                    <div class="flex-grow-1 ms-1">
-                      <span class="float-end text-muted">5 min ago</span>
-                      <h5>Check Your Mail.</h5>
-                      <p class="text-body fs-6">All done! Now check your inbox as you're in for a sweet treat!</p>
-                      <button class="btn btn-sm btn-primary">
-                        Mail
-                        <i class="ti ti-brand-telegram"></i>
-                      </button>
-                    </div>
-                  </div>
-                </a>
-                <a class="list-group-item list-group-item-action">
-                  <div class="d-flex">
-                    <div class="flex-shrink-0">
-                      <img src="assets/images/user/avatar-1.jpg" alt="user-image" class="user-avtar" />
-                    </div>
-                    <div class="flex-grow-1 ms-1">
-                      <span class="float-end text-muted">8 min ago</span>
-                      <h5>{{ userDetails ? userDetails.name+' '+userDetails.surname : '' }}</h5>
-                      <p class="text-body fs-6">
-                        Uploaded two file on &nbsp;
-                        <strong>21 Jan 2020</strong>
-                      </p>
-                      <div class="notification-file d-flex p-3 bg-light-secondary rounded">
-                        <i class="ti ti-arrow-bar-to-down"></i>
-                        <h5 class="m-0">demo.jpg</h5>
+
+                <!-- Section des conversations si elles existent -->
+                <ng-container *ngIf="conversations && conversations.length > 0">
+                  <div *ngFor="let conversation of conversations" class="list-group-item list-group-item-action">
+                    <div class="d-flex">
+                      <div class="flex-shrink-0">
+                        <div class="user-avtar bg-light-primary">
+                          <i class="ti ti-message-circle"></i>
+                        </div>
+                      </div>
+                      <div class="flex-grow-1 ms-1">
+                        <span class="float-end text-muted">{{ getTimeAgo(conversation.updatedAt) }}</span>
+                        <h5>
+                          {{ getConversationTitle(conversation) }}
+                        </h5>
+                        <p class="text-body fs-6">
+                          {{ conversation.lastMessage || 'Nouvelle conversation' }}
+                        </p>
+                        <div *ngIf="conversation.unreadCount > 0" class="badge rounded-pill bg-light-danger">
+                          {{ conversation.unreadCount }} non lu{{ conversation.unreadCount > 1 ? 's' : '' }}
+                        </div>
+                        <div *ngIf="isNewConversation(conversation)" class="badge rounded-pill bg-light-warning">
+                          Nouveau
+                        </div>
                       </div>
                     </div>
                   </div>
-                </a>
-                <a class="list-group-item list-group-item-action">
-                  <div class="d-flex">
-                    <div class="flex-grow-1 ms-1">
-                      <span class="float-end text-muted">10 min ago</span>
-                      <h5>Joseph William</h5>
-                      <p class="text-body fs-6">It is a long established fact that a reader will be distracted</p>
-                      <div class="badge rounded-pill bg-light-success">Confirmation of Account</div>
+                </ng-container>
+
+                <!-- Section des notifications d'activité -->
+                <ng-container *ngIf="notifications && notifications.length > 0">
+                  <div *ngFor="let notification of notifications" class="list-group-item list-group-item-action">
+                    <div class="d-flex">
+                      <div class="flex-shrink-0">
+                        <div class="user-avtar" [class]="getActivityIcon(notification.type).class">
+                          <i [class]="getActivityIcon(notification.type).icon"></i>
+                        </div>
+                      </div>
+                      <div class="flex-grow-1 ms-1">
+                        <span class="float-end text-muted">{{ getTimeAgo(notification.createdAt) }}</span>
+                        <h5>{{ notification.title || 'Notification' }}</h5>
+                        <p class="text-body fs-6">{{ notification.description }}</p>
+                        <div *ngIf="isNewNotification(notification)" class="badge rounded-pill bg-light-success">
+                          {{ notification.type }}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </a>
+                </ng-container>
+
+                <!-- Message si aucune notification -->
+                <div *ngIf="(!conversations || conversations.length === 0) && (!notifications || notifications.length === 0)"
+                     class="list-group-item text-center py-4">
+                  <div class="text-muted">
+                    <i class="ti ti-bell-off fs-1"></i>
+                    <p class="mt-2">Aucune notification pour le moment</p>
+                    <button *ngIf="!isConnected" class="btn btn-sm btn-primary" (click)="connectToChat()">
+                      Se connecter aux notifications
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Notifications statiques existantes (à conserver temporairement) -->
+                <ng-container *ngIf="showStaticNotifications">
+                  <a class="list-group-item list-group-item-action">
+                    <div class="d-flex">
+                      <div class="flex-grow-1 ms-1">
+                        <span class="float-end text-muted">2 min ago</span>
+                        <h5>{{ userDetails ? userDetails.name+' '+userDetails.surname : '' }}</h5>
+                        <p class="text-body fs-6">It is a long established fact that a reader will be distracted</p>
+                        <div class="badge rounded-pill bg-light-danger">Unread</div>
+                        <div class="badge rounded-pill bg-light-warning">New</div>
+                      </div>
+                    </div>
+                  </a>
+                  <a class="list-group-item list-group-item-action">
+                    <div class="d-flex">
+                      <div class="flex-shrink-0">
+                        <div class="user-avtar bg-light-success"><i class="ti ti-building-store"></i></div>
+                      </div>
+                      <div class="flex-grow-1 ms-1">
+                        <span class="float-end text-muted">3 min ago</span>
+                        <h5>Store Verification Done</h5>
+                        <p class="text-body fs-6">We have successfully received your request.</p>
+                        <div class="badge rounded-pill bg-light-danger">Unread</div>
+                      </div>
+                    </div>
+                  </a>
+                </ng-container>
               </div>
             </div>
           </ng-scrollbar>
+
           <div class="dropdown-divider"></div>
           <div class="text-center py-2">
-            <a href="javascript:" class="link-primary">Marque comme lu</a>
+            <a href="javascript:" class="link-primary" (click)="markAllAsRead()">
+              Marquer comme lu
+            </a>
           </div>
         </div>
       </div>
@@ -192,8 +238,7 @@
                 </ul>
               </div>
               <hr />
-              <!-- <a [routerLink]="['/guest/register']" class="dropdown-item"> -->
-              <a  class="dropdown-item">
+              <a class="dropdown-item">
                 <i class="ti ti-settings"></i>
                 <span>Profile</span>
               </a>

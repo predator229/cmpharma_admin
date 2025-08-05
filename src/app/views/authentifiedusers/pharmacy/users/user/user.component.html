@@ -22,7 +22,7 @@
         </button>
       </div>
   </div>
-  <div class="user-profile-header" *ngIf="user">
+  <div class="user-profile-header" *ngIf="user" style="margin-bottom: 20px;">
     <div class="position-relative">
       <img *ngIf="user.photoURL"
            [src]="user.photoURL"
@@ -85,7 +85,7 @@
         <i class="fas fa-lock"></i> Sécurité
       </button>
     </li>
-    <li class="nav-item" *ngIf="permissions.viewActivity">
+    <li class="nav-item">
       <button class="nav-link" [class.active]="activeTab === 'activity'" (click)="switchTab('activity')">
         <i class="fas fa-history"></i> Activité
       </button>
@@ -115,22 +115,22 @@
         <form [formGroup]="profileForm" *ngIf="editMode; else viewModeTemplate">
           <div class="row">
             <div class="col-md-6">
-              <div class="form-floating">
+              <div class="form-group" style="margin-bottom: 20px;">
+                <label>Prénom *</label>
                 <input type="text" class="form-control" formControlName="name"
                        [class.is-valid]="isFieldValid(profileForm, 'name')"
                        [class.is-invalid]="isFieldInvalid(profileForm, 'name')"
                        placeholder="Prénom">
-                <label>Prénom *</label>
                 <div class="invalid-feedback">{{ getFieldError(profileForm, 'name') }}</div>
               </div>
             </div>
             <div class="col-md-6">
-              <div class="form-floating">
+              <div class="form-group" style="margin-bottom: 20px;">
+                <label>Nom *</label>
                 <input type="text" class="form-control" formControlName="surname"
                        [class.is-valid]="isFieldValid(profileForm, 'surname')"
                        [class.is-invalid]="isFieldInvalid(profileForm, 'surname')"
                        placeholder="Nom">
-                <label>Nom *</label>
                 <div class="invalid-feedback">{{ getFieldError(profileForm, 'surname') }}</div>
               </div>
             </div>
@@ -138,22 +138,22 @@
 
           <div class="row">
             <div class="col-md-6">
-              <div class="form-floating">
+              <div class="form-group" style="margin-bottom: 20px;">
+                <label>Email *</label>
                 <input type="email" class="form-control" formControlName="email"
                        [class.is-valid]="isFieldValid(profileForm, 'email')"
                        [class.is-invalid]="isFieldInvalid(profileForm, 'email')"
                        placeholder="Email">
-                <label>Email *</label>
                 <div class="invalid-feedback">{{ getFieldError(profileForm, 'email') }}</div>
               </div>
             </div>
             <div class="col-md-6">
-              <div class="form-floating">
+              <div class="form-group" style="margin-bottom: 20px;">
+                <label>Téléphone</label>
                 <input type="tel" class="form-control" formControlName="phone"
                        [class.is-valid]="isFieldValid(profileForm, 'phone')"
                        [class.is-invalid]="isFieldInvalid(profileForm, 'phone')"
                        placeholder="Téléphone">
-                <label>Téléphone</label>
                 <div class="invalid-feedback">{{ getFieldError(profileForm, 'phone') }}</div>
               </div>
             </div>
@@ -161,40 +161,40 @@
 
           <div class="row">
             <div class="col-md-6">
-              <div class="form-floating">
+              <div class="form-group" style="margin-bottom: 20px;">
+                <label>Pays</label>
                 <select class="form-select" formControlName="country">
                   <option value="">Sélectionner un pays</option>
                   <option *ngFor="let country of countryOptions" [value]="country.value">
                     {{ country.label }}
                   </option>
                 </select>
-                <label>Pays</label>
               </div>
             </div>
             <div class="col-md-6">
-              <div class="form-floating">
-                <input type="text" class="form-control" formControlName="city" placeholder="Ville">
+              <div class="form-group" style="margin-bottom: 20px;">
                 <label>Ville</label>
+                <input type="text" class="form-control" formControlName="city" placeholder="Ville">
               </div>
             </div>
           </div>
 
-          <div class="form-floating">
-            <textarea class="form-control" formControlName="address" placeholder="Adresse" style="height: 100px"></textarea>
+          <div class="form-group" style="margin-bottom: 20px;">
             <label>Adresse</label>
+            <textarea class="form-control" formControlName="address" placeholder="Adresse" style="height: 100px"></textarea>
           </div>
 
           <div class="row">
             <div class="col-md-6">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" formControlName="isActivated">
+              <div class="form-check" style="margin-bottom: 20px;">
                 <label class="form-check-label">Compte activé</label>
+                <input class="form-check-input" type="checkbox" formControlName="isActivated">
               </div>
             </div>
             <div class="col-md-6">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" formControlName="disabled">
+              <div class="form-check" style="margin-bottom: 20px;">
                 <label class="form-check-label">Compte désactivé</label>
+                <input class="form-check-input" type="checkbox" formControlName="disabled">
               </div>
             </div>
           </div>
@@ -246,7 +246,6 @@
         </ng-template>
       </div>
     </div>
-
     <!-- Permissions Tab -->
     <div class="tab-pane" [class.active]="activeTab === 'permissions'" *ngIf="activeTab === 'permissions' && user">
       <!-- User Groups -->
@@ -335,7 +334,6 @@
         </div>
       </div>
     </div>
-
     <!-- Security Tab -->
     <div class="tab-pane" [class.active]="activeTab === 'security'" *ngIf="activeTab === 'security' && permissions.viewSecurity && user">
       <div class="content-card">
@@ -416,9 +414,8 @@
         </div>
       </div>
     </div>
-
     <!-- Activity Tab -->
-    <div class="tab-pane" [class.active]="activeTab === 'activity'" *ngIf="activeTab === 'activity' && permissions.viewActivity">
+    <div class="tab-pane" [class.active]="activeTab === 'activity'" *ngIf="activeTab === 'activity'">
       <div class="content-card">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h3 class="section-title">
@@ -429,28 +426,35 @@
           </button>
         </div>
 
-        <div class="activity-timeline" *ngIf="!isLoadingActivity; else loadingActivityTemplate">
-          <div class="activity-item" *ngFor="let activity of userActivityLogs; trackBy: trackByActivityId">
-            <div class="activity-icon" [ngClass]="getActivityBadgeClass(activity.action)">
-              <i class="fas" [ngClass]="getActivityIcon(activity.action)"></i>
+<!--        <div class="activity-timeline" *ngIf="!isLoadingActivity; else loadingActivityTemplate">-->
+<!--          <div class="activity-item" *ngFor="let activity of userActivityLogs; trackBy: trackByActivityId">-->
+<!--            <div class="activity-icon" [ngClass]="getActivityBadgeClass(activity.action)">-->
+<!--              <i class="fas" [ngClass]="getActivityIcon(activity.action)"></i>-->
+<!--            </div>-->
+<!--            <div class="flex-grow-1">-->
+<!--              <div class="d-flex justify-content-between align-items-start mb-1">-->
+<!--                <strong>{{ activity.description }}</strong>-->
+<!--                <small class="text-muted">{{ formatDate(activity.timestamp) }}</small>-->
+<!--              </div>-->
+<!--              <div class="text-muted small" *ngIf="activity.ip">-->
+<!--                <i class="fas fa-globe"></i> {{ activity.ip }}-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div *ngIf="userActivityLogs.length === 0" class="text-center text-muted p-4">-->
+<!--            <i class="fas fa-history fa-3x mb-3"></i>-->
+<!--            <h5>Aucune activité récente</h5>-->
+<!--            <p>Aucune activité enregistrée pour cet utilisateur.</p>-->
+<!--          </div>-->
+<!--        </div>-->
+        <div class="row">
+          <app-activity-timeline [activites]="usersActivities" [usersInfo]="usersInfo"></app-activity-timeline>
+          <div class="col-md-12">
+            <div class="text-center py-3" *ngIf="usersActivities.length === 0">
+              <p class="text-muted">Aucune activité récente</p>
             </div>
-            <div class="flex-grow-1">
-              <div class="d-flex justify-content-between align-items-start mb-1">
-                <strong>{{ activity.description }}</strong>
-                <small class="text-muted">{{ formatDate(activity.timestamp) }}</small>
-              </div>
-              <div class="text-muted small" *ngIf="activity.ip">
-                <i class="fas fa-globe"></i> {{ activity.ip }}
-              </div>
-            </div>
-          </div>
-          <div *ngIf="userActivityLogs.length === 0" class="text-center text-muted p-4">
-            <i class="fas fa-history fa-3x mb-3"></i>
-            <h5>Aucune activité récente</h5>
-            <p>Aucune activité enregistrée pour cet utilisateur.</p>
           </div>
         </div>
-
         <ng-template #loadingActivityTemplate>
           <div class="text-center p-4">
             <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
@@ -459,7 +463,6 @@
         </ng-template>
       </div>
     </div>
-
     <!-- Pharmacies Tab -->
     <div class="tab-pane" [class.active]="activeTab === 'pharmacies'" *ngIf="activeTab === 'pharmacies' && user && user.pharmaciesManaged.length > 0">
       <div class="content-card">

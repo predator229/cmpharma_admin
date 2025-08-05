@@ -1,0 +1,445 @@
+<div class="messaging-container">
+  <!-- Chargement initial -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>Chargement de la messagerie...</p>
+  </div>
+
+  <!-- Interface principale -->
+  <div class="messaging-layout" *ngIf="!isLoading">
+
+    <!-- Sidebar des conversations -->
+    <div class="conversations-sidebar">
+      <!-- En-tête avec recherche -->
+      <div class="sidebar-header">
+        <div class="user-profile">
+          <div class="user-avatar">
+            <img *ngIf="currentUser?.photoURL; else defaultAvatar"
+                 [src]="currentUser.photoURL"
+                 [alt]="currentUser.getFullName()">
+            <ng-template #defaultAvatar>
+              <span>{{ currentUser?.getInitials() }}</span>
+            </ng-template>
+          </div>
+          <div class="user-info">
+            <h6>{{ currentUser?.getFullName() }}</h6>
+            <span class="status" [class.online]="isConnected">
+              {{ isConnected ? 'En ligne' : 'Hors ligne' }}
+            </span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-sm new-conversation-btn"
+                (click)="showNewConversationDialog()"
+                title="Nouvelle conversation">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+
+      <!-- Barre de recherche -->
+      <div class="search-container">
+        <div class="search-input-group">
+          <i class="fas fa-search"></i>
+          <input type="text"
+                 #searchInput
+                 class="form-control"
+                 placeholder="Rechercher une conversation..."
+                 [(ngModel)]="searchQuery"
+                 (input)="filterConversations(searchQuery)">
+          <button *ngIf="searchQuery"
+                  class="clear-search-btn"
+                  (click)="searchQuery = ''; filterConversations('')">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Liste des conversations -->
+      <div class="conversations-list">
+        <div *ngIf="filteredConversations.length === 0" class="no-conversations">
+          <i class="fas fa-comments"></i>
+          <p>Aucune conversation trouvée</p>
+          <button class="btn btn-outline-primary btn-sm" (click)="showNewConversationDialog()">
+            Commencer une conversation
+          </button>
+        </div>
+
+        <div *ngFor="let conversation of filteredConversations"
+             class="conversation-item"
+             [class.active]="activeConversation?._id === conversation._id"
+             [class.unread]="conversation.unreadCount > 0"
+             (click)="selectConversation(conversation)">
+
+          <div class="conversation-avatar">
+            <img *ngIf="!conversation.isGroup && getConversationAvatar(conversation).startsWith('http'); else iconAvatar"
+                 [src]="getConversationAvatar(conversation)"
+                 [alt]="getConversationName(conversation)">
+            <ng-template #iconAvatar>
+              <i [class]="getConversationAvatar(conversation)"></i>
+            </ng-template>
+
+            <!-- Indicateur en ligne -->
+            <span *ngIf="!conversation.isGroup && isUserOnline(conversation.participants[0]._id!)"
+                  class="online-indicator"></span>
+          </div>
+
+          <div class="conversation-content">
+            <div class="conversation-header">
+              <h6 class="conversation-name">{{ getConversationName(conversation) }}</h6>
+              <span class="conversation-time" *ngIf="conversation.lastMessage">
+                {{ formatMessageTime(conversation.lastMessage.createdAt) }}
+              </span>
+            </div>
+
+            <div class="conversation-preview">
+              <p *ngIf="conversation.lastMessage; else noMessages">
+                <span *ngIf="conversation.lastMessage.senderId === currentUser._id" class="sender-indicator">Vous: </span>
+                {{ conversation.lastMessage.message || 'Fichier joint' }}
+              </p>
+              <ng-template #noMessages>
+                <p class="no-message">Aucun message</p>
+              </ng-template>
+
+              <span *ngIf="conversation.unreadCount > 0" class="unread-count">
+                {{ conversation.unreadCount }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zone de chat -->
+    <div class="chat-area">
+      <!-- Aucune conversation sélectionnée -->
+      <div *ngIf="!activeConversation" class="no-conversation-selected">
+        <i class="fas fa-comments"></i>
+        <h5>Sélectionnez une conversation</h5>
+        <p>Choisissez une conversation existante ou commencez-en une nouvelle</p>
+        <button class="btn btn-primary" (click)="showNewConversationDialog()">
+          <i class="fas fa-plus"></i>
+          Nouvelle conversation
+        </button>
+      </div>
+
+      <!-- Conversation active -->
+      <div *ngIf="activeConversation" class="active-chat">
+        <!-- En-tête de la conversation -->
+        <div class="chat-header">
+          <div class="chat-participant-info">
+            <div class="participant-avatar">
+              <img *ngIf="!activeConversation.isGroup && getConversationAvatar(activeConversation).startsWith('http'); else iconAvatar"
+                   [src]="getConversationAvatar(activeConversation)"
+                   [alt]="getConversationName(activeConversation)">
+              <ng-template #iconAvatar>
+                <i [class]="getConversationAvatar(activeConversation)"></i>
+              </ng-template>
+            </div>
+
+            <div class="participant-details">
+              <h6>{{ getConversationName(activeConversation) }}</h6>
+              <span class="participant-status">
+                <ng-container *ngIf="!activeConversation.isGroup">
+                  {{ isUserOnline(activeConversation.participants[0]._id!) ? 'En ligne' : 'Hors ligne' }}
+                </ng-container>
+                <ng-container *ngIf="activeConversation.isGroup">
+                  {{ activeConversation.participants.length }} participants
+                </ng-container>
+              </span>
+            </div>
+          </div>
+
+          <div class="chat-actions">
+            <button class="btn btn-sm btn-outline-secondary" title="Informations">
+              <i class="fas fa-info-circle"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" title="Plus d'options">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" #messagesContainer>
+          <div *ngIf="groupedMessages.length === 0" class="no-messages">
+            <i class="fas fa-comment-alt"></i>
+            <p>Aucun message dans cette conversation</p>
+            <p class="text-muted">Envoyez votre premier message ci-dessous</p>
+          </div>
+
+          <div *ngFor="let group of groupedMessages" class="message-group">
+            <div class="date-separator">
+              <span>{{ group.date }}</span>
+            </div>
+
+            <div *ngFor="let message of group.messages; let i = index"
+                 class="message-wrapper"
+                 [class.own-message]="message.senderId === currentUser._id"
+                 [class.consecutive]="i > 0 && group.messages[i-1].senderId === message.senderId">
+
+              <!-- Avatar (pour les messages des autres utilisateurs) -->
+<!--              <div *ngIf="message.senderId !== currentUser._id && !message.consecutive"-->
+<!--                   class="message-avatar">-->
+<!--                <img *ngIf="message.senderAvatar; else defaultSenderAvatar"-->
+<!--                     [src]="message.senderAvatar"-->
+<!--                     [alt]="message.senderName">-->
+<!--                <ng-template #defaultSenderAvatar>-->
+<!--                  <span>{{ message.senderName?.charAt(0) || 'U' }}</span>-->
+<!--                </ng-template>-->
+<!--              </div>-->
+
+              <div class="message-bubble">
+                <!-- Nom de l'expéditeur -->
+                <div *ngIf="message.senderId !== currentUser._id && activeConversation.isGroup"
+                     class="sender-name">
+                  {{ message.senderName }}
+                </div>
+
+                <!-- Contenu du message -->
+                <div class="message-content" *ngIf="message.message">
+                  <p>{{ message.message }}</p>
+                </div>
+
+                <!-- Pièces jointes -->
+                <div class="message-attachments" *ngIf="message.attachments != null">
+                  <div class="attachment-item">
+                    <!-- Image -->
+                    <div *ngIf="message.attachments.fileType === 'image'" class="image-attachment">
+<!--                      <img [src]="internatPathUrl + message.attachments.url"-->
+<!--                           [alt]="message.attachments.fileName"-->
+<!--                           (click)="openImageModal(message.attachments)">-->
+                    </div>
+
+                    <!-- Document -->
+                    <div *ngIf="message.attachments.fileType !== 'image'" class="document-attachment">
+                      <div class="document-icon">
+                        <i class="fas"
+                           [class.fa-file-pdf]="message.attachments.fileType === 'pdf'"
+                           [class.fa-file-word]="message.attachments.fileType === 'document'"
+                           [class.fa-file]="message.attachments.fileType === 'other'"></i>
+                      </div>
+                      <div class="document-info">
+                        <span class="document-name">{{ message.attachments.fileName }}</span>
+                        <span class="document-size">{{ formatFileSize(parseInt(message.attachments.fileSize) || 0) }}</span>
+                      </div>
+<!--                      <button class="download-btn"-->
+<!--                              (click)="downloadFile(attachment)"-->
+<!--                              title="Télécharger">-->
+<!--                        <i class="fas fa-download"></i>-->
+<!--                      </button>-->
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Heure du message -->
+                <div class="message-time">
+                  {{ formatMessageTime(message.createdAt) }}
+                  <i *ngIf="message.senderId === currentUser._id && message.seen"
+                     class="fas fa-check-double seen-indicator"
+                     title="Vu"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Indicateur de frappe -->
+          <div *ngIf="typingUsers.length > 0" class="typing-indicator">
+            <div class="typing-avatar">
+              <i class="fas fa-user"></i>
+            </div>
+            <div class="typing-bubble">
+              <span>{{ typingUsers.join(', ') }} {{ typingUsers.length > 1 ? 'sont en train' : 'est en train' }} d'écrire...</span>
+              <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zone de saisie -->
+        <div class="chat-input-area">
+          <!-- Prévisualisation des fichiers -->
+          <div class="file-preview" *ngIf="selectedFiles.length > 0">
+            <div class="preview-header">
+              <span>{{ selectedFiles.length }} fichier(s) sélectionné(s)</span>
+              <button type="button" class="clear-all-btn" (click)="clearFiles()">
+                <i class="fas fa-times"></i> Tout supprimer
+              </button>
+            </div>
+
+            <div class="preview-list">
+              <div *ngFor="let file of selectedFiles; let i = index" class="preview-item">
+                <!-- Prévisualisation image -->
+                <div *ngIf="file.type.startsWith('image/') && previewUrls[i]; else fileIcon" class="preview-image">
+                  <img [src]="previewUrls[i]" [alt]="file.name">
+                </div>
+
+                <!-- Icône fichier -->
+                <ng-template #fileIcon>
+                  <div class="preview-icon"
+                       [class.pdf]="file.type === 'application/pdf'"
+                       [class.doc]="file.type.includes('document') || file.type.includes('word')">
+                    <i class="fas"
+                       [class.fa-file-pdf]="file.type === 'application/pdf'"
+                       [class.fa-file-word]="file.type.includes('document')"
+                       [class.fa-file]="!file.type.includes('pdf') && !file.type.includes('document')"></i>
+                  </div>
+                </ng-template>
+
+                <!-- Informations fichier -->
+                <div class="file-info">
+                  <div class="file-name" [title]="file.name">{{ file.name }}</div>
+                  <div class="file-size">{{ formatFileSize(file.size) }}</div>
+                </div>
+
+                <!-- Bouton suppression -->
+                <button type="button"
+                        class="remove-file-btn"
+                        (click)="removeFile(i)"
+                        [title]="'Supprimer ' + file.name">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulaire de message -->
+          <form [formGroup]="messageForm" (ngSubmit)="sendMessage()" class="message-form">
+            <div class="input-group">
+              <!-- Bouton pièce jointe -->
+              <button type="button"
+                      class="btn btn-outline-secondary attachment-btn"
+                      (click)="fileInput.click()"
+                      title="Joindre un fichier">
+                <i class="fas fa-paperclip"></i>
+              </button>
+
+              <!-- Zone de texte -->
+              <textarea class="form-control message-input"
+                        formControlName="message"
+                        placeholder="Tapez votre message..."
+                        rows="1"
+                        (keypress)="onKeyPress($event)"
+                        maxlength="2000"></textarea>
+
+              <!-- Bouton envoi -->
+              <button type="submit"
+                      class="btn btn-primary send-btn"
+                      [disabled]="!messageForm.get('message')?.value?.trim() && selectedFiles.length === 0">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+
+            <!-- Input fichier caché -->
+            <input type="file"
+                   #fileInput
+                   (change)="onFileSelected($event)"
+                   accept="image/*,.pdf,.doc,.docx,.txt"
+                   multiple
+                   style="display: none;">
+
+            <!-- Compteur de caractères -->
+            <div class="character-count" *ngIf="messageForm.get('message')?.value?.length > 1800">
+              {{ messageForm.get('message')?.value?.length || 0 }}/2000
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal nouvelle conversation -->
+  <div class="modal fade"
+       [class.show]="showNewConversation"
+       [style.display]="showNewConversation ? 'block' : 'none'"
+       *ngIf="showNewConversation">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-plus-circle"></i>
+            Nouvelle conversation
+          </h5>
+          <button type="button" class="btn-close" (click)="closeNewConversation()"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="search-users">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Rechercher un administrateur..."
+                   [(ngModel)]="searchQuery">
+          </div>
+
+          <!-- Utilisateurs sélectionnés -->
+          <div class="selected-users" *ngIf="selectedUsers.length > 0">
+            <h6>Participants sélectionnés ({{ selectedUsers.length }})</h6>
+            <div class="selected-users-list" >
+              <div *ngFor="let user of selectedUsers" class="selected-user">
+                <div class="user-avatar">
+                  <img *ngIf="user.photoURL; else defaultUserAvatar" [src]="user.photoURL" [alt]="user.getFullName()">
+                  <ng-template #defaultUserAvatar>
+                    <span>{{ user.getInitials() }}</span>
+                  </ng-template>
+                </div>
+                <span class="user-name">{{ user.getFullName() }}</span>
+                <button type="button" class="remove-user-btn" (click)="toggleUserSelection(user)">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Liste des administrateurs -->
+          <div class="users-list" style="max-height: 200px; overflow-y: auto;">
+            <h6>Utilisateurs disponibles</h6>
+            <div class="user-item"
+                 *ngFor="let admin of allAdmins"
+                 [class.selected]="isUserSelected(admin)"
+                 (click)="toggleUserSelection(admin)">
+
+              <div class="user-avatar">
+                <img *ngIf="admin.photoURL; else defaultAdminAvatar" [src]="admin.photoURL" [alt]="admin.getFullName()">
+                <ng-template #defaultAdminAvatar>
+                  <span>{{ admin.getInitials() }}</span>
+                </ng-template>
+                <span *ngIf="isUserOnline(admin._id!)" class="online-indicator"></span>
+              </div>
+
+              <div class="user-info">
+                <div class="user-name">{{ admin.getFullName() }}</div>
+                <div class="user-role">{{ admin.getRoleLabels()[0] || 'Administrateur' }}</div>
+                <div class="user-status">
+                  <i class="fas fa-circle" [class.text-success]="isUserOnline(admin._id!)" [class.text-muted]="!isUserOnline(admin._id!)"></i>
+                  {{ isUserOnline(admin._id!) ? 'En ligne' : 'Hors ligne' }}
+                </div>
+              </div>
+
+              <div class="user-selection">
+                <i class="fas fa-check" *ngIf="isUserSelected(admin)"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeNewConversation()">
+            Annuler
+          </button>
+          <button type="button"
+                  class="btn btn-primary"
+                  [disabled]="selectedUsers.length === 0"
+                  (click)="createNewConversation()">
+            <i class="fas fa-comments"></i>
+            Commencer la conversation
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay modal -->
+  <div class="modal-backdrop fade show" *ngIf="showNewConversation" (click)="closeNewConversation()"></div>
+</div>

@@ -132,14 +132,6 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
           }
         });
 
-      // Suivi des utilisateurs qui tapent
-      // this.chatService.getTypingUsers()
-      //   .pipe(takeUntil(this.destroy$))
-      //   .subscribe(typingUsers => {
-      //     this.isTyping = typingUsers;
-      //     this.changeDetectorRef.detectChanges();
-      //   });
-
       // Gestion des erreurs
       this.chatService.getErrors()
         .pipe(takeUntil(this.destroy$))

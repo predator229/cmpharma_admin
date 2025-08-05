@@ -19,6 +19,8 @@ import { Admin } from "../../../../../models/Admin.class";
 import { Country } from "../../../../../models/Country.class";
 import { PharmacyClass } from "../../../../../models/Pharmacy.class";
 import { CommonFunctions } from "../../../../../controllers/comonsfunctions";
+import {ActivityTimelineComponent} from "../../../sharedComponents/activity-timeline/activity-timeline.component";
+import {ActivityLoged} from "../../../../../models/Activity.class";
 
 interface UserActivityLog {
   action: string;
@@ -39,7 +41,7 @@ interface SecurityAudit {
 @Component({
   selector: 'app-pharmacy-user-detail',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterModule, FormsModule, Select2],
+  imports: [CommonModule, SharedModule, RouterModule, FormsModule, Select2, ActivityTimelineComponent],
   templateUrl: './user.component.html',
   styleUrls: ['./user.component.scss']
 })
@@ -72,9 +74,11 @@ export class PharmacyUserDetailComponent implements OnInit, OnDestroy {
   passwordForm: FormGroup;
 
   // View states
-  activeTab: 'profile' | 'permissions' | 'security' | 'activity' | 'pharmacies' = 'profile';
+  activeTab: 'profile' | 'permissions' | 'security' | 'activity' | 'pharmacies' | 'historiques' = 'profile';
   editMode: boolean = false;
   showSensitiveInfo: boolean = false;
+  usersActivities: ActivityLoged[] = [];
+  usersInfo: { [key: string]:{  name: string;  img: string;  } } | null = null;
 
   // Permissions
   permissions = {
@@ -221,6 +225,7 @@ export class PharmacyUserDetailComponent implements OnInit, OnDestroy {
           next: (response: any) => {
             if (response && response.data && !response.error) {
               this.user = new Admin(response.data.user);
+              this.loaduserActivities(this.user._id);
               this.originalUser = new Admin(response.data.user);
 
               // Load related data
@@ -398,7 +403,7 @@ export class PharmacyUserDetailComponent implements OnInit, OnDestroy {
   }
 
   // Tab navigation
-  switchTab(tab: 'profile' | 'permissions' | 'security' | 'activity' | 'pharmacies'): void {
+  switchTab(tab: 'profile' | 'permissions' | 'security' | 'activity' | 'pharmacies' | 'historiques'): void {
     if (this.hasChanges) {
       this.showDiscardChangesDialog().then(confirmed => {
         if (confirmed) {
@@ -1146,4 +1151,31 @@ export class PharmacyUserDetailComponent implements OnInit, OnDestroy {
     if (score >= 40) return { level: 'Moyen', class: 'text-warning', score };
     return { level: 'Faible', class: 'text-danger', score };
   }
+  async loaduserActivities(userID: string): Promise<void> {
+    const token = await this.auth.getRealToken();
+    const uid = await this.auth.getUid();
+    if (!token) {
+      this.handleError('Vous n\'êtes pas autorisé à effectuer cette action');
+      return;
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    });
+
+    this.apiService.post('pharmacy-management/users/activities', { id: userID, uid }, headers)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          this.usersActivities = response?.data || [];
+          this.usersInfo = response?.usersMap || [];
+        },
+        error: (error) => {
+          this.usersActivities = [];
+        }
+      });
+  }
+
 }

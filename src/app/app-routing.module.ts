@@ -8,6 +8,9 @@ import { GroupGuard } from './controllers/guards/group.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
 import {GroupCode} from "./models/Group.class";
 import {PharmacyUserDetailComponent} from "./views/authentifiedusers/pharmacy/users/user/user.component";
+import {
+  PharmacyInternalMessagingComponent
+} from "./views/authentifiedusers/pharmacy/settings/messagerie/messagerie.component";
 
 const routes: Routes = [{
     path: 'admin',
@@ -50,6 +53,8 @@ const routes: Routes = [{
 
       { path: 'admin/logs',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/logs/logs.component').then((c) => c.PharmacyLogsComponent), },
       { path: 'admin/logs/:idPharmacy',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/logs/logs.component').then((c) => c.PharmacyLogsComponent), },
+
+      { path: 'messaging',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/messagerie/messagerie.component').then((c) => c.PharmacyInternalMessagingComponent), },
 
     ],
   },
