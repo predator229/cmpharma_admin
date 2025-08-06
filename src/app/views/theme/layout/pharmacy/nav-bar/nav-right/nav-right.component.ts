@@ -32,6 +32,7 @@ export class NavRightComponent implements OnInit, OnDestroy {
   previewDoc: string;
   unreadCount = 0;
   internatPathUrl = environment.internalPathUrl;
+  toShow = ['message', 'notif'];
 
   // Nouvelles propriétés pour le filtrage
   currentFilter = 'all';
@@ -41,6 +42,9 @@ export class NavRightComponent implements OnInit, OnDestroy {
   conversations: Conversation[] = [];
   notifications: ActivityLoged[] = [];
   private shouldScrollToBottom = false;
+
+  // Namespace spécifique pour les conversations/notifications
+  private namespace = 'internal_messaging';
 
   constructor(
     private renderer: Renderer2,
@@ -67,9 +71,13 @@ export class NavRightComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    console.log(`🧹 Nettoyage NavRight pour namespace: ${this.namespace}`);
+
     this.destroy$.next();
     this.destroy$.complete();
-    this.chatService.disconnect();
+
+    // Déconnexion du namespace spécifique
+    this.chatService.disconnectFromNamespace(this.namespace);
   }
 
   async connectToChat() {
@@ -84,14 +92,15 @@ export class NavRightComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.chatService.connect(token, this.userDetails.id, 'conversation');
+      // Connexion au namespace spécifique pour les conversations
+      this.chatService.connectToNamespace(this.namespace, token, this.userDetails.id);
 
-      // État de la connexion
-      this.chatService.getConnectionStatus()
+      // État de la connexion pour ce namespace spécifique
+      this.chatService.getConnectionStatusForNamespace(this.namespace)
         .pipe(takeUntil(this.destroy$))
         .subscribe(async isConnected => {
           this.isConnected = isConnected;
-          console.log(`🔗 État connexion: ${isConnected}`);
+          console.log(`🔗 État connexion namespace ${this.namespace}: ${isConnected}`);
 
           if (isConnected && this.userDetails?.id) {
             await this.loadUnreadMessage();
@@ -101,56 +110,75 @@ export class NavRightComponent implements OnInit, OnDestroy {
           this.changeDetectorRef.detectChanges();
         });
 
-      // Écoute des nouvelles conversations
+      // Écoute des nouvelles conversations avec filtrage par namespace
       this.chatService.getConversation()
         .pipe(takeUntil(this.destroy$))
         .subscribe((conversation: Conversation) => {
-          const existingConv = this.conversations.find(conv => {
-            return conv._id === conversation._id;
-          });
+          // Filtrer pour ce namespace uniquement
+          if (conversation.namespace === this.namespace) {
+            const existingConv = this.conversations.find(conv => {
+              return conv._id === conversation._id;
+            });
 
-          if (!existingConv) {
-            this.conversations.push(conversation);
+            if (!existingConv) {
+              this.conversations.unshift(conversation); // Ajouter en début de liste
+              console.log(`💬 Nouvelle conversation reçue dans namespace ${this.namespace}:`, conversation);
 
-            if (conversation.participants.some(part => part._id !== this.userDetails.id) && !this.isChatOpen) {
-              this.unreadCount++;
+              // Incrémenter le compteur si ce n'est pas l'utilisateur actuel
+              if (conversation.participants.some(part => part._id !== this.userDetails.id) && !this.isChatOpen) {
+                this.updateUnreadCount(1);
+              }
+
+              this.shouldScrollToBottom = true;
+              this.changeDetectorRef.detectChanges();
+            } else {
+              // Mettre à jour la conversation existante
+              const index = this.conversations.findIndex(conv => conv._id === conversation._id);
+              if (index > -1) {
+                this.conversations[index] = { ...this.conversations[index], ...conversation };
+                this.changeDetectorRef.detectChanges();
+              }
             }
-
-            this.shouldScrollToBottom = true;
-            this.changeDetectorRef.detectChanges();
           }
         });
 
-      // Écoute des nouvelles activités
+      // Écoute des nouvelles activités avec filtrage par namespace
       this.chatService.getActivities()
         .pipe(takeUntil(this.destroy$))
         .subscribe((activity: ActivityLoged) => {
-          const existingActivity = this.notifications.find(notification => {
-            return notification._id === activity._id;
-          });
+          // Filtrer pour ce namespace uniquement
+          if (activity.namespace === this.namespace) {
+            const existingActivity = this.notifications.find(notification => {
+              return notification._id === activity._id;
+            });
 
-          if (!existingActivity) {
-            this.notifications.push(activity);
+            if (!existingActivity) {
+              this.notifications.unshift(activity); // Ajouter en début de liste
+              console.log(`🔔 Nouvelle activité reçue dans namespace ${this.namespace}:`, activity);
 
-            if (activity.author !== this.userDetails.id && !this.isChatOpen) {
-              this.unreadCount++;
+              // Incrémenter le compteur si ce n'est pas l'utilisateur actuel
+              if (activity.author !== this.userDetails.id && !this.isChatOpen) {
+                this.updateUnreadCount(1);
+              }
+
+              this.shouldScrollToBottom = true;
+              this.changeDetectorRef.detectChanges();
             }
-
-            this.shouldScrollToBottom = true;
-            this.changeDetectorRef.detectChanges();
           }
         });
 
-      // Gestion des erreurs
+      // Gestion des erreurs pour ce namespace
       this.chatService.getErrors()
         .pipe(takeUntil(this.destroy$))
-        .subscribe(error => {
-          this.errorMessage = error;
-          console.error('❌ Erreur chat:', error);
+        .subscribe(errorData => {
+          if (errorData.namespace === this.namespace) {
+            this.errorMessage = errorData.error;
+            console.error(`❌ Erreur chat namespace ${this.namespace}:`, errorData.error);
+          }
         });
 
-      // Suivi du compteur de messages non lus
-      this.chatService.getUnreadCount()
+      // Suivi du compteur de messages non lus pour ce namespace
+      this.chatService.getUnreadCountForNamespace(this.namespace)
         .pipe(takeUntil(this.destroy$))
         .subscribe(count => {
           this.unreadCount = count;
@@ -164,9 +192,18 @@ export class NavRightComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Méthode pour ouvrir/fermer le panneau de notifications
+  toggleNotificationPanel() {
+    this.isChatOpen = !this.isChatOpen;
+    if (this.isChatOpen) {
+      this.markAllAsRead();
+    }
+  }
+
   // Nouvelle méthode pour filtrer les éléments
   onFilterChange(event: any) {
     this.currentFilter = event.target.value;
+    this.toShow = event.target.value === 'all' ? ['message', 'notif'] : [event.target.value];
     this.changeDetectorRef.detectChanges();
   }
 
@@ -182,9 +219,35 @@ export class NavRightComponent implements OnInit, OnDestroy {
     return [];
   }
 
+  // Méthode pour obtenir tous les éléments mélangés et triés par date
+  getAllItemsSorted(): Array<{type: 'conversation' | 'notification', data: Conversation | ActivityLoged, date: Date}> {
+    const allItems: Array<{type: 'conversation' | 'notification', data: Conversation | ActivityLoged, date: Date}> = [];
+
+    // Ajouter les conversations
+    this.getFilteredItems('message').forEach(conv => {
+      allItems.push({
+        type: 'conversation',
+        data: conv,
+        date: new Date(conv.updatedAt || conv.createdAt)
+      });
+    });
+
+    // Ajouter les notifications
+    this.getFilteredItems('notif').forEach(notif => {
+      allItems.push({
+        type: 'notification',
+        data: notif,
+        date: new Date(notif.createdAt)
+      });
+    });
+
+    // Trier par date (plus récent en premier)
+    return allItems.sort((a, b) => b.date.getTime() - a.date.getTime());
+  }
+
   getConversationTitle(conversation: Conversation): string {
-    const otherParticipants = conversation.participants.filter(p => p._id !== this.userDetails.id);
-    if (otherParticipants.length > 0) {
+    const otherParticipants = conversation.participants?.filter(p => p._id !== this.userDetails.id);
+    if (otherParticipants?.length > 0) {
       return otherParticipants.map(p => p._id !== this.userDetails.id ? `${p.name} ${p.surname}` : '').join(', ');
     }
     return 'Conversation';
@@ -234,14 +297,18 @@ export class NavRightComponent implements OnInit, OnDestroy {
         return { icon: 'ti ti-user', class: 'bg-light-success' };
       case 'system':
         return { icon: 'ti ti-settings', class: 'bg-light-warning' };
+      case 'pharmacy':
+        return { icon: 'ti ti-building-hospital', class: 'bg-light-success' };
+      case 'validation':
+        return { icon: 'ti ti-check-circle', class: 'bg-light-success' };
+      case 'rejection':
+        return { icon: 'ti ti-x-circle', class: 'bg-light-danger' };
       default:
         return { icon: 'ti ti-bell', class: 'bg-light-secondary' };
     }
   }
 
-  // Méthode pour marquer toutes les notifications comme lues
   markAllAsRead() {
-    // Marquer les conversations comme lues
     this.conversations.forEach(conv => {
       if (conv.unreadCount > 0) {
         conv.unreadCount = 0;
@@ -252,8 +319,16 @@ export class NavRightComponent implements OnInit, OnDestroy {
     this.changeDetectorRef.detectChanges();
   }
 
+  onConversationClick(conversation: Conversation) {
+    console.log('📱 Clic sur conversation:', conversation);
+  }
+
+  onNotificationClick(notification: ActivityLoged) {
+    console.log('🔔 Clic sur notification:', notification);
+  }
+
   logout() {
-    this.chatService.disconnect();
+    this.chatService.disconnectAll();
     this.authService.logout();
   }
 
@@ -281,12 +356,60 @@ export class NavRightComponent implements OnInit, OnDestroy {
     try {
       const history = await this.chatService.getConvHistory(this.userDetails.id);
       if (history) {
-        this.conversations = history.conversations;
-        this.notifications = history.activities;
+        this.conversations = history.conversations || [];
+        this.notifications = history.activities || [];
+
+        let totalUnread = 0;
+        this.conversations.forEach(conv => {
+          if (conv.unreadCount > 0) {
+            totalUnread += conv.unreadCount;
+          }
+        });
+
+        this.unreadCount = totalUnread;
         this.shouldScrollToBottom = true;
+
+        console.log(`📚 Historique chargé pour namespace ${this.namespace}:`, {
+          conversations: this.conversations.length,
+          notifications: this.notifications.length,
+          unreadCount: this.unreadCount
+        });
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des conversations:', error);
+      console.error('❌ Erreur lors du chargement des conversations:', error);
     }
+  }
+
+  private updateUnreadCount(increment: number) {
+    this.unreadCount = Math.max(0, this.unreadCount + increment);
+  }
+
+  // Méthodes de débogage
+  isNamespaceConnected(): boolean {
+    return this.chatService.isConnectedToNamespace(this.namespace);
+  }
+
+  logNamespaceInfo(): void {
+    console.log('📊 Info namespace NavRight:', {
+      namespace: this.namespace,
+      isConnected: this.isNamespaceConnected(),
+      currentUser: this.chatService.getCurrentPharmacyForNamespace(this.namespace),
+      conversations: this.conversations.length,
+      notifications: this.notifications.length,
+      unreadCount: this.unreadCount,
+      connectedNamespaces: this.chatService.getConnectedNamespaces()
+    });
+  }
+
+  getRecentItemsCount(): number {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentConversations = this.conversations.filter(conv =>
+      new Date(conv.createdAt) > oneDayAgo
+    ).length;
+    const recentNotifications = this.notifications.filter(notif =>
+      new Date(notif.createdAt) > oneDayAgo
+    ).length;
+
+    return recentConversations + recentNotifications;
   }
 }

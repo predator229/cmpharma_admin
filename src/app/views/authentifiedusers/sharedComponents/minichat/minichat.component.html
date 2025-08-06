@@ -32,13 +32,12 @@
       <div class="spinner-border spinner-border-sm" role="status"></div>
       <span>Chargement des messages...</span>
     </div>
-
     <div class="message-wrapper"
          *ngFor="let message of messages;"
          [class.own-message]="(currentUser.id == message.senderId)"
          [class.admin-message]="(currentUser.id != message.senderId)">
 
-      <div class="message-bubble" (click)="message.showMoreInfo = !message.showMoreInfo">
+      <div class="message-bubble" *ngIf="message.message" (click)="message.showMoreInfo = !message.showMoreInfo">
         <div class="message-header" *ngIf="(message.senderId != currentUser.id || message.showMoreInfo)">
           <div class="sender-avatar">
             <img *ngIf="currentUser.id == message.senderId; else defaultAvatar"
@@ -55,14 +54,6 @@
 
         <div class="message-content">
           <p>{{ message.message }}</p>
-          <div class="message-attachments" *ngIf="message.attachments != null && message.attachments">
-            <div class="attachment">
-              <i class="fas fa-file-pdf" *ngIf="message.attachments?.fileType === 'document'"
-                 [class.fa-image]="message.attachments?.fileType === 'image'"></i>
-              <span *ngIf="message.attachments?.fileType === 'document'">{{ message.attachments?.fileName }}</span>
-              <img [src]="internatPathUrl+message.attachments?.url" alt="Aperçu" class="preview-image">
-            </div>
-          </div>
         </div>
 
         <div class="message-time" *ngIf="message.showMoreInfo">
@@ -70,73 +61,75 @@
           <i class="fas fa-check" *ngIf="message.seen && message.senderId === currentUser.id"></i>
         </div>
       </div>
-<!--      <button class="download-btn"-->
-<!--          *ngIf="message.attachments != null"-->
-<!--          (click)="downloadFile(message.attachments)"-->
-<!--          [title]="'Télécharger ' + (message.attachments?.fileName || 'le fichier')">-->
-<!--        <i class="fas fa-download"></i>-->
-<!--      </button>-->
+      <div class="message-attachments" *ngIf="message.attachments.length > 0">
+        <div class="attachment-item" *ngFor="let att of message.attachments">
+          <div *ngIf="['jpeg', 'jpg' ,'png'].includes(att.extension)" class="image-attachment">
+            <img [src]="internatPathUrl + att.url" [alt]="att.fileName">
+          </div>
+
+          <!-- Document -->
+          <div *ngIf="!['jpeg', 'jpg' ,'png'].includes(att.extension)" class="document-attachment">
+            <div class="document-icon">
+              <i class="fas"
+                 [class.fa-file-pdf]="att.extension === 'pdf'"
+                 [class.fa-file-word]="['doc', 'xls'].includes(att.extension)"
+                 [class.fa-file]="!['doc', 'xls','pdf'].includes(att.extension)"></i>
+            </div>
+            <div class="document-info" [ngbTooltip]="att.fileName + ' (' + formatFileSize(parseInt(att.fileSize) || 0) + ')'"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Zone de saisie -->
   <div class="chat-input-area">
-    <form [formGroup]="messageForm" (ngSubmit)="sendMessage()" class="message-form">
+    <div class="file-preview" *ngIf="selectedFiles.length > 0">
+      <div class="preview-header">
+        <span>{{ selectedFiles.length }} fichier(s) sélectionné(s)</span>
+        <button type="button" class="clear-all-btn" (click)="clearFiles()">
+          <i class="fas fa-times"></i> Tout supprimer
+        </button>
+      </div>
 
-      <!-- Prévisualisation du fichier sélectionné -->
-      <div class="file-preview" *ngIf="selectedFiles">
-        <div class="preview-item">
-
-          <!-- Prévisualisation image ou icône -->
-          <div *ngIf="selectedFiles && previewDoc && selectedFiles.type.startsWith('image/'); else fileIcon">
-            <img [src]="previewDoc"
-                 [alt]="selectedFiles.name"
-                 class="preview-image">
+      <div class="preview-list">
+        <div *ngFor="let file of selectedFiles; let i = index" class="preview-item">
+          <!-- Prévisualisation image -->
+          <div *ngIf="file.type.startsWith('image/') && previewUrls[i]; else fileIcon" class="preview-image">
+            <img [src]="previewUrls[i]" [alt]="file.name">
           </div>
 
+          <!-- Icône fichier -->
           <ng-template #fileIcon>
             <div class="preview-icon"
-                 [class.pdf]="selectedFiles.type === 'application/pdf'"
-                 [class.doc]="selectedFiles.type.includes('document') || selectedFiles.type.includes('word')">
+                 [class.pdf]="file.type === 'application/pdf'"
+                 [class.doc]="file.type.includes('document') || file.type.includes('word')">
               <i class="fas"
-                 [class.fa-file-pdf]="selectedFiles.type === 'application/pdf'"
-                 [class.fa-file-word]="selectedFiles.type.includes('document') || selectedFiles.type.includes('word')"
-                 [class.fa-file]="!selectedFiles.type.includes('pdf') && !selectedFiles.type.includes('document') && !selectedFiles.type.includes('word')"></i>
+                 [class.fa-file-pdf]="file.type === 'application/pdf'"
+                 [class.fa-file-word]="file.type.includes('document')"
+                 [class.fa-file]="!file.type.includes('pdf') && !file.type.includes('document')"></i>
             </div>
           </ng-template>
 
-          <!-- Informations du fichier -->
+          <!-- Informations fichier -->
           <div class="file-info">
-            <div class="file-name" [title]="selectedFiles.name">{{ selectedFiles.name }}</div>
-            <div class="file-size" *ngIf="selectedFiles.size">{{ (selectedFiles.size / 1024 / 1024).toFixed(2) }} MB</div>
-            <div class="file-type">{{ selectedFiles.type || 'Fichier' }}</div>
+            <div class="file-name" [title]="file.name">{{ file.name }}</div>
+            <div class="file-size">{{ formatFileSize(file.size) }}</div>
           </div>
 
-          <!-- Bouton de suppression -->
+          <!-- Bouton suppression -->
           <button type="button"
                   class="remove-file-btn"
-                  (click)="removeFile()"
-                  [title]="'Supprimer ' + selectedFiles.name">
+                  (click)="removeFile(i)"
+                  [title]="'Supprimer ' + file.name">
             <i class="fas fa-times"></i>
           </button>
         </div>
       </div>
-
-      <!-- Zone de drop (quand aucun fichier sélectionné) -->
-      <div class="drop-zone"
-           *ngIf="!selectedFiles"
-           (click)="fileInput.click()"
-           style="display: none;">
-        <div class="drop-zone-text">
-          <i class="fas fa-cloud-upload-alt"></i>
-          Cliquez pour sélectionner un fichier
-        </div>
-        <div class="drop-zone-subtext">
-          Images, PDF, DOC acceptés (max 5MB)
-        </div>
-      </div>
-
+    </div>
+    <form [formGroup]="messageForm" (ngSubmit)="sendMessage()" class="message-form">
       <div class="input-group">
+        <!-- Bouton pièce jointe -->
         <button type="button"
                 class="btn btn-outline-secondary attachment-btn"
                 (click)="fileInput.click()"
@@ -144,32 +137,36 @@
           <i class="fas fa-paperclip"></i>
         </button>
 
+        <!-- Zone de texte -->
         <textarea class="form-control message-input"
                   formControlName="message"
                   placeholder="Tapez votre message..."
                   rows="1"
                   (keypress)="onKeyPress($event)"
-                  maxlength="1000"></textarea>
+                  maxlength="2000"></textarea>
 
+        <!-- Bouton envoi -->
         <button type="submit"
                 class="btn btn-primary send-btn"
-                [disabled]="!messageForm.valid || isLoading">
+                [disabled]="!messageForm.get('message')?.value?.trim() && selectedFiles.length === 0">
           <i class="fas fa-paper-plane"></i>
         </button>
       </div>
 
+      <!-- Input fichier caché -->
       <input type="file"
              #fileInput
              (change)="onFileSelected($event)"
-             accept="image/*,.pdf,.doc,.docx"
+             accept="image/*,.pdf,.doc,.docx,.txt"
+             multiple
              style="display: none;">
 
-      <div class="character-count" *ngIf="messageForm.get('message')?.value?.length > 800">
-        {{ messageForm.get('message')?.value?.length || 0 }}/1000
+      <!-- Compteur de caractères -->
+      <div class="character-count" *ngIf="messageForm.get('message')?.value?.length > 1800">
+        {{ messageForm.get('message')?.value?.length || 0 }}/2000
       </div>
     </form>
-  </div>
-</div>
+  </div></div>
 
 <!-- Overlay pour fermer le chat sur mobile -->
 <div class="chat-overlay"

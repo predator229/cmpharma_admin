@@ -27,9 +27,18 @@ export const NavigationItems: NavigationItem[] = [
       'dashboard.stats',
       'dashboard.export',
       'preparation.view',
-      'avis.view'
+      'avis.view',
+      'calendrier.view'
     ],
     children: [
+      {
+        id: 'pharmacy-preparation',
+        title: 'En cours',
+        type: 'item',
+        url: '/pharmacy/preparation',
+        icon: 'fa fa-fire text-danger',
+        permissions: ['preparation.view']
+      },
       {
         id: 'pharmacy-dashboard',
         title: 'Tableau de bord',
@@ -39,12 +48,20 @@ export const NavigationItems: NavigationItem[] = [
         permissions: ['dashboard.view']
       },
       {
-        id: 'pharmacy-preparation',
-        title: 'Prep cmd',
+        id: 'pharmacy-calendar',
+        title: 'Calendrier',
         type: 'item',
-        url: '/pharmacy/preparation',
-        icon: 'fa fa-fire text-danger',
-        permissions: ['preparation.view']
+        url: '/pharmacy/calendar',
+        icon: 'fa fa-calendar',
+        permissions: ['calendrier.view']
+      },
+      {
+        id: 'pharmacy-admin-analytics',
+        title: 'Stats',
+        type: 'item',
+        url: '/pharmacy/admin/analytics',
+        icon: 'fa fa-chart-bar',
+        permissions: ['admin_pharmacy.analytics.view']
       },
       {
         id: 'pharmacy-reviews',
@@ -110,14 +127,14 @@ export const NavigationItems: NavigationItem[] = [
         icon: 'fa fa-file-invoice',
         permissions: ['factures.view']
       },
-      {
-        id: 'pharmacy-customers',
-        title: 'Clients',
-        type: 'item',
-        url: '/pharmacy/customers/list',
-        icon: 'fa fa-users',
-        permissions: ['clients.view']
-      }
+      // {
+      //   id: 'pharmacy-customers',
+      //   title: 'Clients',
+      //   type: 'item',
+      //   url: '/pharmacy/customers/list',
+      //   icon: 'fa fa-users',
+      //   permissions: ['clients.view']
+      // }
     ]
   },
   {
@@ -128,7 +145,6 @@ export const NavigationItems: NavigationItem[] = [
     permissions: [
       'utilisateurs.view',
       'utilisateurs.permissions',
-      'utilisateurs.roles'
     ],
     children: [
       {
@@ -144,17 +160,9 @@ export const NavigationItems: NavigationItem[] = [
         title: 'Permissions',
         type: 'item',
         icon: "fa fa-bolt",
-        url: '/pharmacy/users/permissions',
+        url: '/pharmacy/permissions/list',
         permissions: ['utilisateurs.permissions']
       },
-      {
-        id: 'pharmacy-roles',
-        title: 'Rôles',
-        type: 'item',
-        url: '/pharmacy/roles/list',
-        icon: 'ti ti-target',
-        permissions: ['utilisateurs.roles']
-      }
     ]
   },
   {
@@ -164,7 +172,6 @@ export const NavigationItems: NavigationItem[] = [
     icon: 'icon-navigation',
     permissions: [
       'messagerie.view',
-      'calendrier.view',
       'support.view'
     ],
     children: [
@@ -177,18 +184,10 @@ export const NavigationItems: NavigationItem[] = [
         permissions: ['messagerie.view']
       },
       {
-        id: 'pharmacy-calendar',
-        title: 'Calendrier',
-        type: 'item',
-        url: '/pharmacy/calendar',
-        icon: 'fa fa-calendar',
-        permissions: ['calendrier.view']
-      },
-      {
         id: 'pharmacy-support',
         title: 'Support',
         type: 'item',
-        url: '/pharmacy/support',
+        url: '/pharmacy/support/list',
         icon: 'fa fa-headset',
         permissions: ['support.view']
       }
@@ -203,13 +202,12 @@ export const NavigationItems: NavigationItem[] = [
       'parametres.view',
       'admin_pharmacy.logs.view',
       'admin_pharmacy.config.view',
-      'admin_pharmacy.roles.manage',
       'admin_pharmacy.analytics.view'
     ],
     children: [
       {
         id: 'pharmacy-settings',
-        title: 'Paramètres pharmacie',
+        title: 'Paramètres',
         type: 'item',
         url: '/pharmacy/settings',
         icon: 'fa fa-cogs',
@@ -225,28 +223,12 @@ export const NavigationItems: NavigationItem[] = [
       },
       {
         id: 'pharmacy-admin-config',
-        title: 'Configuration avancée',
+        title: 'Conf avancée',
         type: 'item',
         url: '/pharmacy/admin/config',
         icon: 'fa fa-tools',
         permissions: ['admin_pharmacy.config.view']
       },
-      {
-        id: 'pharmacy-admin-roles',
-        title: 'Gestion des rôles',
-        type: 'item',
-        url: '/pharmacy/admin/roles',
-        icon: 'fa fa-shield',
-        permissions: ['admin_pharmacy.roles.manage']
-      },
-      {
-        id: 'pharmacy-admin-analytics',
-        title: 'Analyses et rapports',
-        type: 'item',
-        url: '/pharmacy/admin/analytics',
-        icon: 'fa fa-chart-bar',
-        permissions: ['admin_pharmacy.analytics.view']
-      }
     ]
   }
 ];

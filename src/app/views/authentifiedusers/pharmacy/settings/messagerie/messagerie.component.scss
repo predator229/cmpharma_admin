@@ -647,72 +647,6 @@ $shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
         font-size: 0.95rem;
       }
 
-      .message-attachments {
-        margin-top: 0.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-
-        .attachment-item {
-          .image-attachment img {
-            max-width: 200px;
-            max-height: 200px;
-            border-radius: 8px;
-            cursor: zoom-in;
-            transition: transform 0.2s;
-            object-fit: cover;
-            display: block;
-
-            &:hover {
-              transform: scale(1.02);
-            }
-          }
-
-          .document-attachment {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 0.5rem;
-            background: rgba($dark-text, 0.05);
-            border-radius: 8px;
-            transition: $transition-base;
-
-            &:hover {
-              background: rgba($dark-text, 0.1);
-            }
-
-            .document-icon {
-              width: 35px;
-              height: 35px;
-              background: $info-color;
-              border-radius: 6px;
-              display: grid;
-              place-content: center;
-              color: $white-bg;
-              font-size: 1rem;
-            }
-
-            .document-info {
-              flex: 1;
-              min-width: 0;
-
-              .document-name {
-                font-size: 0.9rem;
-                font-weight: 500;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-              }
-
-              .document-size {
-                font-size: 0.75rem;
-                color: $muted-text;
-              }
-            }
-          }
-        }
-      }
-
       .message-time {
         font-size: 0.7rem;
         margin-top: 0.5rem;
@@ -725,6 +659,78 @@ $shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
       }
     }
+    .message-attachments {
+      //max-width: 70%;
+      //padding: 0.75rem 1rem;
+      //box-shadow: $shadow-sm;
+      //transition: $transition-base;
+      //word-wrap: break-word;
+
+      margin-top: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .attachment-item {
+        .image-attachment img {
+          max-width: 200px;
+          max-height: 200px;
+          border-radius: 8px;
+          cursor: zoom-in;
+          transition: transform 0.2s;
+          object-fit: cover;
+          display: block;
+
+          &:hover {
+            transform: scale(1.02);
+          }
+        }
+
+        .document-attachment {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 0.5rem;
+          background: rgba($dark-text, 0.05);
+          border-radius: 8px;
+          transition: $transition-base;
+
+          &:hover {
+            background: rgba($dark-text, 0.1);
+          }
+
+          .document-icon {
+            width: 35px;
+            height: 35px;
+            background: $info-color;
+            border-radius: 6px;
+            display: grid;
+            place-content: center;
+            color: $white-bg;
+            font-size: 1rem;
+          }
+
+          .document-info {
+            flex: 1;
+            min-width: 0;
+
+            .document-name {
+              font-size: 0.9rem;
+              font-weight: 500;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+
+            .document-size {
+              font-size: 0.75rem;
+              color: $muted-text;
+            }
+          }
+        }
+      }
+    }
+
   }
 
   .no-messages {

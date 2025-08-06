@@ -10,6 +10,7 @@ export class Conversation {
   groupName?: string;
   createdAt: Date;
   updatedAt: Date;
+  namespace?: string;
 
   constructor(data: Partial<Conversation>) {
     this._id = data._id;

@@ -76,7 +76,11 @@ export class UserDetails {
 
     this.loadAllPermissions();
   }
-
+  getInitials(): string {
+    const name = this.name?.charAt(0) || '';
+    const surname = this.surname?.charAt(0) || '';
+    return (name + surname).toUpperCase() || this.email?.charAt(0).toUpperCase() || 'U';
+  }
   static fromApiResponse(data: ApiUserDetails): UserDetails {
     return new UserDetails({
       id: data.user._id,

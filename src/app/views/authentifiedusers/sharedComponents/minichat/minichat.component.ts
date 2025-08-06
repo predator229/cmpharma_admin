@@ -63,14 +63,27 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   private destroy$ = new Subject<void>();
   private shouldScrollToBottom = false;
   private typingTimeout: any;
-  selectedFiles: File;
+  selectedFiles: File[] = [];
+  previewUrls: string[] = [];
 
+  // Namespace pour ce component spécifique
+  private namespace = 'pharmacy_contact_admin';
+  maxFileSize = 10 * 1024 * 1024; // 10MB
+  maxFiles = 5;
+  private successMessage: string;
+  allowedFileTypes = [
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain'
+  ];
   constructor(
     private fb: FormBuilder,
     private chatService: MiniChatService,
     private authService: AuthService,
     private changeDetectorRef: ChangeDetectorRef,
-    private apiService : ApiService
+    private apiService: ApiService
   ) {
     this.messageForm = this.fb.group({
       message: ['', [Validators.required, Validators.maxLength(1000)]]
@@ -82,7 +95,6 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     await this.connectToChat();
     this.loadOnlineAdmins();
     // this.setupFormTypingIndicator();
-
   }
 
   async connectToChat() {
@@ -94,14 +106,15 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         return;
       }
 
-      this.chatService.connect(token, this.pharmacy.id);
+      // Connexion au namespace spécifique
+      this.chatService.connectToNamespace(this.namespace, token, this.pharmacy.id);
 
-      // État de la connexion
-      this.chatService.getConnectionStatus()
+      // État de la connexion pour ce namespace spécifique
+      this.chatService.getConnectionStatusForNamespace(this.namespace)
         .pipe(takeUntil(this.destroy$))
         .subscribe(async isConnected => {
           this.isConnected = isConnected;
-          console.log(`🔗 État connexion: ${isConnected}`);
+          console.log(`🔗 État connexion namespace ${this.namespace}: ${isConnected}`);
 
           if (isConnected && this.pharmacy?.id) {
             await this.loadChatHistory();
@@ -114,34 +127,38 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.chatService.getMessages()
         .pipe(takeUntil(this.destroy$))
         .subscribe((message: MiniChatMessage) => {
-          const existingMessage = this.messages.find(m => {
-            return m.createdAt === message.createdAt &&
-              m.senderId === message.senderId &&
-              m.message === message.message;
-          });
+          if (message.namespace === this.namespace) {
+            const existingMessage = this.messages.find(m => {
+              return m.createdAt === message.createdAt &&
+                m.senderId === message.senderId &&
+                m.message === message.message;
+            });
 
-          if (!existingMessage) {
-            this.messages.push(message);
+            if (!existingMessage) {
+              this.messages.push(message);
 
-            if (message.senderId !== this.currentUser.id && !this.isChatOpen) {
-              this.unreadCount++;
+              if (message.senderId !== this.currentUser.id && !this.isChatOpen) {
+                this.unreadCount++;
+              }
+
+              this.shouldScrollToBottom = true;
+              this.changeDetectorRef.detectChanges();
             }
-
-            this.shouldScrollToBottom = true;
-            this.changeDetectorRef.detectChanges();
           }
         });
 
-      // Gestion des erreurs
+      // Gestion des erreurs pour ce namespace
       this.chatService.getErrors()
         .pipe(takeUntil(this.destroy$))
-        .subscribe(error => {
-          this.errorMessage = error;
-          console.error('❌ Erreur chat:', error);
+        .subscribe(errorData => {
+          if (errorData.namespace === this.namespace) {
+            this.errorMessage = errorData.error;
+            console.error(`❌ Erreur chat namespace ${this.namespace}:`, errorData.error);
+          }
         });
 
-      // Suivi du compteur de messages non lus
-      this.chatService.getUnreadCount()
+      // Suivi du compteur de messages non lus pour ce namespace
+      this.chatService.getUnreadCountForNamespace(this.namespace)
         .pipe(takeUntil(this.destroy$))
         .subscribe(count => {
           this.unreadCount = count;
@@ -180,21 +197,29 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   async sendMessage() {
-    if (this.messageForm.valid && this.messageForm.value.message.trim()) {
-      const messageText = this.messageForm.value.message.trim();
-      let attachments = null;
+    if (typeof this.messageForm.value.message !== 'undefined' || (this.selectedFiles && this.selectedFiles.length > 0)) {
+      const messageText = this.messageForm.value.message?.trim();
+      let attachments = [];
+
       if (this.selectedFiles) {
-        attachments = await this.uploadFiles();
+        try {
+          attachments = await this.uploadFiles();
+        } catch (error) {
+          console.error('❌ Erreur upload fichier:', error);
+          this.errorMessage = 'Erreur lors de l\'upload du fichier';
+          return;
+        }
       }
+
       const newMessage: MiniChatMessage = {
         senderId: this.currentUser.id ?? '',
         senderName: this.currentUser.name ?? '',
         senderType: this.userType,
         message: messageText,
         for: this.pharmacy.id,
-        isActivated:true,
-        isDeleted:false,
-        seen:false,
+        isActivated: true,
+        isDeleted: false,
+        seen: false,
         deletedAt: null,
         seenAt: null,
         createdAt: new Date(),
@@ -202,41 +227,21 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       };
 
       this.messageForm.reset();
-      console.log('the atachement', attachments)
-      const success = this.chatService.sendMessage(this.pharmacy.id, newMessage, attachments);
+      const success = this.chatService.sendMessage(
+        this.namespace,
+        this.pharmacy.id,
+        newMessage,
+        attachments
+      );
+
       if (success) {
         this.shouldScrollToBottom = true;
-        this.removeFile();
+        this.clearFiles();
       } else {
         this.errorMessage = 'Impossible d\'envoyer le message';
       }
     }
   }
-
-  // onFileSelected(event: any) {
-  //   const files = event.target.files;
-  //   if (files && files.length > 0) {
-  //     const file = files[0];
-  //
-  //     // Validation du fichier
-  //     if (file.size > 10 * 1024 * 1024) { // 10MB max
-  //       alert('Le fichier est trop volumineux (max 10MB)');
-  //       return;
-  //     }
-  //
-  //     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/msword'];
-  //     if (!allowedTypes.includes(file.type)) {
-  //       alert('Type de fichier non autorisé');
-  //       return;
-  //     }
-  //
-  //     // Ici, vous uploaderiez le fichier et créeriez le message avec l'attachment
-  //     console.log('Fichier sélectionné:', file);
-  //
-  //     // Reset de l'input
-  //     this.fileInput.nativeElement.value = '';
-  //   }
-  // }
 
   markAllAsRead() {
     this.messages.forEach(message => {
@@ -246,8 +251,8 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
     this.unreadCount = 0;
 
-    // Marquer comme lu côté serveur
-    this.chatService.markAsRead(this.pharmacy.id);
+    // Marquer comme lu côté serveur pour ce namespace
+    this.chatService.markAsRead(this.namespace, this.pharmacy.id);
   }
 
   scrollToBottom() {
@@ -298,11 +303,11 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.messages = history;
         this.messages.forEach(message => {
           if (message.attachments !== null && message.attachments) {
-            console.log(message.attachments);
+            console.log('📎 Attachement trouvé:', message.attachments);
           }
-        })
+        });
         this.shouldScrollToBottom = true;
-        console.log(`📜 Historique chargé: ${history.length} messages`);
+        console.log(`📜 Historique chargé: ${history.length} messages pour namespace ${this.namespace}`);
       }
     } catch (error) {
       console.error('❌ Erreur lors du chargement de l\'historique:', error);
@@ -310,12 +315,18 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   ngOnDestroy() {
+    console.log(`🧹 Nettoyage component pour namespace: ${this.namespace}`);
+
     this.destroy$.next();
     this.destroy$.complete();
 
+    // Quitter le chat et déconnecter du namespace
     if (this.pharmacy?.id) {
-      this.chatService.leavePharmacyChat(this.pharmacy.id);
+      this.chatService.leavePharmacyChat(this.namespace, this.pharmacy.id);
     }
+
+    // Déconnexion du namespace spécifique
+    this.chatService.disconnectFromNamespace(this.namespace);
 
     if (this.typingTimeout) {
       clearTimeout(this.typingTimeout);
@@ -344,39 +355,54 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     return types[mimeType] || 'Fichier';
   }
-  onFileSelected(event: any): void {
-    const file = event.target.files[0];
-    if (!file) return;
+  private showError(message: string) {
+    this.errorMessage = message;
+    this.successMessage = '';
+    setTimeout(() => this.clearMessages(), 5000);
+  }
+  private clearMessages() {
+    this.errorMessage = '';
+    this.successMessage = '';
+  }
+  private validateFile(file: File): boolean {
+    if (file.size > this.maxFileSize) {
+      this.showError(`Le fichier "${file.name}" est trop volumineux (max ${this.maxFileSize / 1024 / 1024}MB)`);
+      return false;
+    }
+    if (!this.allowedFileTypes.includes(file.type)) {
+      this.showError(`Type de fichier "${file.type}" non autorisé pour "${file.name}"`);
+      return false;
+    }
+    return true;
+  }
+  onFileSelected(event: any) {
+    const files = Array.from(event.target.files) as File[];
 
-    // Validation du type de fichier
-    if (!this.isValidFileType(file)) {
-      alert('Type de fichier non autorisé. Formats acceptés: PDF, DOC, DOCX, JPG, PNG');
+    if (this.selectedFiles.length + files.length > this.maxFiles) {
+      this.showError(`Vous ne pouvez sélectionner que ${this.maxFiles} fichiers maximum`);
       this.resetFileInput();
       return;
     }
 
-    // Validation de la taille (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Le fichier est trop volumineux. Taille maximum: 5MB');
-      this.resetFileInput();
-      return;
-    }
+    files.forEach(file => {
+      if (this.validateFile(file)) {
+        this.selectedFiles.push(file);
 
-    // Stocker le fichier
-    this.selectedFiles = file;
+        // Créer une prévisualisation pour les images
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+            this.previewUrls.push(e.target.result);
+            this.changeDetectorRef.detectChanges();
+          };
+          reader.readAsDataURL(file);
+        } else {
+          this.previewUrls.push('');
+        }
+      }
+    });
 
-    // Créer une prévisualisation pour les images
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.previewDoc = e.target.result;
-        this.changeDetectorRef.detectChanges();
-      };
-      reader.readAsDataURL(file);
-    } else {
-      // Pour les autres types de fichiers, pas de prévisualisation
-      this.previewDoc = '';
-    }
+    this.resetFileInput();
   }
 
   private isValidFileType(file: File): boolean {
@@ -391,10 +417,9 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     return allowedTypes.includes(file.type);
   }
 
-  removeFile(): void {
-    delete this.selectedFiles;
-    delete this.previewDoc;
-    this.resetFileInput();
+  removeFile(index: number) {
+    this.selectedFiles.splice(index, 1);
+    this.previewUrls.splice(index, 1);
   }
 
   private resetFileInput(): void {
@@ -407,10 +432,12 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     event.preventDefault();
     event.stopPropagation();
   }
+
   onDragLeave(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
   }
+
   onDrop(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
@@ -425,8 +452,9 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.onFileSelected(mockEvent);
     }
   }
-  private async uploadFiles(): Promise<string> {
-    let fileId: string = '';
+
+  private async uploadFiles(): Promise<string[]> {
+    let fileId: string[] = [];
     const token = await this.authService.getRealToken();
     const uid = await this.authService.getUid();
 
@@ -439,18 +467,26 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
 
     if (this.selectedFiles) {
-      const formData = new FormData();
-      formData.append('file', this.selectedFiles);
-      formData.append('type_', 'chat_pharm_apartment');
-      formData.append('pharmacyId', this.pharmacy.id || '');
-      formData.append('uid', uid);
+      for (const file_ of this.selectedFiles) {
+        if (!file_) { continue; }
+        const formData = new FormData();
+        formData.append('file', file_);
+        formData.append('type_', 'chat_pharm_apartment');
+        formData.append('pharmacyId', this.pharmacy.id || '');
+        formData.append('uid', uid);
 
-      try {
-        const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-document', formData, headers).toPromise();
-        if (response && response.success) {
-          fileId = response.fileId;
+        try {
+          const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-document', formData, headers).toPromise();
+          if (response && response.success) {
+            fileId.push(response.fileId);
+            console.log('✅ Fichier uploadé avec succès, ID:', fileId);
+          } else {
+            throw new Error('Réponse invalide du serveur');
+          }
+        } catch (error) {
+          console.error('❌ Erreur upload:', error);
+          throw error;
         }
-      } catch (error) {
       }
     }
     return fileId;
@@ -474,7 +510,9 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      console.log('📥 Téléchargement initié pour:', filename);
     } catch (error) {
+      console.error('❌ Erreur téléchargement:', error);
       alert('Erreur lors du téléchargement du fichier. Veuillez réessayer.');
     }
   }
@@ -485,4 +523,29 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.shouldScrollToBottom = false;
     }
   }
+
+  // Méthodes utilitaires pour déboguer le namespace
+  isNamespaceConnected(): boolean {
+    return this.chatService.isConnectedToNamespace(this.namespace);
+  }
+
+  getCurrentPharmacyForNamespace(): string | null {
+    return this.chatService.getCurrentPharmacyForNamespace(this.namespace);
+  }
+
+  logNamespaceInfo(): void {
+    console.log('📊 Info namespace:', {
+      namespace: this.namespace,
+      isConnected: this.isNamespaceConnected(),
+      currentPharmacy: this.getCurrentPharmacyForNamespace(),
+      connectedNamespaces: this.chatService.getConnectedNamespaces()
+    });
+  }
+
+  clearFiles() {
+    this.selectedFiles = [];
+    this.previewUrls = [];
+  }
+
+  protected readonly parseInt = parseInt;
 }

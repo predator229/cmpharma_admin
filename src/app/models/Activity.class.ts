@@ -8,6 +8,7 @@ export class ActivityLoged {
   updatedAt: string;
   author?: string;
   time?: string;
+  namespace?: string;
 
   constructor(data: Partial<ActivityLoged>) {
     this._id = data._id;

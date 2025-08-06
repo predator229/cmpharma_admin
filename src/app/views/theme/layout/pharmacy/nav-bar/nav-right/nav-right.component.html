@@ -13,7 +13,7 @@
           <i class="ti ti-bell"></i>
           <!-- Badge pour le compteur de notifications non lues -->
           <span *ngIf="unreadCount > 0" class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle">
-            {{ unreadCount > 99 ? '99+' : unreadCount }}
+            {{ unreadCount > 9 ? '9+' : unreadCount }}
           </span>
         </a>
         <div class="dropdown-menu dropdown-notification dropdown-menu-end pc-h-dropdown" ngbDropdownMenu>
@@ -54,7 +54,7 @@
                 </div>
 
                 <!-- Section des conversations si elles existent -->
-                <ng-container *ngIf="conversations && conversations.length > 0">
+                <ng-container *ngIf="conversations && conversations.length > 0 && toShow.includes('message')">
                   <div *ngFor="let conversation of conversations" class="list-group-item list-group-item-action">
                     <div class="d-flex">
                       <div class="flex-shrink-0">
@@ -68,7 +68,7 @@
                           {{ getConversationTitle(conversation) }}
                         </h5>
                         <p class="text-body fs-6">
-                          {{ conversation.lastMessage || 'Nouvelle conversation' }}
+                          {{ conversation.lastMessage?.message || 'Nouvelle conversation' }}
                         </p>
                         <div *ngIf="conversation.unreadCount > 0" class="badge rounded-pill bg-light-danger">
                           {{ conversation.unreadCount }} non lu{{ conversation.unreadCount > 1 ? 's' : '' }}
@@ -82,7 +82,7 @@
                 </ng-container>
 
                 <!-- Section des notifications d'activité -->
-                <ng-container *ngIf="notifications && notifications.length > 0">
+                <ng-container *ngIf="notifications && notifications.length > 0 && toShow.includes('notif')">
                   <div *ngFor="let notification of notifications" class="list-group-item list-group-item-action">
                     <div class="d-flex">
                       <div class="flex-shrink-0">
@@ -147,9 +147,9 @@
 
           <div class="dropdown-divider"></div>
           <div class="text-center py-2">
-            <a href="javascript:" class="link-primary" (click)="markAllAsRead()">
-              Marquer comme lu
-            </a>
+<!--            <a href="javascript:" class="link-primary" (click)="markAllAsRead()">-->
+<!--              Marquer comme lu-->
+<!--            </a>-->
           </div>
         </div>
       </div>

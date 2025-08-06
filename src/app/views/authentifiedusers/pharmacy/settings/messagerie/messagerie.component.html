@@ -14,15 +14,15 @@
       <div class="sidebar-header">
         <div class="user-profile">
           <div class="user-avatar">
-            <img *ngIf="currentUser?.photoURL; else defaultAvatar"
-                 [src]="currentUser.photoURL"
-                 [alt]="currentUser.getFullName()">
+            <img *ngIf="userDetail?.photoURL; else defaultAvatar"
+                 [src]="userDetail.photoURL"
+                 [alt]="userDetail.name+' '+userDetail.surname">
             <ng-template #defaultAvatar>
-              <span>{{ currentUser?.getInitials() }}</span>
+              <span>{{ userDetail?.getInitials() }}</span>
             </ng-template>
           </div>
           <div class="user-info">
-            <h6>{{ currentUser?.getFullName() }}</h6>
+            <h6>{{ userDetail.name+' '+userDetail.surname }}</h6>
             <span class="status" [class.online]="isConnected">
               {{ isConnected ? 'En ligne' : 'Hors ligne' }}
             </span>
@@ -93,7 +93,7 @@
 
             <div class="conversation-preview">
               <p *ngIf="conversation.lastMessage; else noMessages">
-                <span *ngIf="conversation.lastMessage.senderId === currentUser._id" class="sender-indicator">Vous: </span>
+                <span *ngIf="conversation.lastMessage.senderId === userDetail.id" class="sender-indicator">Vous: </span>
                 {{ conversation.lastMessage.message || 'Fichier joint' }}
               </p>
               <ng-template #noMessages>
@@ -158,8 +158,6 @@
             </button>
           </div>
         </div>
-
-        <!-- Messages -->
         <div class="chat-messages" #messagesContainer>
           <div *ngIf="groupedMessages.length === 0" class="no-messages">
             <i class="fas fa-comment-alt"></i>
@@ -174,89 +172,69 @@
 
             <div *ngFor="let message of group.messages; let i = index"
                  class="message-wrapper"
-                 [class.own-message]="message.senderId === currentUser._id"
-                 [class.consecutive]="i > 0 && group.messages[i-1].senderId === message.senderId">
+                 [class.own-message]="message.senderId === userDetail.id"
+                 [class.consecutive]="i > 0 && group.messages[i - 1].senderId === message.senderId">
 
-              <!-- Avatar (pour les messages des autres utilisateurs) -->
-<!--              <div *ngIf="message.senderId !== currentUser._id && !message.consecutive"-->
-<!--                   class="message-avatar">-->
-<!--                <img *ngIf="message.senderAvatar; else defaultSenderAvatar"-->
-<!--                     [src]="message.senderAvatar"-->
-<!--                     [alt]="message.senderName">-->
-<!--                <ng-template #defaultSenderAvatar>-->
-<!--                  <span>{{ message.senderName?.charAt(0) || 'U' }}</span>-->
-<!--                </ng-template>-->
-<!--              </div>-->
+              <div *ngIf="message.senderId !== userDetail.id && (i === 0 || group.messages[i - 1].senderId !== message.senderId)"
+                   class="message-avatar">
+                <img *ngIf="!activeConversation.isGroup && getConversationAvatar(activeConversation).startsWith('http'); else iconAvatar"
+                     [src]="getConversationAvatar(activeConversation)"
+                     [alt]="getConversationName(activeConversation)">
+              </div>
+              <div *ngIf="message.senderId !== userDetail.id && !(i === 0 || group.messages[i - 1].senderId !== message.senderId)" style="margin-right: 15px;" ></div>
 
-              <div class="message-bubble">
-                <!-- Nom de l'expéditeur -->
-                <div *ngIf="message.senderId !== currentUser._id && activeConversation.isGroup"
-                     class="sender-name">
+              <div class="message-bubble" *ngIf="message.message || message.attachments.length > 0">
+                <!-- Nom de l’expéditeur (visible en groupe si ce n’est pas l’utilisateur) -->
+                <div *ngIf="message.senderId !== userDetail.id && activeConversation.isGroup" class="sender-name">
                   {{ message.senderName }}
                 </div>
 
-                <!-- Contenu du message -->
+                <!-- Texte du message -->
                 <div class="message-content" *ngIf="message.message">
                   <p>{{ message.message }}</p>
                 </div>
 
                 <!-- Pièces jointes -->
-                <div class="message-attachments" *ngIf="message.attachments != null">
-                  <div class="attachment-item">
+                <div class="message-attachments" *ngIf="message.attachments.length > 0">
+                  <div class="attachment-item" *ngFor="let att of message.attachments">
                     <!-- Image -->
-                    <div *ngIf="message.attachments.fileType === 'image'" class="image-attachment">
-<!--                      <img [src]="internatPathUrl + message.attachments.url"-->
-<!--                           [alt]="message.attachments.fileName"-->
-<!--                           (click)="openImageModal(message.attachments)">-->
+                    <div *ngIf="['jpeg', 'jpg', 'png'].includes(att.extension)" class="image-attachment">
+                      <img [src]="internatPathUrl + att.url" [alt]="att.fileName">
                     </div>
 
                     <!-- Document -->
-                    <div *ngIf="message.attachments.fileType !== 'image'" class="document-attachment">
+                    <div *ngIf="!['jpeg', 'jpg', 'png'].includes(att.extension)" class="document-attachment">
                       <div class="document-icon">
                         <i class="fas"
-                           [class.fa-file-pdf]="message.attachments.fileType === 'pdf'"
-                           [class.fa-file-word]="message.attachments.fileType === 'document'"
-                           [class.fa-file]="message.attachments.fileType === 'other'"></i>
+                           [class.fa-file-pdf]="att.extension === 'pdf'"
+                           [class.fa-file-word]="['doc', 'xls'].includes(att.extension)"
+                           [class.fa-file]="!['doc', 'xls', 'pdf'].includes(att.extension)"></i>
                       </div>
-                      <div class="document-info">
-                        <span class="document-name">{{ message.attachments.fileName }}</span>
-                        <span class="document-size">{{ formatFileSize(parseInt(message.attachments.fileSize) || 0) }}</span>
+                      <div class="document-info"
+                           [ngbTooltip]="att.fileName + ' (' + formatFileSize(parseInt(att.fileSize) || 0) + ')'">
+                        {{ att.fileName }}
                       </div>
-<!--                      <button class="download-btn"-->
-<!--                              (click)="downloadFile(attachment)"-->
-<!--                              title="Télécharger">-->
-<!--                        <i class="fas fa-download"></i>-->
-<!--                      </button>-->
                     </div>
                   </div>
                 </div>
 
-                <!-- Heure du message -->
+                <!-- Date + statut vu -->
                 <div class="message-time">
                   {{ formatMessageTime(message.createdAt) }}
-                  <i *ngIf="message.senderId === currentUser._id && message.seen"
+                  <i *ngIf="message.senderId === userDetail.id && message.seen"
                      class="fas fa-check-double seen-indicator"
                      title="Vu"></i>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- Indicateur de frappe -->
-          <div *ngIf="typingUsers.length > 0" class="typing-indicator">
-            <div class="typing-avatar">
-              <i class="fas fa-user"></i>
-            </div>
-            <div class="typing-bubble">
-              <span>{{ typingUsers.join(', ') }} {{ typingUsers.length > 1 ? 'sont en train' : 'est en train' }} d'écrire...</span>
-              <div class="typing-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            </div>
-          </div>
         </div>
+
+        <ng-template #iconAvatar>
+          <div class="avatar-placeholder">
+            <i class="fas fa-user-circle"></i>
+          </div>
+        </ng-template>
 
         <!-- Zone de saisie -->
         <div class="chat-input-area">

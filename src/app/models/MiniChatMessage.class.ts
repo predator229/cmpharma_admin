@@ -8,7 +8,7 @@ export class MiniChatMessage {
   message: string;
   for?: string;
   conversation? : string;
-  attachments?: FileClass | null;
+  attachments?: FileClass[];
   isActivated:boolean;
   isDeleted: boolean;
   seen: boolean;
@@ -18,6 +18,7 @@ export class MiniChatMessage {
   updatedAt: Date;
   showMoreInfo? : boolean;
   isGroup?: boolean;
+  namespace?: string;
 
   constructor(data: Partial<MiniChatMessage>) {
     this._id = data._id;
@@ -27,7 +28,7 @@ export class MiniChatMessage {
     this.message = data.message;
     this.for = data.for;
     this.conversation = data.conversation ?? null;
-    this.attachments = data.attachments || null;
+    this.attachments = data.attachments || [];
     this.isActivated = data.isActivated || false;
     this.isDeleted = data.isDeleted || false;
     this.deletedAt = data.deletedAt;

@@ -811,11 +811,11 @@ export class PharmacyUserDetailComponent implements OnInit, OnDestroy {
     if (this.hasChanges) {
       this.showDiscardChangesDialog().then(confirmed => {
         if (confirmed) {
-          this.router.navigate(['pharmacy/users']);
+          this.router.navigate(['pharmacy/users/list']);
         }
       });
     } else {
-      this.router.navigate(['pharmacy/users']);
+      this.router.navigate(['pharmacy/users/list']);
     }
   }
 
