@@ -14,6 +14,7 @@ import {Subject} from "rxjs";
 import {environment} from "../../../../../../../environments/environment";
 import {Conversation} from "../../../../../../models/Conversation.class";
 import {ActivityLoged} from "../../../../../../models/Activity.class";
+import {Ticket} from "../../../../../../models/Ticket.class";
 
 @Component({
   selector: 'app-nav-right',
@@ -330,6 +331,10 @@ export class NavRightComponent implements OnInit, OnDestroy {
   logout() {
     this.chatService.disconnectAll();
     this.authService.logout();
+  }
+
+  goToProfile() {
+    this.router.navigate(['pharmacy/users', this.userDetails.id]);
   }
 
   fontFamily(font: string, sendToServer: boolean = false) {
