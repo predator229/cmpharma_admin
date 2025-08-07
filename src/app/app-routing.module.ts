@@ -7,10 +7,9 @@ import { AuthGuard } from './controllers/guards/auth.guard';
 import { GroupGuard } from './controllers/guards/group.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
 import {GroupCode} from "./models/Group.class";
-import {PharmacyUserDetailComponent} from "./views/authentifiedusers/pharmacy/users/user/user.component";
 import {
-  PharmacyInternalMessagingComponent
-} from "./views/authentifiedusers/pharmacy/settings/messagerie/messagerie.component";
+  TicketDetailComponent
+} from "./views/authentifiedusers/sharedComponents/support/tickets/detail/support.component";
 
 const routes: Routes = [{
     path: 'admin',
@@ -55,8 +54,8 @@ const routes: Routes = [{
       { path: 'admin/logs/:idPharmacy',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/logs/logs.component').then((c) => c.PharmacyLogsComponent), },
 
       { path: 'messaging',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/messagerie/messagerie.component').then((c) => c.PharmacyInternalMessagingComponent), },
-      { path: 'support/list',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/messagerie/messagerie.component').then((c) => c.PharmacyInternalMessagingComponent), },
-      { path: 'support/:id',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/messagerie/messagerie.component').then((c) => c.PharmacyInternalMessagingComponent), },
+      { path: 'support/list',  loadComponent: () => import('./views/authentifiedusers/sharedComponents/support/tickets/list/support.component').then((c) => c.TicketListComponent), },
+      { path: 'support/:id',  loadComponent: () => import('./views/authentifiedusers/sharedComponents/support/tickets/detail/support.component').then((c) => c.TicketDetailComponent), },
 
     ],
   },

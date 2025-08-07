@@ -1,0 +1,1341 @@
+// ticket-list.component.scss
+
+// Variables
+$primary-color: #d91a72;
+$primary-hover: #b91560;
+$secondary-color: #6c757d;
+$success-color: #28a745;
+$info-color: #17a2b8;
+$warning-color: #ffc107;
+$danger-color: #dc3545;
+$light-bg: #f8f9fa;
+$white-bg: #ffffff;
+$dark-text: #343a40;
+$muted-text: #6c757d;
+$border-color: #e9ecef;
+
+// Dimensions
+$border-radius: 8px;
+$border-radius-lg: 12px;
+$transition: all 0.2s ease-in-out;
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+
+.ticket-system {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+
+  // Header
+  .ticket-header {
+    background: $white-bg;
+    border-radius: $border-radius-lg;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: $shadow-sm;
+    border: 1px solid $border-color;
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+
+      .title-section {
+        h1 {
+          color: $dark-text;
+          font-size: 2rem;
+          font-weight: 700;
+          margin: 0 0 0.5rem 0;
+
+          i {
+            color: $primary-color;
+            margin-right: 0.75rem;
+          }
+        }
+
+        .subtitle {
+          color: $muted-text;
+          font-size: 1rem;
+          margin: 0;
+
+          .unread-count {
+            color: $danger-color;
+            font-weight: 600;
+          }
+        }
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+
+        .btn {
+          padding: 0.75rem 1.5rem;
+          border-radius: $border-radius;
+          font-weight: 500;
+          transition: $transition;
+          border: 1px solid $border-color;
+
+          &.btn-primary {
+            background: $primary-color;
+            border-color: $primary-color;
+            color: white;
+
+            &:hover {
+              background: $primary-hover;
+              border-color: $primary-hover;
+            }
+          }
+
+          &.btn-outline-primary {
+            color: $primary-color;
+            border-color: $primary-color;
+
+            &:hover, &.active {
+              background: $primary-color;
+              color: white;
+            }
+
+            .filter-count {
+              background: $danger-color;
+              color: white;
+              border-radius: 12px;
+              padding: 2px 6px;
+              font-size: 0.75rem;
+              margin-left: 0.5rem;
+            }
+          }
+        }
+
+        .view-toggle {
+          display: flex;
+          border: 1px solid $border-color;
+          border-radius: $border-radius;
+          overflow: hidden;
+
+          .btn-icon {
+            background: $white-bg;
+            border: none;
+            padding: 0.75rem;
+            color: $muted-text;
+            transition: $transition;
+
+            &:hover {
+              background: $light-bg;
+              color: $dark-text;
+            }
+
+            &.active {
+              background: $primary-color;
+              color: white;
+            }
+
+            & + .btn-icon {
+              border-left: 1px solid $border-color;
+            }
+          }
+        }
+      }
+    }
+
+    .quick-stats {
+      display: flex;
+      gap: 2rem;
+
+      .stat-item {
+        text-align: center;
+        padding: 1rem;
+        border-radius: $border-radius;
+        background: $light-bg;
+        min-width: 120px;
+        transition: $transition;
+
+        &.clickable {
+          cursor: pointer;
+
+          &:hover {
+            background: darken($light-bg, 5%);
+            transform: translateY(-2px);
+            box-shadow: $shadow-sm;
+          }
+        }
+
+        .stat-value {
+          font-size: 2rem;
+          font-weight: 700;
+          color: $primary-color;
+          margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+          font-size: 0.875rem;
+          color: $muted-text;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  // Filtres
+  .filters-panel {
+    background: $white-bg;
+    border-radius: $border-radius-lg;
+    border: 1px solid $border-color;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease-in-out;
+
+    &.show {
+      max-height: 500px;
+    }
+
+    .filters-form {
+      padding: 2rem;
+
+      .filter-row {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .filter-group {
+          flex: 1;
+
+          label {
+            display: block;
+            font-weight: 600;
+            color: $dark-text;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+          }
+
+          .search-input {
+            position: relative;
+
+            i {
+              position: absolute;
+              left: 1rem;
+              top: 50%;
+              transform: translateY(-50%);
+              color: $muted-text;
+            }
+
+            input {
+              width: 100%;
+              padding: 0.75rem 1rem 0.75rem 2.5rem;
+              border: 1px solid $border-color;
+              border-radius: $border-radius;
+              font-size: 0.9rem;
+              transition: $transition;
+
+              &:focus {
+                outline: none;
+                border-color: $primary-color;
+                box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+              }
+            }
+
+            .clear-search {
+              position: absolute;
+              right: 0.75rem;
+              top: 50%;
+              transform: translateY(-50%);
+              background: none;
+              border: none;
+              color: $muted-text;
+              cursor: pointer;
+              padding: 0.25rem;
+              transition: $transition;
+
+              &:hover {
+                color: $dark-text;
+              }
+            }
+          }
+
+          .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+
+            .checkbox-item {
+              display: flex;
+              align-items: center;
+              cursor: pointer;
+
+              input[type="checkbox"] {
+                margin-right: 0.75rem;
+                accent-color: $primary-color;
+              }
+
+              .checkbox-label {
+                font-size: 0.9rem;
+                color: $dark-text;
+
+                .count {
+                  color: $muted-text;
+                  font-size: 0.8rem;
+                  margin-left: 0.25rem;
+                }
+              }
+            }
+          }
+
+          .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid $border-color;
+            border-radius: $border-radius;
+            font-size: 0.9rem;
+            transition: $transition;
+
+            &:focus {
+              outline: none;
+              border-color: $primary-color;
+              box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+            }
+          }
+        }
+
+        .filter-actions {
+          display: flex;
+          align-items: flex-end;
+
+          .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: $border-radius;
+            font-weight: 500;
+            transition: $transition;
+            border: 1px solid $border-color;
+            background: $white-bg;
+            color: $muted-text;
+
+            &:hover {
+              background: $light-bg;
+              color: $dark-text;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Actions en lot
+  .bulk-actions {
+    background: $primary-color;
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: $border-radius;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: $shadow-sm;
+
+    .selection-info {
+      font-weight: 600;
+    }
+
+    .bulk-buttons {
+      display: flex;
+      gap: 1rem;
+
+      .btn {
+        padding: 0.5rem 1rem;
+        border-radius: $border-radius;
+        font-weight: 500;
+        transition: $transition;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+      }
+    }
+  }
+
+  // Contenu principal
+  .tickets-content {
+    .alert {
+      padding: 1rem 1.5rem;
+      border-radius: $border-radius;
+      margin-bottom: 2rem;
+      border: none;
+
+      &.alert-danger {
+        background: rgba($danger-color, 0.1);
+        color: $danger-color;
+        border-left: 4px solid $danger-color;
+      }
+
+      i {
+        margin-right: 0.5rem;
+      }
+    }
+
+    .connection-status {
+      background: rgba($warning-color, 0.1);
+      color: darken($warning-color, 20%);
+      padding: 1rem 1.5rem;
+      border-radius: $border-radius;
+      margin-bottom: 2rem;
+      text-align: center;
+      border-left: 4px solid $warning-color;
+
+      i {
+        margin-right: 0.5rem;
+        animation: pulse 2s infinite;
+      }
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: $muted-text;
+
+      .spinner {
+        width: 3rem;
+        height: 3rem;
+        border: 3px solid $light-bg;
+        border-top: 3px solid $primary-color;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem auto;
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: $muted-text;
+
+      .empty-icon {
+        font-size: 4rem;
+        color: $border-color;
+        margin-bottom: 1rem;
+      }
+
+      h3 {
+        color: $dark-text;
+        margin-bottom: 1rem;
+      }
+
+      p {
+        margin-bottom: 2rem;
+      }
+
+      .btn {
+        padding: 0.75rem 2rem;
+        border-radius: $border-radius;
+        font-weight: 500;
+        transition: $transition;
+
+        &.btn-primary {
+          background: $primary-color;
+          border-color: $primary-color;
+          color: white;
+
+          &:hover {
+            background: $primary-hover;
+          }
+        }
+
+        &.btn-outline-primary {
+          color: $primary-color;
+          border-color: $primary-color;
+
+          &:hover {
+            background: $primary-color;
+            color: white;
+          }
+        }
+      }
+    }
+  }
+
+  // Vue Liste
+  .tickets-list {
+    background: $white-bg;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-sm;
+    border: 1px solid $border-color;
+    overflow: hidden;
+
+    .list-header {
+      display: grid;
+      grid-template-columns: 40px 1fr 120px 100px 150px 200px 100px;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      background: $light-bg;
+      font-weight: 600;
+      color: $dark-text;
+      font-size: 0.875rem;
+      border-bottom: 1px solid $border-color;
+
+      .sortable {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: $transition;
+
+        &:hover {
+          color: $primary-color;
+        }
+
+        i {
+          opacity: 0.5;
+          transition: $transition;
+        }
+
+        &:hover i {
+          opacity: 1;
+        }
+      }
+    }
+
+    .ticket-item {
+      display: grid;
+      grid-template-columns: 40px 1fr 120px 100px 150px 200px 100px;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid $border-color;
+      transition: $transition;
+      align-items: center;
+
+      &:hover {
+        background: rgba($primary-color, 0.02);
+      }
+
+      &.selected {
+        background: rgba($primary-color, 0.05);
+        border-left: 4px solid $primary-color;
+      }
+
+      &.unread {
+        background: rgba($info-color, 0.02);
+
+        .ticket-title {
+          font-weight: 600;
+        }
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .item-select input[type="checkbox"] {
+        accent-color: $primary-color;
+      }
+
+      .item-title {
+        cursor: pointer;
+
+        .ticket-number {
+          font-size: 0.8rem;
+          color: $muted-text;
+          font-weight: 500;
+          margin-bottom: 0.25rem;
+        }
+
+        .ticket-title {
+          font-size: 0.95rem;
+          color: $dark-text;
+          font-weight: 500;
+          margin-bottom: 0.25rem;
+          line-height: 1.3;
+        }
+
+        .ticket-description {
+          font-size: 0.85rem;
+          color: $muted-text;
+          line-height: 1.4;
+        }
+      }
+
+      .status-badge, .priority-badge, .category-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      // Status badges
+      .status-open { background: rgba($info-color, 0.1); color: $info-color; }
+      .status-progress { background: rgba($warning-color, 0.1); color: darken($warning-color, 20%); }
+      .status-pending { background: rgba($secondary-color, 0.1); color: $secondary-color; }
+      .status-resolved { background: rgba($success-color, 0.1); color: $success-color; }
+      .status-closed { background: rgba($dark-text, 0.1); color: $dark-text; }
+
+      // Priority badges
+      .priority-urgent { background: rgba($danger-color, 0.1); color: $danger-color; }
+      .priority-high { background: rgba(#ff6b35, 0.1); color: #ff6b35; }
+      .priority-medium { background: rgba($warning-color, 0.1); color: darken($warning-color, 20%); }
+      .priority-low { background: rgba($success-color, 0.1); color: $success-color; }
+
+      .category-badge {
+        background: rgba($secondary-color, 0.1);
+        color: $secondary-color;
+      }
+
+      .item-activity {
+        text-align: right;
+
+        .activity-time {
+          font-size: 0.85rem;
+          color: $dark-text;
+          margin-bottom: 0.25rem;
+        }
+
+        .activity-info {
+          font-size: 0.75rem;
+          color: $muted-text;
+        }
+
+        .unread-badge {
+          background: $danger-color;
+          color: white;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.7rem;
+          font-weight: 600;
+          margin-top: 0.25rem;
+        }
+      }
+
+      .item-actions {
+        .btn {
+          padding: 0.375rem 0.75rem;
+          border-radius: $border-radius;
+          font-size: 0.8rem;
+          transition: $transition;
+          border: 1px solid $border-color;
+          background: $white-bg;
+          color: $primary-color;
+
+          &:hover {
+            background: $primary-color;
+            color: white;
+          }
+        }
+      }
+    }
+  }
+
+  // Vue Grille
+  .tickets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+
+    .ticket-card {
+      background: $white-bg;
+      border: 1px solid $border-color;
+      border-radius: $border-radius-lg;
+      overflow: hidden;
+      transition: $transition;
+      cursor: pointer;
+      box-shadow: $shadow-sm;
+
+      &:hover {
+        box-shadow: $shadow-md;
+        transform: translateY(-2px);
+      }
+
+      &.unread {
+        border-left: 4px solid $info-color;
+      }
+
+      .card-header {
+        padding: 1rem 1.5rem;
+        background: $light-bg;
+        border-bottom: 1px solid $border-color;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .ticket-number {
+          font-size: 0.85rem;
+          color: $muted-text;
+          font-weight: 600;
+        }
+      }
+
+      .card-body {
+        padding: 1.5rem;
+
+        .ticket-title {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: $dark-text;
+          margin-bottom: 0.75rem;
+          line-height: 1.3;
+        }
+
+        .ticket-description {
+          color: $muted-text;
+          line-height: 1.5;
+          margin-bottom: 1rem;
+          font-size: 0.9rem;
+        }
+
+        .ticket-meta {
+          display: flex;
+          gap: 0.75rem;
+
+          .meta-item {
+            flex: 1;
+          }
+        }
+      }
+
+      .card-footer {
+        padding: 1rem 1.5rem;
+        background: $light-bg;
+        border-top: 1px solid $border-color;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .footer-left {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+
+          .last-activity {
+            font-size: 0.85rem;
+            color: $muted-text;
+          }
+
+          .message-count {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.8rem;
+            color: $muted-text;
+
+            i {
+              opacity: 0.7;
+            }
+          }
+        }
+
+        .footer-right {
+          .unread-badge {
+            background: $danger-color;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+  }
+
+  // Vue Kanban
+  .tickets-kanban {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+
+    .kanban-column {
+      min-width: 300px;
+      background: $light-bg;
+      border-radius: $border-radius-lg;
+      border: 1px solid $border-color;
+      overflow: hidden;
+
+      .column-header {
+        padding: 1rem 1.5rem;
+        background: $white-bg;
+        border-bottom: 1px solid $border-color;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        h3 {
+          margin: 0;
+          font-size: 1rem;
+          font-weight: 600;
+          color: $dark-text;
+        }
+
+        .column-count {
+          background: $primary-color;
+          color: white;
+          border-radius: 50%;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+      }
+
+      .column-content {
+        padding: 1rem;
+        max-height: 70vh;
+        overflow-y: auto;
+
+        .kanban-card {
+          background: $white-bg;
+          border: 1px solid $border-color;
+          border-radius: $border-radius;
+          margin-bottom: 1rem;
+          overflow: hidden;
+          cursor: pointer;
+          transition: $transition;
+          box-shadow: $shadow-sm;
+
+          &:hover {
+            box-shadow: $shadow-md;
+            transform: translateY(-1px);
+          }
+
+          &.unread {
+            border-left: 3px solid $info-color;
+          }
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .card-header {
+            padding: 0.75rem 1rem;
+            background: $light-bg;
+            border-bottom: 1px solid $border-color;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .ticket-number {
+              font-size: 0.8rem;
+              color: $muted-text;
+              font-weight: 600;
+            }
+
+            .priority-indicator {
+              width: 12px;
+              height: 12px;
+              border-radius: 50%;
+
+              &.priority-urgent { background: $danger-color; }
+              &.priority-high { background: #ff6b35; }
+              &.priority-medium { background: $warning-color; }
+              &.priority-low { background: $success-color; }
+            }
+          }
+
+          .card-content {
+            padding: 1rem;
+
+            .ticket-title {
+              font-size: 0.95rem;
+              font-weight: 600;
+              color: $dark-text;
+              margin-bottom: 0.5rem;
+              line-height: 1.3;
+            }
+
+            .ticket-description {
+              color: $muted-text;
+              line-height: 1.4;
+              margin-bottom: 0.75rem;
+              font-size: 0.85rem;
+            }
+
+            .card-meta {
+              .category-tag {
+                background: rgba($secondary-color, 0.1);
+                color: $secondary-color;
+                padding: 0.25rem 0.5rem;
+                border-radius: 12px;
+                font-size: 0.7rem;
+                font-weight: 600;
+              }
+
+              .card-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 0.75rem;
+                padding-top: 0.75rem;
+                border-top: 1px solid $border-color;
+
+                .last-activity {
+                  font-size: 0.75rem;
+                  color: $muted-text;
+                }
+
+                .unread-badge {
+                  background: $danger-color;
+                  color: white;
+                  border-radius: 50%;
+                  width: 18px;
+                  height: 18px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 0.7rem;
+                  font-weight: 600;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Pagination
+  .pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding: 1.5rem 2rem;
+    background: $white-bg;
+    border-radius: $border-radius-lg;
+    border: 1px solid $border-color;
+
+    .pagination-info {
+      color: $muted-text;
+      font-size: 0.9rem;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 0.25rem;
+
+      .page-btn {
+        background: $white-bg;
+        border: 1px solid $border-color;
+        color: $dark-text;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        transition: $transition;
+        border-radius: $border-radius;
+        font-size: 0.9rem;
+
+        &:hover:not(:disabled) {
+          background: $primary-color;
+          border-color: $primary-color;
+          color: white;
+        }
+
+        &.active {
+          background: $primary-color;
+          border-color: $primary-color;
+          color: white;
+        }
+
+        &:disabled {
+          background: $light-bg;
+          color: $muted-text;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+
+        &:first-child {
+          border-radius: $border-radius 0 0 $border-radius;
+        }
+
+        &:last-child {
+          border-radius: 0 $border-radius $border-radius 0;
+        }
+      }
+    }
+  }
+
+  // Bouton d'actualisation
+  .refresh-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    background: $primary-color;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: $shadow-lg;
+    transition: $transition;
+    z-index: 100;
+
+    &:hover {
+      background: $primary-hover;
+      transform: scale(1.05);
+    }
+
+    &.loading {
+      pointer-events: none;
+    }
+
+    i {
+      transition: transform 0.3s ease;
+
+      &.fa-spin {
+        animation: spin 1s linear infinite;
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+// Responsive Design
+@media (max-width: 1200px) {
+  .ticket-system {
+    .tickets-list .list-header,
+    .tickets-list .ticket-item {
+      grid-template-columns: 40px 1fr 100px 80px 120px 150px 80px;
+      gap: 0.75rem;
+    }
+
+    .tickets-grid {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+  }
+}
+
+@media (max-width: 992px) {
+  .ticket-system {
+    padding: 1rem;
+
+    .ticket-header {
+      padding: 1.5rem;
+
+      .header-content {
+        flex-direction: column;
+        gap: 1.5rem;
+
+        .header-actions {
+          align-self: stretch;
+          justify-content: space-between;
+        }
+      }
+
+      .quick-stats {
+        gap: 1rem;
+        flex-wrap: wrap;
+
+        .stat-item {
+          flex: 1;
+          min-width: 100px;
+        }
+      }
+    }
+
+    .filters-panel .filters-form .filter-row {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .tickets-list {
+      .list-header {
+        display: none;
+      }
+
+      .ticket-item {
+        display: block;
+        padding: 1rem;
+
+        .item-select {
+          float: right;
+          margin-bottom: 0.5rem;
+        }
+
+        .item-title {
+          margin-bottom: 1rem;
+
+          .ticket-number {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+          }
+
+          .ticket-title {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+          }
+        }
+
+        .item-status,
+        .item-priority,
+        .item-category {
+          display: inline-block;
+          margin: 0.25rem 0.5rem 0.25rem 0;
+        }
+
+        .item-activity {
+          margin-top: 1rem;
+          text-align: left;
+        }
+
+        .item-actions {
+          margin-top: 1rem;
+        }
+      }
+    }
+
+    .tickets-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .tickets-kanban {
+      flex-direction: column;
+
+      .kanban-column {
+        min-width: auto;
+
+        .column-content {
+          max-height: none;
+        }
+      }
+    }
+
+    .pagination-wrapper {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .ticket-system {
+    .ticket-header {
+      .header-content .header-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+
+        .view-toggle {
+          order: -1;
+          align-self: stretch;
+        }
+      }
+
+      .quick-stats {
+        .stat-item {
+          .stat-value {
+            font-size: 1.5rem;
+          }
+        }
+      }
+    }
+
+    .bulk-actions {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+
+      .bulk-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+    }
+
+    .refresh-btn {
+      bottom: 1rem;
+      right: 1rem;
+      width: 3rem;
+      height: 3rem;
+      font-size: 1rem;
+    }
+  }
+}
+.custom-modal {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  //margin: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.custom-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .close-button {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+}
+
+.custom-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.custom-modal-body {
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+
+      label {
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+
+      input,
+      textarea,
+      select2 {
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 1rem;
+        transition: border 0.2s ease;
+
+        &.invalid {
+          border-color: #dc3545;
+        }
+
+        &:focus {
+          border-color: #007bff;
+          outline: none;
+        }
+      }
+
+      textarea {
+        resize: vertical;
+      }
+
+      .error {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 4px;
+      }
+
+      .required {
+        color: #dc3545;
+        margin-left: 4px;
+      }
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      input[type='checkbox'] {
+        transform: scale(1.2);
+      }
+    }
+  }
+}
+
+.custom-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+
+  .btn-outline,
+  .btn-primary {
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+
+    &:hover {
+      background: #f1f1f1;
+    }
+  }
+
+  .btn-primary {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+
+    &:hover {
+      background-color: #0069d9;
+    }
+
+    &:disabled {
+      background-color: #a0c3e8;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Animation d'apparition
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

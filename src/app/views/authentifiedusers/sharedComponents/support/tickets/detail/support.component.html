@@ -1,0 +1,479 @@
+<!-- ticket-detail.component.html -->
+<div class="ticket-detail">
+  <!-- Header avec navigation et actions -->
+  <div class="ticket-header">
+    <div class="header-nav">
+      <button class="btn btn-outline-secondary btn-back" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i>
+        Retour
+      </button>
+    </div>
+
+    <div class="header-info" *ngIf="ticket && !isLoading">
+      <div class="ticket-title-section">
+        <h1 class="ticket-number">#{{ ticket.ticketNumber }}</h1>
+        <h2 class="ticket-title" *ngIf="!showEditMode">{{ ticket.title }}</h2>
+
+        <!-- Mode édition du titre -->
+        <div class="edit-title" *ngIf="showEditMode">
+          <input type="text"
+                 formControlName="title"
+                 class="form-control"
+                 placeholder="Titre du ticket">
+        </div>
+      </div>
+
+      <div class="ticket-meta">
+        <div class="meta-badges">
+          <span class="status-badge" [ngClass]="getStatusClass(ticket.status)">
+            {{ getStatusLabel(ticket.status) }}
+          </span>
+          <span class="priority-badge" [ngClass]="getPriorityClass(ticket.priority)">
+            {{ getPriorityLabel(ticket.priority) }}
+          </span>
+          <span class="category-badge">{{ getCategoryLabel(ticket.category) }}</span>
+        </div>
+
+        <div class="meta-info">
+          <div class="created-info">
+            <i class="fas fa-calendar"></i>
+            Créé le {{ formatDate(ticket.createdAt) }}
+            <span *ngIf="ticket.createdBy">par {{ ticket.createdBy.name }}</span>
+          </div>
+          <div class="pharmacy-info" *ngIf="ticket.pharmacy">
+            <i class="fas fa-building"></i>
+            {{ ticket.pharmacy.name }}
+          </div>
+          <div class="activity-info">
+            <i class="fas fa-clock"></i>
+            Dernière activité {{ formatRelativeDate(ticket.lastActivity) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions" *ngIf="ticket && !isLoading">
+      <button class="btn btn-outline-primary"
+              (click)="toggleEditMode()"
+              [class.active]="showEditMode">
+        <i class="fas" [class.fa-edit]="!showEditMode" [class.fa-times]="showEditMode"></i>
+        {{ showEditMode ? 'Annuler' : 'Modifier' }}
+      </button>
+
+      <!-- Actions rapides de changement de statut -->
+      <div class="quick-actions" *ngIf="!showEditMode">
+        <div class="dropdown">
+          <button class="btn btn-outline-success dropdown-toggle"
+                  data-bs-toggle="dropdown">
+            <i class="fas fa-exchange-alt"></i>
+            Statut
+          </button>
+          <ul class="dropdown-menu">
+            <li *ngFor="let option of statusOptions">
+              <button class="dropdown-item"
+                      [class.active]="ticket.status === option.value"
+                      (click)="changeStatus(option.value)">
+                {{ option.label }}
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="dropdown">
+          <button class="btn btn-outline-warning dropdown-toggle"
+                  data-bs-toggle="dropdown">
+            <i class="fas fa-flag"></i>
+            Priorité
+          </button>
+          <ul class="dropdown-menu">
+            <li *ngFor="let option of priorityOptions">
+              <button class="dropdown-item"
+                      [class.active]="ticket.priority === option.value"
+                      (click)="changePriority(option.value)">
+                {{ option.label }}
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <button class="btn btn-outline-primary" (click)="refresh()" [disabled]="isLoading">
+        <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+        Actualiser
+      </button>
+    </div>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div class="alert alert-danger" *ngIf="errorMessage">
+    <i class="fas fa-exclamation-triangle"></i>
+    {{ errorMessage }}
+  </div>
+
+  <!-- État de connexion -->
+  <div class="connection-status" *ngIf="!isConnected">
+    <i class="fas fa-wifi"></i>
+    <span>Reconnexion au système de tickets...</span>
+  </div>
+
+  <!-- Chargement -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <span>Chargement du ticket...</span>
+  </div>
+
+  <!-- Contenu principal -->
+  <div class="ticket-content" *ngIf="ticket && !isLoading">
+
+    <!-- Section d'édition du ticket -->
+    <div class="edit-section" *ngIf="showEditMode">
+      <form [formGroup]="editTicketForm" (ngSubmit)="updateTicket()" class="edit-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Description</label>
+            <textarea formControlName="description"
+                      class="form-control"
+                      rows="3"
+                      placeholder="Description du ticket"></textarea>
+            <small class="error" *ngIf="isFieldInvalid(editTicketForm, 'description')">
+              {{ getFieldError(editTicketForm, 'description') }}
+            </small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Catégorie</label>
+            <select2 [data]="categoryOptions"
+                     formControlName="category"
+                     [class.invalid]="isFieldInvalid(editTicketForm, 'category')">
+            </select2>
+          </div>
+
+          <div class="form-group">
+            <label>Priorité</label>
+            <select2 [data]="priorityOptions"
+                     formControlName="priority"
+                     [class.invalid]="isFieldInvalid(editTicketForm, 'priority')">
+            </select2>
+          </div>
+
+          <div class="form-group">
+            <label>Statut</label>
+            <select2 [data]="statusOptions"
+                     formControlName="status"
+                     [class.invalid]="isFieldInvalid(editTicketForm, 'status')">
+            </select2>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline-secondary" (click)="toggleEditMode()">
+            Annuler
+          </button>
+          <button type="submit"
+                  class="btn btn-primary"
+                  [disabled]="editTicketForm.invalid || isUpdatingTicket">
+            <span *ngIf="isUpdatingTicket" class="spinner-border spinner-border-sm me-2"></span>
+            Mettre à jour
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Description du ticket -->
+    <div class="ticket-description" *ngIf="!showEditMode && ticket.description">
+      <div class="section-header">
+        <h3><i class="fas fa-file-text"></i> Description</h3>
+      </div>
+      <div class="description-content">
+        <p>{{ ticket.description }}</p>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-section">
+      <div class="section-header">
+        <h3>
+          <i class="fas fa-comments"></i>
+          Messages ({{ getVisibleMessages().length }})
+        </h3>
+
+        <div class="message-filters">
+          <label class="checkbox-toggle">
+            <input type="checkbox"
+                   [ngModel]="showInternalMessages"
+                   (change)="toggleInternalMessages()">
+            <span>Afficher les messages internes</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="messages-container">
+        <!-- Message vide -->
+        <div class="empty-messages" *ngIf="getVisibleMessages().length === 0">
+          <i class="fas fa-comments"></i>
+          <p>Aucun message pour ce ticket</p>
+          <button class="btn btn-primary" (click)="focusMessageInput()">
+            <i class="fas fa-plus"></i>
+            Écrire le premier message
+          </button>
+        </div>
+
+        <!-- Liste des messages -->
+        <div class="message-list" *ngIf="getVisibleMessages().length > 0">
+          <div class="message-item"
+               *ngFor="let message of getVisibleMessages()"
+               [class.own-message]="isCurrentUser(message.author._id)"
+               [class.internal-message]="message.isInternal"
+               [class.unread-message]="!message.seen">
+
+            <div class="message-avatar">
+              <img [src]="message.author.photoURL || 'assets/default-avatar.png'"
+                   [alt]="message.author.name">
+            </div>
+
+            <div class="message-content">
+              <div class="message-header">
+                <div class="author-info">
+                  <span class="author-name">{{ message.author.name }}</span>
+                  <span class="message-badges">
+                    <span class="internal-badge" *ngIf="message.isInternal">
+                      <i class="fas fa-lock"></i>
+                      Interne
+                    </span>
+                  </span>
+                </div>
+                <div class="message-time">
+                  {{ formatRelativeDate(message.createdAt) }}
+                  <span class="read-indicator" *ngIf="message.seen">
+                    <i class="fas fa-check-double"></i>
+                  </span>
+                </div>
+              </div>
+
+              <div class="message-body">
+                <p>{{ message.content }}</p>
+
+                <!-- Pièces jointes -->
+                <div class="message-attachments" *ngIf="message.attachments.length > 0">
+                  <div class="attachment-item" *ngFor="let attachment of message.attachments">
+                    <i class="fas fa-paperclip"></i>
+                    <a [href]="attachment.url" target="_blank">{{ attachment.originalName }}</a>
+                    <span class="file-size">({{ (parseFloat(attachment.fileSize) / 1024 / 1024).toFixed(2) }} MB)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="message-footer" *ngIf="message.editedAt">
+                <small class="edited-indicator">
+                  <i class="fas fa-edit"></i>
+                  Modifié le {{ formatDate(message.editedAt) }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulaire de nouveau message -->
+    <div class="message-form-section">
+      <div class="section-header">
+        <h3><i class="fas fa-reply"></i> Répondre</h3>
+      </div>
+
+      <form [formGroup]="messageForm" (ngSubmit)="sendMessage()" class="message-form">
+        <div class="form-group">
+          <textarea #messageTextarea
+                    formControlName="content"
+                    class="form-control message-textarea"
+                    rows="4"
+                    placeholder="Tapez votre message..."
+                    [class.invalid]="isFieldInvalid(messageForm, 'content')">
+          </textarea>
+          <small class="error" *ngIf="isFieldInvalid(messageForm, 'content')">
+            {{ getFieldError(messageForm, 'content') }}
+          </small>
+        </div>
+
+        <!-- Pièces jointes -->
+        <div class="attachments-section" *ngIf="attachedFiles.length > 0">
+          <div class="attached-files">
+            <div class="attached-file" *ngFor="let file of attachedFiles; let i = index">
+              <div class="file-info">
+                <i class="fas fa-paperclip"></i>
+                <span class="file-name">{{ file.name }}</span>
+                <span class="file-size">({{ (file.size / 1024 / 1024).toFixed(2) }} MB)</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeAttachment(i)">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <div class="left-actions">
+            <input #attachmentInput
+                   type="file"
+                   multiple
+                   style="display: none"
+                   (change)="onFileSelected($event)"
+                   accept="image/*,application/pdf,.doc,.docx,.txt">
+
+            <button type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="attachmentInput.click()">
+              <i class="fas fa-paperclip"></i>
+              Joindre
+            </button>
+
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="isInternal">
+              <span>Message interne</span>
+              <small class="help-text">Visible uniquement par les administrateurs</small>
+            </label>
+          </div>
+
+          <div class="right-actions">
+            <div class="typing-indicator" *ngIf="isTyping">
+              <i class="fas fa-ellipsis-h"></i>
+              <span>En cours de frappe...</span>
+            </div>
+
+            <button type="submit"
+                    class="btn btn-primary"
+                    [disabled]="messageForm.invalid || isSendingMessage">
+              <span *ngIf="isSendingMessage" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="fas fa-paper-plane" *ngIf="!isSendingMessage"></i>
+              {{ isSendingMessage ? 'Envoi...' : 'Envoyer' }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Informations sur le ticket -->
+    <div class="ticket-sidebar">
+      <div class="sidebar-section">
+        <h4><i class="fas fa-info-circle"></i> Informations</h4>
+
+        <div class="info-item">
+          <label>Créé par</label>
+          <div class="user-info" *ngIf="ticket.createdBy">
+            <img [src]="ticket.createdBy.photoURL || 'assets/default-avatar.png'"
+                 class="user-avatar"
+                 [alt]="ticket.createdBy.name">
+            <div class="user-details">
+              <div class="user-name">{{ ticket.createdBy.name }}</div>
+              <div class="user-email">{{ ticket.createdBy.email }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-item" *ngIf="ticket.assignedTo">
+          <label>Assigné à</label>
+          <div class="user-info">
+            <img [src]="'assets/default-avatar.png'"
+                 class="user-avatar"
+                 [alt]="ticket.assignedTo.name">
+            <div class="user-details">
+              <div class="user-name">{{ ticket.assignedTo.name }}</div>
+              <div class="user-email">{{ ticket.assignedTo.email }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <label>Pharmacie</label>
+          <div class="pharmacy-info" *ngIf="ticket.pharmacy">
+            <div class="pharmacy-name">{{ ticket.pharmacy.name }}</div>
+            <div class="pharmacy-address" *ngIf="ticket.pharmacy.address">
+              {{ ticket.pharmacy.address }}
+            </div>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <label>Dates importantes</label>
+          <div class="dates-info">
+            <div class="date-item">
+              <span class="date-label">Créé:</span>
+              <span class="date-value">{{ formatDate(ticket.createdAt) }}</span>
+            </div>
+            <div class="date-item" *ngIf="ticket.resolvedAt">
+              <span class="date-label">Résolu:</span>
+              <span class="date-value">{{ formatDate(ticket.resolvedAt) }}</span>
+            </div>
+            <div class="date-item" *ngIf="ticket.closedAt">
+              <span class="date-label">Fermé:</span>
+              <span class="date-value">{{ formatDate(ticket.closedAt) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-item" *ngIf="ticket.tags.length > 0">
+          <label>Tags</label>
+          <div class="tags-list">
+            <span class="tag" *ngFor="let tag of ticket.tags">{{ tag }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistiques du ticket -->
+      <div class="sidebar-section">
+        <h4><i class="fas fa-chart-bar"></i> Statistiques</h4>
+
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value">{{ ticket.messages.length }}</div>
+            <div class="stat-label">Messages</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ ticket.attachments.length }}</div>
+            <div class="stat-label">Pièces jointes</div>
+          </div>
+          <div class="stat-item" *ngIf="ticket.unreadMessagesCount > 0">
+            <div class="stat-value">{{ ticket.unreadMessagesCount }}</div>
+            <div class="stat-label">Non lus</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions avancées -->
+      <div class="sidebar-section">
+        <h4><i class="fas fa-cogs"></i> Actions</h4>
+
+        <div class="action-buttons">
+          <button class="btn btn-outline-primary btn-block" (click)="refresh()">
+            <i class="fas fa-sync-alt"></i>
+            Actualiser
+          </button>
+
+          <button class="btn btn-outline-secondary btn-block"
+                  *ngIf="ticket.status !== 'closed'"
+                  (click)="changeStatus('closed')">
+            <i class="fas fa-times"></i>
+            Fermer le ticket
+          </button>
+
+          <button class="btn btn-outline-success btn-block"
+                  *ngIf="ticket.status !== 'resolved'"
+                  (click)="changeStatus('resolved')">
+            <i class="fas fa-check"></i>
+            Marquer comme résolu
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bouton d'actualisation flottant -->
+  <button class="refresh-btn"
+          (click)="refresh()"
+          [class.loading]="isLoading"
+          title="Actualiser">
+    <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+  </button>
+</div>

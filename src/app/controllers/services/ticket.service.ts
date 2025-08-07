@@ -40,7 +40,7 @@ interface PaginatedResponse<T> {
 })
 export class TicketService {
   private socket: Socket | null = null;
-  private readonly namespace = 'tickets';
+  private readonly namespace = 'ticketing';
 
   // Subjects pour les événements temps réel
   private ticketsSubject = new BehaviorSubject<Ticket[]>([]);
@@ -154,54 +154,57 @@ export class TicketService {
     this.ticketsSubject.next(tickets);
   }
 
-  // API Methods - Tickets
-  async getTickets(
-    page: number = 1,
-    limit: number = 20,
-    filters?: TicketFilter
-  ): Promise<PaginatedResponse<Ticket>> {
+  async getTickets( page: number = 1,  limit: number = 20,  filters?: TicketFilter): Promise<PaginatedResponse<Ticket>> {
     try {
       const token = await this.authService.getRealToken();
-      if (!token) throw new Error('Token manquant');
+      const uid = await this.authService.getUid();
+      if (!token || !uid) throw new Error('Token manquant');
 
       const headers = new HttpHeaders({
         'Authorization': `Bearer ${token}`
       });
 
-      let params = new HttpParams()
-        .set('page', page.toString())
-        .set('limit', limit.toString());
+      // let params = new HttpParams()
+      //   .set('page', page.toString())
+      //   .set('limit', limit.toString());
+      //
+      // // Ajouter les filtres
+      // if (filters) {
+      //   if (filters.status?.length) {
+      //     params = params.set('status', filters.status.join(','));
+      //   }
+      //   if (filters.priority?.length) {
+      //     params = params.set('priority', filters.priority.join(','));
+      //   }
+      //   if (filters.category?.length) {
+      //     params = params.set('category', filters.category.join(','));
+      //   }
+      //   if (filters.assignedTo) {
+      //     params = params.set('assignedTo', filters.assignedTo);
+      //   }
+      //   if (filters.pharmacy) {
+      //     params = params.set('pharmacy', filters.pharmacy);
+      //   }
+      //   if (filters.search) {
+      //     params = params.set('search', filters.search);
+      //   }
+      //   if (filters.dateFrom) {
+      //     params = params.set('dateFrom', filters.dateFrom.toISOString());
+      //   }
+      //   if (filters.dateTo) {
+      //     params = params.set('dateTo', filters.dateTo.toISOString());
+      //   }
+      // }
+      // params = params.set('uid', uid);
 
-      // Ajouter les filtres
-      if (filters) {
-        if (filters.status?.length) {
-          params = params.set('status', filters.status.join(','));
-        }
-        if (filters.priority?.length) {
-          params = params.set('priority', filters.priority.join(','));
-        }
-        if (filters.category?.length) {
-          params = params.set('category', filters.category.join(','));
-        }
-        if (filters.assignedTo) {
-          params = params.set('assignedTo', filters.assignedTo);
-        }
-        if (filters.pharmacy) {
-          params = params.set('pharmacy', filters.pharmacy);
-        }
-        if (filters.search) {
-          params = params.set('search', filters.search);
-        }
-        if (filters.dateFrom) {
-          params = params.set('dateFrom', filters.dateFrom.toISOString());
-        }
-        if (filters.dateTo) {
-          params = params.set('dateTo', filters.dateTo.toISOString());
-        }
-      }
-
+      let payload = {
+        page,
+        limit,
+        uid,
+        ...filters
+      };
       const response: any = await firstValueFrom(
-        this.apiService.post('tickets', params, headers)
+        this.apiService.post('tools/tickets/list', payload, headers)
       );
 
       if (response.success) {
@@ -240,14 +243,15 @@ export class TicketService {
       }
 
       const token = await this.authService.getRealToken();
-      if (!token) throw new Error('Token manquant');
+      const uid = await this.authService.getUid();
+      if (!token || !uid) throw new Error('Token manquant');
 
       const headers = new HttpHeaders({
         'Authorization': `Bearer ${token}`
       });
 
       const response: any = await firstValueFrom(
-        this.apiService.get(`tickets/${ticketId}`, headers)
+        this.apiService.post(`tools/tickets/listById`, {ticketId, uid}, headers)
       );
 
       if (response.success) {
@@ -278,11 +282,11 @@ export class TicketService {
 
       const payload = {
         ...ticketData,
-        createdBy: uid
+        uid
       };
 
       const response: any = await firstValueFrom(
-        this.apiService.post('tickets', payload, headers)
+        this.apiService.post('tools/tickets/create', payload, headers)
       );
 
       if (response.success) {
@@ -302,7 +306,8 @@ export class TicketService {
   async updateTicket(ticketId: string, updates: Partial<Ticket>): Promise<Ticket> {
     try {
       const token = await this.authService.getRealToken();
-      if (!token) throw new Error('Token manquant');
+      const uid = await this.authService.getUid();
+      if (!token || !uid) throw new Error('Token manquant');
 
       const headers = new HttpHeaders({
         'Authorization': `Bearer ${token}`,
@@ -310,7 +315,7 @@ export class TicketService {
       });
 
       const response: any = await firstValueFrom(
-        this.apiService.post(`tickets/${ticketId}`, updates, headers)
+        this.apiService.post(`tools/tickets/update`, {uid, ticketId, updates}, headers)
       );
 
       if (response.success) {
@@ -337,12 +342,15 @@ export class TicketService {
       const token = await this.authService.getRealToken();
       if (!token) throw new Error('Token manquant');
 
+      const uid = await this.authService.getUid();
+      if (!uid) throw new Error('Token manquant');
+
       const headers = new HttpHeaders({
         'Authorization': `Bearer ${token}`
       });
 
       const response: any = await firstValueFrom(
-        this.apiService.delete(`tickets/${ticketId}`, headers)
+        this.apiService.post('tools/tickets/delete', {ticketId, uid}, headers)
       );
 
       if (response.success) {
@@ -361,7 +369,6 @@ export class TicketService {
     }
   }
 
-  // API Methods - Messages
   async sendMessage(ticketId: string, content: string, attachments: string[] = [], isInternal: boolean = false): Promise<TicketMessage> {
     try {
       const token = await this.authService.getRealToken();
@@ -379,11 +386,12 @@ export class TicketService {
         content,
         attachments,
         isInternal,
-        authorId: uid
+        authorId: uid,
+        uid
       };
 
       const response: any = await firstValueFrom(
-        this.apiService.post('tickets/messages', payload, headers)
+        this.apiService.post('tools/tickets/sendMessage', payload, headers)
       );
 
       if (response.success) {
@@ -410,17 +418,18 @@ export class TicketService {
   async markMessageAsRead(ticketId: string, messageId: string): Promise<void> {
     try {
       const token = await this.authService.getRealToken();
-      if (!token) throw new Error('Token manquant');
+      const uid = await this.authService.getUid();
+      if (!token || !uid) throw new Error('Token ou uid manquant');
 
       const headers = new HttpHeaders({
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       });
 
-      const payload = { messageId };
+      const payload = { ticketId, messageId, uid };
 
       const response: any = await firstValueFrom(
-        this.apiService.post(`tickets/${ticketId}/messages/read`, payload, headers)
+        this.apiService.post('tools/tickets/messages/read', payload, headers)
       );
 
       if (response.success && this.socket?.connected) {
@@ -434,7 +443,6 @@ export class TicketService {
     }
   }
 
-  // API Methods - Templates
   async getTicketTemplates(): Promise<TicketTemplate[]> {
     try {
       if (this.templatesCache.length > 0) {
@@ -442,14 +450,15 @@ export class TicketService {
       }
 
       const token = await this.authService.getRealToken();
-      if (!token) throw new Error('Token manquant');
+      const uid = await this.authService.getUid();
+      if (!token || !uid) throw new Error('Token ou uid manquant');
 
       const headers = new HttpHeaders({
         'Authorization': `Bearer ${token}`
       });
 
       const response: any = await firstValueFrom(
-        this.apiService.get('tickets/templates', headers)
+        this.apiService.post('tools/tickets/templates',{uid}, headers)
       );
 
       if (response.success) {
@@ -464,23 +473,20 @@ export class TicketService {
     }
   }
 
-  // API Methods - Stats
-  async getTicketStats(pharmacyId?: string): Promise<TicketStats> {
+  async getTicketStats(): Promise<TicketStats> {
     try {
       const token = await this.authService.getRealToken();
       if (!token) throw new Error('Token manquant');
+
+      const uid = await this.authService.getUid();
+      if (!uid) throw new Error('uid manquant');
 
       const headers = new HttpHeaders({
         'Authorization': `Bearer ${token}`
       });
 
-      let params = new HttpParams();
-      if (pharmacyId) {
-        params = params.set('pharmacyId', pharmacyId);
-      }
-
       const response: any = await firstValueFrom(
-        this.apiService.post('tickets/stats', params, headers)
+        this.apiService.post('tools/tickets/stats', {uid}, headers)
       );
 
       if (response.success) {
@@ -496,7 +502,6 @@ export class TicketService {
     }
   }
 
-  // Upload de fichiers
   async uploadAttachment(file: File, ticketId: string): Promise<string> {
     try {
       const token = await this.authService.getRealToken();
@@ -515,7 +520,7 @@ export class TicketService {
       });
 
       const response: any = await firstValueFrom(
-        this.apiService.post('tickets/upload', formData, headers)
+        this.apiService.post('tools/tickets/upload', formData, headers)
       );
 
       if (response.success) {
@@ -529,7 +534,6 @@ export class TicketService {
     }
   }
 
-  // Observables publics
   getTickets$(): Observable<Ticket[]> {
     return this.ticketsSubject.asObservable();
   }
@@ -558,7 +562,6 @@ export class TicketService {
     return this.errorSubject.asObservable();
   }
 
-  // Méthodes utilitaires
   isConnected(): boolean {
     return this.connectionStatusSubject.value;
   }
@@ -571,7 +574,6 @@ export class TicketService {
     this.currentTicketSubject.next(null);
   }
 
-  // Nettoyage
   disconnect(): void {
     if (this.socket) {
       this.socket.disconnect();

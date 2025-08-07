@@ -1,0 +1,510 @@
+<!-- ticket-list.component.html -->
+<div class="ticket-system">
+  <!-- Header avec stats et actions principales -->
+  <div class="ticket-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1><i class="fas fa-ticket-alt"></i> Support & Tickets</h1>
+        <p class="subtitle" *ngIf="!isLoading">
+          {{ totalTickets }} ticket{{ totalTickets > 1 ? 's' : '' }} au total
+          <span *ngIf="stats.totalUnread > 0" class="unread-count">
+            • {{ stats.totalUnread }} non lu{{ stats.totalUnread > 1 ? 's' : '' }}
+          </span>
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-outline-primary"
+                (click)="toggleFilters()"
+                [class.active]="showFilters">
+          <i class="fas fa-filter"></i>
+          Filtres
+          <span class="filter-count" *ngIf="hasActiveFilters()">{{ Object.keys(activeFilters).length }}</span>
+        </button>
+
+        <div class="view-toggle">
+          <button class="btn btn-icon"
+                  [class.active]="viewMode === 'list'"
+                  (click)="changeView('list')"
+                  title="Vue liste">
+            <i class="fas fa-list"></i>
+          </button>
+          <button class="btn btn-icon"
+                  [class.active]="viewMode === 'grid'"
+                  (click)="changeView('grid')"
+                  title="Vue grille">
+            <i class="fas fa-th-large"></i>
+          </button>
+          <button class="btn btn-icon"
+                  [class.active]="viewMode === 'kanban'"
+                  (click)="changeView('kanban')"
+                  title="Vue kanban">
+            <i class="fas fa-columns"></i>
+          </button>
+        </div>
+
+        <button class="btn btn-primary" (click)="createNewTicket()">
+          <i class="fas fa-plus"></i>
+          Nouveau ticket
+        </button>
+      </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="quick-stats" *ngIf="!isLoading">
+      <div class="stat-item" [class.clickable]="true" (click)="filterForm.patchValue({status: ['open']})">
+        <div class="stat-value">{{ stats.open }}</div>
+        <div class="stat-label">Ouverts</div>
+      </div>
+      <div class="stat-item" [class.clickable]="true" (click)="filterForm.patchValue({status: ['in_progress']})">
+        <div class="stat-value">{{ stats.inProgress }}</div>
+        <div class="stat-label">En cours</div>
+      </div>
+      <div class="stat-item" [class.clickable]="true" (click)="filterForm.patchValue({status: ['pending']})">
+        <div class="stat-value">{{ stats.pending }}</div>
+        <div class="stat-label">En attente</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{{ stats.averageResolutionTime }}h</div>
+        <div class="stat-label">Temps moyen</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtres avancés -->
+  <div class="filters-panel" [class.show]="showFilters">
+    <form [formGroup]="filterForm" class="filters-form">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Recherche</label>
+          <div class="search-input">
+            <i class="fas fa-search"></i>
+            <input #searchInput
+                   type="text"
+                   placeholder="Rechercher par numéro, titre, description..."
+                   formControlName="search">
+            <button type="button"
+                    class="clear-search"
+                    *ngIf="filterForm.get('search')?.value"
+                    (click)="filterForm.patchValue({search: ''})">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Statut</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item" *ngFor="let option of statusOptions">
+              <input type="checkbox"
+                     [value]="option.value"
+                     (change)="onStatusFilterChange($event)">
+              <span class="checkbox-label">
+                {{ option.label }}
+                <span class="count" *ngIf="option.count !== undefined">({{ option.count }})</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Priorité</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item" *ngFor="let option of priorityOptions">
+              <input type="checkbox"
+                     [value]="option.value"
+                     (change)="onPriorityFilterChange($event)">
+              <span class="checkbox-label">
+                {{ option.label }}
+                <span class="count" *ngIf="option.count !== undefined">({{ option.count }})</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Catégorie</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item" *ngFor="let option of categoryOptions">
+              <input type="checkbox"
+                     [value]="option.value"
+                     (change)="onCategoryFilterChange($event)">
+              <span class="checkbox-label">
+                {{ option.label }}
+                <span class="count" *ngIf="option.count !== undefined">({{ option.count }})</span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Du</label>
+          <input type="date" formControlName="dateFrom" class="form-control">
+        </div>
+
+        <div class="filter-group">
+          <label>Au</label>
+          <input type="date" formControlName="dateTo" class="form-control">
+        </div>
+
+        <div class="filter-actions">
+          <button type="button" class="btn btn-outline-secondary" (click)="clearFilters()">
+            <i class="fas fa-times"></i>
+            Effacer
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Actions en lot (si sélection multiple) -->
+  <div class="bulk-actions" *ngIf="selectedTickets.size > 0">
+    <div class="selection-info">
+      <span>{{ selectedTickets.size }} ticket(s) sélectionné(s)</span>
+    </div>
+    <div class="bulk-buttons">
+      <button class="btn btn-outline-success" (click)="bulkUpdateStatus('resolved')">
+        <i class="fas fa-check"></i>
+        Marquer comme résolu
+      </button>
+      <button class="btn btn-outline-danger" (click)="bulkUpdateStatus('closed')">
+        <i class="fas fa-times"></i>
+        Fermer
+      </button>
+      <button class="btn btn-outline-secondary" (click)="selectedTickets.clear()">
+        <i class="fas fa-times"></i>
+        Annuler sélection
+      </button>
+    </div>
+  </div>
+
+  <!-- Contenu principal -->
+  <div class="tickets-content">
+    <!-- Message d'erreur -->
+    <div class="alert alert-danger" *ngIf="errorMessage">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ errorMessage }}
+    </div>
+
+    <!-- État de connexion -->
+    <div class="connection-status" *ngIf="!isConnected">
+      <i class="fas fa-wifi"></i>
+      <span>Reconnexion au système de tickets...</span>
+    </div>
+
+    <!-- Chargement -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner"></div>
+      <span>Chargement des tickets...</span>
+    </div>
+
+    <!-- Liste vide -->
+    <div class="empty-state" *ngIf="!isLoading && filteredTickets.length === 0 && !hasActiveFilters()">
+      <div class="empty-icon">
+        <i class="fas fa-ticket-alt"></i>
+      </div>
+      <h3>Aucun ticket</h3>
+      <p>Vous n'avez pas encore créé de tickets de support.</p>
+      <button class="btn btn-primary" (click)="createNewTicket()">
+        <i class="fas fa-plus"></i>
+        Créer votre premier ticket
+      </button>
+    </div>
+
+    <!-- Aucun résultat de recherche -->
+    <div class="empty-state" *ngIf="!isLoading && filteredTickets.length === 0 && hasActiveFilters()">
+      <div class="empty-icon">
+        <i class="fas fa-search"></i>
+      </div>
+      <h3>Aucun résultat</h3>
+      <p>Aucun ticket ne correspond aux critères de recherche.</p>
+      <button class="btn btn-outline-primary" (click)="clearFilters()">
+        <i class="fas fa-times"></i>
+        Effacer les filtres
+      </button>
+    </div>
+
+    <!-- Vue Liste -->
+    <div class="tickets-list" *ngIf="!isLoading && filteredTickets.length > 0 && viewMode === 'list'">
+      <div class="list-header">
+        <div class="select-all">
+          <input type="checkbox"
+                 [checked]="selectedTickets.size === filteredTickets.length && filteredTickets.length > 0"
+                 [indeterminate]="selectedTickets.size > 0 && selectedTickets.size < filteredTickets.length"
+                 (change)="selectAllTickets()">
+        </div>
+        <div class="header-title sortable" (click)="sortBy_('title')">
+          Titre
+          <i class="fas fa-sort"
+             [class.fa-sort-up]="sortBy === 'title' && sortDirection === 'asc'"
+             [class.fa-sort-down]="sortBy === 'title' && sortDirection === 'desc'"></i>
+        </div>
+        <div class="header-status">Statut</div>
+        <div class="header-priority">Priorité</div>
+        <div class="header-category">Catégorie</div>
+        <div class="header-activity sortable" (click)="sortBy_('lastActivity')">
+          Dernière activité
+          <i class="fas fa-sort"
+             [class.fa-sort-up]="sortBy === 'lastActivity' && sortDirection === 'asc'"
+             [class.fa-sort-down]="sortBy === 'lastActivity' && sortDirection === 'desc'"></i>
+        </div>
+        <div class="header-actions">Actions</div>
+      </div>
+
+      <div class="ticket-item"
+           *ngFor="let ticket of filteredTickets; trackBy: trackByTicketId"
+           [class.selected]="selectedTickets.has(ticket._id!)"
+           [class.unread]="ticket.unreadMessagesCount > 0">
+
+        <div class="item-select">
+          <input type="checkbox"
+                 [checked]="selectedTickets.has(ticket._id!)"
+                 (change)="toggleTicketSelection(ticket._id!)">
+        </div>
+
+        <div class="item-title" (click)="openTicket(ticket)">
+          <div class="ticket-number">#{{ ticket.ticketNumber }}</div>
+          <div class="ticket-title">{{ ticket.title }}</div>
+          <div class="ticket-description">{{ ticket.description | slice:0:100 }}...</div>
+        </div>
+
+        <div class="item-status">
+          <span class="status-badge" [ngClass]="getStatusClass(ticket.status)">
+            {{ getStatusLabel(ticket.status) }}
+          </span>
+        </div>
+
+        <div class="item-priority">
+          <span class="priority-badge" [ngClass]="getPriorityClass(ticket.priority)">
+            {{ getPriorityLabel(ticket.priority) }}
+          </span>
+        </div>
+
+        <div class="item-category">
+          <span class="category-badge">{{ getCategoryLabel(ticket.category) }}</span>
+        </div>
+
+        <div class="item-activity">
+          <div class="activity-time">{{ formatRelativeDate(ticket.lastActivity) }}</div>
+          <div class="activity-info" *ngIf="ticket.lastMessage">
+            {{ ticket.lastMessage.author.name }}
+          </div>
+          <div class="unread-badge" *ngIf="ticket.unreadMessagesCount > 0">
+            {{ ticket.unreadMessagesCount }}
+          </div>
+        </div>
+
+        <div class="item-actions">
+          <button class="btn btn-sm btn-outline-primary" (click)="openTicket(ticket)">
+            <i class="fas fa-eye"></i>
+            Voir
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vue Grille -->
+    <div class="tickets-grid" *ngIf="!isLoading && filteredTickets.length > 0 && viewMode === 'grid'">
+      <div class="ticket-card"
+           *ngFor="let ticket of filteredTickets; trackBy: trackByTicketId"
+           [class.unread]="ticket.unreadMessagesCount > 0"
+           (click)="openTicket(ticket)">
+
+        <div class="card-header">
+          <div class="ticket-number">#{{ ticket.ticketNumber }}</div>
+          <div class="ticket-status">
+            <span class="status-badge" [ngClass]="getStatusClass(ticket.status)">
+              {{ getStatusLabel(ticket.status) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <h3 class="ticket-title">{{ ticket.title }}</h3>
+          <p class="ticket-description">{{ ticket.description | slice:0:120 }}...</p>
+
+          <div class="ticket-meta">
+            <div class="meta-item">
+              <span class="priority-badge" [ngClass]="getPriorityClass(ticket.priority)">
+                {{ getPriorityLabel(ticket.priority) }}
+              </span>
+            </div>
+            <div class="meta-item">
+              <span class="category-badge">{{ getCategoryLabel(ticket.category) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <div class="footer-left">
+            <div class="last-activity">{{ formatRelativeDate(ticket.lastActivity) }}</div>
+            <div class="message-count" *ngIf="ticket.messages.length > 0">
+              <i class="fas fa-comment"></i>
+              {{ ticket.messages.length }}
+            </div>
+          </div>
+          <div class="footer-right">
+            <div class="unread-badge" *ngIf="ticket.unreadMessagesCount > 0">
+              {{ ticket.unreadMessagesCount }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vue Kanban -->
+    <div class="tickets-kanban" *ngIf="!isLoading && filteredTickets.length > 0 && viewMode === 'kanban'">
+      <div class="kanban-column" *ngFor="let status of statusOptions">
+        <div class="column-header">
+          <h3>{{ status.label }}</h3>
+          <span class="column-count">{{ getTicketsByStatus(status.value).length }}</span>
+        </div>
+
+        <div class="column-content">
+          <div class="kanban-card"
+               *ngFor="let ticket of getTicketsByStatus(status.value); trackBy: trackByTicketId"
+               [class.unread]="ticket.unreadMessagesCount > 0"
+               (click)="openTicket(ticket)">
+
+            <div class="card-header">
+              <div class="ticket-number">#{{ ticket.ticketNumber }}</div>
+              <div class="priority-indicator" [ngClass]="getPriorityClass(ticket.priority)"></div>
+            </div>
+
+            <div class="card-content">
+              <h4 class="ticket-title">{{ ticket.title }}</h4>
+              <p class="ticket-description">{{ ticket.description | slice:0:80 }}...</p>
+
+              <div class="card-meta">
+                <span class="category-tag">{{ getCategoryLabel(ticket.category) }}</span>
+                <div class="card-footer">
+                  <span class="last-activity">{{ formatRelativeDate(ticket.lastActivity) }}</span>
+                  <div class="unread-badge" *ngIf="ticket.unreadMessagesCount > 0">
+                    {{ ticket.unreadMessagesCount }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-wrapper" *ngIf="!isLoading && totalPages > 1">
+      <div class="pagination-info">
+        Affichage {{ (currentPage - 1) * itemsPerPage + 1 }} à {{ Math.min(currentPage * itemsPerPage, totalTickets) }} sur {{ totalTickets }} tickets
+      </div>
+
+      <div class="pagination">
+        <button class="page-btn"
+                [disabled]="currentPage === 1"
+                (click)="goToPage(1)">
+          <i class="fas fa-angle-double-left"></i>
+        </button>
+
+        <button class="page-btn"
+                [disabled]="currentPage === 1"
+                (click)="goToPage(currentPage - 1)">
+          <i class="fas fa-angle-left"></i>
+        </button>
+
+        <button class="page-btn"
+                *ngFor="let page of paginationPages"
+                [class.active]="page === currentPage"
+                (click)="goToPage(page)">
+          {{ page }}
+        </button>
+
+        <button class="page-btn"
+                [disabled]="currentPage === totalPages"
+                (click)="goToPage(currentPage + 1)">
+          <i class="fas fa-angle-right"></i>
+        </button>
+
+        <button class="page-btn"
+                [disabled]="currentPage === totalPages"
+                (click)="goToPage(totalPages)">
+          <i class="fas fa-angle-double-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bouton d'actualisation flottant -->
+  <button class="refresh-btn"
+          (click)="refresh()"
+          [class.loading]="isLoading"
+          title="Actualiser">
+    <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+  </button>
+</div>
+<ng-template #addEditProductModal>
+  <div class="custom-modal">
+    <div class="custom-modal-header">
+      <h3>Ajouter un ticket</h3>
+      <button type="button" class="close-button" (click)="closeModal()">&times;</button>
+    </div>
+
+    <form [formGroup]="ticketForm" (ngSubmit)="onSubmit()" class="custom-modal-form">
+      <div class="custom-modal-body">
+        <div class="form-section">
+          <h4 class="section-title">Informations générales</h4>
+
+          <div class="form-group">
+            <label>Titre <span class="required">*</span></label>
+            <input type="text" formControlName="title"
+                   [class.invalid]="isFieldInvalid('title')">
+            <small class="error" *ngIf="isFieldInvalid('title')">{{ getFieldError('title') }}</small>
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea formControlName="description" rows="3"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Catégorie <span class="required">*</span></label>
+            <select2 [data]="categoryOptions" formControlName="category" [class.invalid]="isFieldInvalid('category')"></select2>
+            <small class="error" *ngIf="isFieldInvalid('category')">{{ getFieldError('category') }}</small>
+          </div>
+
+          <div class="form-group">
+            <label>Priorité <span class="required">*</span></label>
+            <select2 [data]="priorityOptions" formControlName="priority" [class.invalid]="isFieldInvalid('priority')"></select2>
+            <small class="error" *ngIf="isFieldInvalid('priority')">{{ getFieldError('priority') }}</small>
+          </div>
+
+          <div class="form-group">
+            <label>Statut <span class="required">*</span></label>
+            <select2 [data]="statusOptions" formControlName="status" [class.invalid]="isFieldInvalid('status')"></select2>
+            <small class="error" *ngIf="isFieldInvalid('status')">{{ getFieldError('status') }}</small>
+          </div>
+
+          <div class="form-group">
+            <label>Pharmacie concernée <span class="required">*</span></label>
+            <select2 [data]="pharmaciesArraySelect2" formControlName="pharmacy" [class.invalid]="isFieldInvalid('pharmacy')"></select2>
+            <small class="error" *ngIf="isFieldInvalid('pharmacy')">{{ getFieldError('pharmacy') }}</small>
+          </div>
+
+          <div class="form-group switch-row">
+            <label>
+              <input type="checkbox" formControlName="isPrivate">
+              Ticket activé
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="custom-modal-footer">
+        <button type="button" class="btn-outline" (click)="closeModal()">Annuler</button>
+        <button type="submit" class="btn-primary" [disabled]="!ticketForm.valid || isLoading">
+          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Créer
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
