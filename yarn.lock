@@ -374,13 +374,6 @@
     fast-glob "3.3.3"
     yargs "^17.2.1"
 
-"@angular/material@^20.1.5":
-  version "20.1.5"
-  resolved "https://registry.yarnpkg.com/@angular/material/-/material-20.1.5.tgz#e17cadae4d952d197dc91de484763a1b09b42363"
-  integrity sha512-Kce3rjQEblkX6gb6RH8Fefm0cFxXsM7d/bTCu3syCQiy4F0BUv4OGyThIkiWztVwVtg/E9IeYotoftCyydFJLQ==
-  dependencies:
-    tslib "^2.3.0"
-
 "@angular/platform-browser-dynamic@19.2.10":
   version "19.2.10"
   resolved "https://registry.yarnpkg.com/@angular/platform-browser-dynamic/-/platform-browser-dynamic-19.2.10.tgz#e7f2d81b3d35df0a351e331c9f45fec849eb5791"
@@ -9340,13 +9333,6 @@ ngx-infinite-scroll@^9.0.0:
   dependencies:
     "@scarf/scarf" "^1.1.0"
     opencollective-postinstall "^2.0.2"
-
-ngx-quill@^28.0.1:
-  version "28.0.1"
-  resolved "https://registry.yarnpkg.com/ngx-quill/-/ngx-quill-28.0.1.tgz#3cd20f07d5192451fbcad5c7dfb4b203d249206d"
-  integrity sha512-fbhPzAPkSSgTutkpXW46kVfP++m1yEAZUJ/kqLZ9DjkF50Ati8n7PJZw/pnxssQP4BRWAtoTypaHFzCkHNrzQw==
-  dependencies:
-    tslib "^2.3.0"
 
 ngx-scrollbar@16.1.1:
   version "16.1.1"

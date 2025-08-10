@@ -6,7 +6,7 @@ import { Subject, takeUntil, debounceTime } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Location } from '@angular/common';
 import { HttpHeaders } from '@angular/common/http';
-import { QuillModule } from 'ngx-quill';
+// import { QuillModule } from 'ngx-quill';
 import Quill from 'quill';
 
 import { Ticket, TicketStatus, TicketPriority, TicketCategory } from 'src/app/models/Ticket.class';
@@ -23,7 +23,7 @@ import Swal from 'sweetalert2';
 
 import Toolbar from 'quill/modules/toolbar';
 
-Quill.register('modules/toolbar', Toolbar);
+// Quill.register('modules/toolbar', Toolbar);
 
 interface FilterOption {
   value: string;
@@ -34,7 +34,7 @@ interface FilterOption {
   selector: 'app-pharmacy-ticket-detail',
   templateUrl: './support.component.html',
   styleUrls: ['./support.component.scss'],
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, Select2, QuillModule]
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Select2, ] //QuillModule
 })
 export class TicketDetailComponent implements OnInit, OnDestroy {
   @ViewChild('messageTextarea') messageTextarea!: ElementRef;
@@ -59,18 +59,18 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
 
   isEditing = false;
   isEditingTitle: boolean = false;
-  quillConfig = {
-    theme: 'snow',
-    placeholder: 'Tapez votre message...',
-    modules: {
-      toolbar: [
-        ['bold', 'italic', 'underline'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        ['link'],
-        ['clean']
-      ]
-    }
-  };
+  // quillConfig = {
+  //   theme: 'snow',
+  //   placeholder: 'Tapez votre message...',
+  //   modules: {
+  //     toolbar: [
+  //       ['bold', 'italic', 'underline'],
+  //       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+  //       ['link'],
+  //       ['clean']
+  //     ]
+  //   }
+  // };
 
   // Options pour les sélecteurs
   statusOptions: FilterOption[] = [
