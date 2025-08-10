@@ -1,11 +1,13 @@
 // ticket-detail.component.ts
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import {Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import { Subject, takeUntil, debounceTime } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Location } from '@angular/common';
 import { HttpHeaders } from '@angular/common/http';
+import { QuillModule } from 'ngx-quill';
+import Quill from 'quill';
 
 import { Ticket, TicketStatus, TicketPriority, TicketCategory } from 'src/app/models/Ticket.class';
 import { TicketMessage } from 'src/app/models/TicketMessage.class';
@@ -19,16 +21,20 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Select2 } from 'ng-select2-component';
 import Swal from 'sweetalert2';
 
+import Toolbar from 'quill/modules/toolbar';
+
+Quill.register('modules/toolbar', Toolbar);
+
 interface FilterOption {
   value: string;
   label: string;
 }
 
 @Component({
-  selector: 'app-ticket-detail',
+  selector: 'app-pharmacy-ticket-detail',
   templateUrl: './support.component.html',
   styleUrls: ['./support.component.scss'],
-  imports: [CommonModule, ReactiveFormsModule, Select2, FormsModule]
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Select2, QuillModule]
 })
 export class TicketDetailComponent implements OnInit, OnDestroy {
   @ViewChild('messageTextarea') messageTextarea!: ElementRef;
@@ -50,6 +56,21 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
   isUpdatingTicket = false;
   isTyping = false;
   errorMessage = '';
+
+  isEditing = false;
+  isEditingTitle: boolean = false;
+  quillConfig = {
+    theme: 'snow',
+    placeholder: 'Tapez votre message...',
+    modules: {
+      toolbar: [
+        ['bold', 'italic', 'underline'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link'],
+        ['clean']
+      ]
+    }
+  };
 
   // Options pour les sélecteurs
   statusOptions: FilterOption[] = [
@@ -83,6 +104,7 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private typingTimer: any;
+  notExtendMessage: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -110,7 +132,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
-    // Récupérer l'ID du ticket depuis l'URL
     this.ticketId = this.route.snapshot.paramMap.get('id') || '';
 
     if (!this.ticketId) {
@@ -142,12 +163,9 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
     try {
       this.isLoading = true;
 
-      // Connexion au système de tickets si pas encore connecté
       if (!this.ticketService.isConnected()) {
         await this.ticketService.connectToTicketSystem();
       }
-
-      // Charger le ticket
       await this.loadTicket();
 
       // Surveiller l'état de connexion
@@ -313,55 +331,103 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
 
   // Actions sur le ticket
   async updateTicket() {
-    if (this.editTicketForm.invalid || !this.ticket || this.isUpdatingTicket) {
-      return;
-    }
 
     try {
       this.isUpdatingTicket = true;
-      const formValue = this.editTicketForm.value;
+      const formValue = {
+        title: this.ticket.title,
+        description: this.ticket.description,
+        category: this.ticket.category,
+        priority: this.ticket.priority,
+        status: this.ticket.status,
+      }
 
       await this.ticketService.updateTicket(this.ticket._id!, formValue);
-
       this.showEditMode = false;
-      this.handleSuccess('Ticket mis à jour avec succès');
 
     } catch (error) {
       console.error('❌ Erreur mise à jour ticket:', error);
       this.handleError('Erreur lors de la mise à jour du ticket');
     } finally {
       this.isUpdatingTicket = false;
+      this.isEditingTitle = false;
+      this.isEditing = false;
     }
   }
 
   async changeStatus(newStatusString: string) {
     if (!this.ticket) return;
 
-    //damien
     const newStatus = newStatusString as TicketStatus;
     if (!newStatus) return;
 
     try {
       await this.ticketService.updateTicket(this.ticket._id!, { status: newStatus });
       this.handleSuccess(`Statut changé vers "${this.getStatusLabel(newStatus)}"`);
+      this.ticket.status = newStatus;
+      // Fermer le dropdown après sélection
+      this.isStatusDropdownOpen = false;
     } catch (error) {
       console.error('❌ Erreur changement statut:', error);
       this.handleError('Erreur lors du changement de statut');
     }
   }
 
-  async changePriority(newPriorityStatus: string) {
+  async changePriority(newPriorityString: string) {
     if (!this.ticket) return;
 
-    const newPriority = newPriorityStatus as TicketPriority;
+    const newPriority = newPriorityString as TicketPriority;
     if (!newPriority) return;
 
     try {
       await this.ticketService.updateTicket(this.ticket._id!, { priority: newPriority });
       this.handleSuccess(`Priorité changée vers "${this.getPriorityLabel(newPriority)}"`);
+      this.ticket.priority = newPriority;
+      // Fermer le dropdown après sélection
+      this.isPriorityDropdownOpen = false;
     } catch (error) {
       console.error('❌ Erreur changement priorité:', error);
       this.handleError('Erreur lors du changement de priorité');
+    }
+  }
+  isStatusDropdownOpen = false;
+  isPriorityDropdownOpen = false;
+  closeDropdown(dropdownElement: ElementRef | any) {
+    try {
+      // Utiliser l'API Bootstrap directement
+      const dropdownEl = dropdownElement?.nativeElement || dropdownElement;
+      if (dropdownEl) {
+        const dropdown = new (window as any).bootstrap.Dropdown(dropdownEl);
+        dropdown.hide();
+      }
+    } catch (error) {
+      console.warn('Erreur fermeture dropdown:', error);
+    }
+  }
+  // Méthodes de toggle
+  toggleStatusDropdown() {
+    this.isStatusDropdownOpen = !this.isStatusDropdownOpen;
+    // Fermer l'autre dropdown si ouvert
+    if (this.isStatusDropdownOpen) {
+      this.isPriorityDropdownOpen = false;
+    }
+  }
+
+  togglePriorityDropdown() {
+    this.isPriorityDropdownOpen = !this.isPriorityDropdownOpen;
+    // Fermer l'autre dropdown si ouvert
+    if (this.isPriorityDropdownOpen) {
+      this.isStatusDropdownOpen = false;
+    }
+  }
+
+  // Fermer les dropdowns en cliquant ailleurs (optionnel)
+  @HostListener('document:click', ['$event'])
+  closeDropdownsOnOutsideClick(event: Event) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.custom-dropdown')) {
+      this.isStatusDropdownOpen = false;
+      this.isPriorityDropdownOpen = false;
     }
   }
 
@@ -428,17 +494,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
     const option = this.statusOptions.find(opt => opt.value === status);
     return option?.label || status;
   }
-
-  getPriorityLabel(priority: TicketPriority): string {
-    const option = this.priorityOptions.find(opt => opt.value === priority);
-    return option?.label || priority;
-  }
-
-  getCategoryLabel(category: TicketCategory): string {
-    const option = this.categoryOptions.find(opt => opt.value === category);
-    return option?.label || category;
-  }
-
   getStatusClass(status: TicketStatus): string {
     const classes = {
       'open': 'status-open',
@@ -450,6 +505,10 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
     return classes[status] || 'status-default';
   }
 
+  getPriorityLabel(priority: TicketPriority): string {
+    const option = this.priorityOptions.find(opt => opt.value === priority);
+    return option?.label || priority;
+  }
   getPriorityClass(priority: TicketPriority): string {
     const classes = {
       'urgent': 'priority-urgent',
@@ -459,6 +518,13 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
     };
     return classes[priority] || 'priority-default';
   }
+
+  getCategoryLabel(category: TicketCategory): string {
+    const option = this.categoryOptions.find(opt => opt.value === category);
+    return option?.label || category;
+  }
+
+
 
   formatDate(date: Date): string {
     return new Intl.DateTimeFormat('fr-FR', {
@@ -488,13 +554,25 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
   getVisibleMessages(): TicketMessage[] {
     if (!this.ticket) return [];
 
-    return this.ticket.messages.filter(message =>
-      this.showInternalMessages || !message.isInternal
-    );
+    const sortedMessages = [...this.ticket.messages]
+      .sort((a, b) =>
+        new Date(b.updatedAt || b.createdAt).getTime() -
+        new Date(a.updatedAt || a.createdAt).getTime()
+      )
+      .filter(message => this.showInternalMessages || !message.isInternal);
+
+    return !this.notExtendMessage
+      ? sortedMessages.slice(0, 2)
+      : sortedMessages;
   }
 
   isCurrentUser(userId: string): boolean {
     return this.currentUser?.id === userId;
+  }
+  editTextDescription = '';
+  enableEdit() {
+    this.isEditing = true;
+    this.editTextDescription = this.ticket.description;
   }
 
   // Validation des formulaires

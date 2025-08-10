@@ -31,11 +31,12 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss",
               "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
               "node_modules/leaflet/dist/leaflet.css",
               "node_modules/select2/dist/css/select2.min.css",
-              "node_modules/leaflet-draw/dist/leaflet.draw.css"
+              "node_modules/leaflet-draw/dist/leaflet.draw.css",
+              "node_modules/quill/dist/quill.snow.css",
+              "src/styles.scss"
             ],
             "scripts": [
               "node_modules/chart.js/dist/chart.umd.js",
