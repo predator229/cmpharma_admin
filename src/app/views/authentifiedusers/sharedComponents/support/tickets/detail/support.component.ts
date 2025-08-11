@@ -5,8 +5,7 @@ import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} fr
 import { Subject, takeUntil, debounceTime } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Location } from '@angular/common';
-import { HttpHeaders } from '@angular/common/http';
-// import { QuillModule } from 'ngx-quill';
+import { QuillModule } from 'ngx-quill';
 import Quill from 'quill';
 
 import { Ticket, TicketStatus, TicketPriority, TicketCategory } from 'src/app/models/Ticket.class';
@@ -23,7 +22,7 @@ import Swal from 'sweetalert2';
 
 import Toolbar from 'quill/modules/toolbar';
 
-// Quill.register('modules/toolbar', Toolbar);
+Quill.register('modules/toolbar', Toolbar);
 
 interface FilterOption {
   value: string;
@@ -34,7 +33,7 @@ interface FilterOption {
   selector: 'app-pharmacy-ticket-detail',
   templateUrl: './support.component.html',
   styleUrls: ['./support.component.scss'],
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, Select2, ] //QuillModule
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Select2, QuillModule]
 })
 export class TicketDetailComponent implements OnInit, OnDestroy {
   @ViewChild('messageTextarea') messageTextarea!: ElementRef;
@@ -59,18 +58,26 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
 
   isEditing = false;
   isEditingTitle: boolean = false;
-  // quillConfig = {
-  //   theme: 'snow',
-  //   placeholder: 'Tapez votre message...',
-  //   modules: {
-  //     toolbar: [
-  //       ['bold', 'italic', 'underline'],
-  //       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-  //       ['link'],
-  //       ['clean']
-  //     ]
-  //   }
-  // };
+  quillConfig = {
+    toolbar: [
+      ['bold', 'italic', 'underline'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['link'],
+      ['clean']
+    ],
+    theme: 'snow',
+    placeholder: 'Tapez votre message...',
+    modules: {
+      toolbar: [
+        ['bold', 'italic', 'underline'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link'],
+        ['clean']
+      ]
+    }
+  };
+  editTextDescription: string = '';
+  editTitle: string = '';
 
   // Options pour les sélecteurs
   statusOptions: FilterOption[] = [
@@ -190,6 +197,8 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
       .subscribe(ticket => {
         if (ticket && ticket._id === this.ticketId) {
           this.ticket = ticket;
+          this.editTitle = ticket.title;
+          this.editTextDescription = ticket.description;
           this.updateEditForm();
         }
       });
@@ -335,8 +344,8 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
     try {
       this.isUpdatingTicket = true;
       const formValue = {
-        title: this.ticket.title,
-        description: this.ticket.description,
+        title: this.editTitle ?? this.ticket.title,
+        description: this.editTextDescription ?? this.ticket.description,
         category: this.ticket.category,
         priority: this.ticket.priority,
         status: this.ticket.status,
@@ -569,7 +578,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
   isCurrentUser(userId: string): boolean {
     return this.currentUser?.id === userId;
   }
-  editTextDescription = '';
   enableEdit() {
     this.isEditing = true;
     this.editTextDescription = this.ticket.description;

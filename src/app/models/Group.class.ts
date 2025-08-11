@@ -1,5 +1,4 @@
 import {Permission} from "./Permission.class";
-import {isArray} from "@angular/compiler-cli/src/ngtsc/annotations/common";
 
 export enum GroupCode {
   SUPERADMIN = 'superadmin',

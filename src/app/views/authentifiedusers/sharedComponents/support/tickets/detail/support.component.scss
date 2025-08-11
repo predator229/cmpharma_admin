@@ -8,6 +8,7 @@ $light-bg: #f8f9fa;
 $white-bg: #ffffff;
 $dark-text: #343a40;
 $muted-text: #6c757d;
+$text-muted: #6c757d;
 $border-color: #e9ecef;
 $danger-color: #dc3545;
 $sidebar-width: 350px;
@@ -213,90 +214,100 @@ $shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .description {
-  padding: 24px;
-  line-height: 1.6;
+  padding: 20px 24px;
+  line-height: 1.7;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 8px;
+  background: #fff;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
 
   &:hover {
-    background: #f7f8fa;
+    background: #f9fafc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
   /* Styles généraux pour les balises pre/code */
-  pre {
+  pre,
+  pre.ql-syntax {
     background-color: #1e1e1e;
-    color: #d4d4d4;
-    padding: 12px;
-    border-radius: 4px;
-    font-family: 'Source Code Pro', monospace, monospace;
+    color: #f5f5f5;
+    padding: 14px;
+    border-radius: 6px;
+    font-family: 'Source Code Pro', monospace;
     font-size: 14px;
     overflow-x: auto;
     white-space: pre-wrap;
+    line-height: 1.6;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2);
   }
 
   code {
-    font-family: 'Source Code Pro', monospace, monospace;
-  }
-
-  /* Styles spécifiques aux blocs de code Quill */
-  pre.ql-syntax {
-    background-color: #1e1e1e;
-    color: #d4d4d4;
-    padding: 12px;
+    font-family: 'Source Code Pro', monospace;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 2px 4px;
     border-radius: 4px;
-    font-family: 'Source Code Pro', monospace, monospace;
-    font-size: 14px;
-    overflow-x: auto;
+    font-size: 13px;
   }
 }
 
 .description-editor {
   background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   padding: 8px;
+  transition: box-shadow 0.25s ease;
+
+  &:focus-within {
+    box-shadow: 0 0 0 3px rgba(38, 132, 255, 0.2);
+  }
 
   .ql-toolbar {
     border-radius: 6px 6px 0 0;
+    border-bottom: 1px solid #ddd;
   }
 
   .ql-container {
     border-radius: 0 0 6px 6px;
-    min-height: 150px;
+    min-height: 160px;
   }
 
   .editor-actions {
-    margin-top: 10px;
+    margin-top: 12px;
     display: flex;
     gap: 8px;
 
     .btn-save {
-      background: #2684ff;
+      background: linear-gradient(135deg, #2684ff, #1e6fd9);
       color: white;
-      padding: 6px 14px;
-      border-radius: 4px;
+      padding: 7px 16px;
+      border-radius: 6px;
       border: none;
       cursor: pointer;
+      font-weight: 500;
+      transition: background 0.25s ease, transform 0.15s ease;
 
       &:hover {
-        background: #1e6fd9;
+        background: linear-gradient(135deg, #1e6fd9, #155bb5);
+        transform: translateY(-1px);
       }
     }
 
     .btn-cancel {
-      background: #f0f0f0;
-      padding: 6px 14px;
-      border-radius: 4px;
+      background: #f3f4f6;
+      padding: 7px 16px;
+      border-radius: 6px;
       border: none;
       cursor: pointer;
+      font-weight: 500;
+      transition: background 0.25s ease, transform 0.15s ease;
 
       &:hover {
-        background: #e2e2e2;
+        background: #e5e7eb;
+        transform: translateY(-1px);
       }
     }
   }
 }
-
 
 // Activity Section
 .activity-section {
@@ -1414,4 +1425,73 @@ select2 .select2-container {
 /* Pour le contenu trop large, un scroll horizontal apparaît */
 .row.col-12 > div {
   overflow-x: auto;
+}
+
+.ticket-title-section {
+  margin-bottom: 20px;
+
+  .ticket-title {
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #333;
+
+    &:hover {
+      background-color: $light-bg;
+    }
+  }
+
+  .title-editor {
+    .title-textarea {
+      font-size: 1.8rem;
+      font-weight: 600;
+      border: 2px solid $primary-color;
+      border-radius: 6px;
+      padding: 12px 16px;
+      width: 100%;
+      resize: vertical;
+      min-height: 70px;
+      font-family: inherit;
+
+      &:focus {
+        outline: none;
+        border-color: darken($primary-color, 10%);
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
+    }
+
+    .editor-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+
+      .btn {
+        padding: 6px 12px;
+        font-size: 0.875rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+
+        i {
+          margin-right: 4px;
+        }
+      }
+    }
+  }
+}
+quill-editor {
+  display: block;
+  width: 100% !important;
+}
+
+quill-editor .ql-container {
+  width: 100% !important;
+  min-height: 200px; /* ou ta hauteur */
+}
+
+quill-editor .ql-editor {
+  min-height: 200px; /* hauteur éditable */
 }

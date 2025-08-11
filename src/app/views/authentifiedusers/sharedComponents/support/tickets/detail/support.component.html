@@ -46,15 +46,15 @@
       <!-- Ticket Header -->
       <div class="ticket-header">
         <div class="ticket-title-section">
-          <h1 class="ticket-title" *ngIf="!isEditingTitle" (click)="isEditingTitle=true" >{{ ticket.title }}</h1>
+          <h1 class="ticket-title" *ngIf="!isEditingTitle" (click)="editTitle = ticket.title; isEditingTitle=true" >{{ ticket.title }}</h1>
           <div class="description-editor" *ngIf="isEditingTitle">
             <textarea
-              [(ngModel)]="ticket.title"
+              [(ngModel)]="editTitle"
               class="textarea comment-input-container"
             ></textarea>
             <div class="editor-actions">
               <button class="btn-save" (click)="updateTicket()">💾 Enregistrer</button>
-              <button class="btn-cancel" (click)="isEditingTitle = false">✖ Annuler</button>
+              <button class="btn-cancel" (click)="editTitle = ''; isEditingTitle = false">✖ Annuler</button>
             </div>
           </div>
         </div>
@@ -72,16 +72,15 @@
         </div>
 
         <div class="description-editor" *ngIf="isEditing">
-<!--          <quill-editor-->
-<!--            #descriptionEditor-->
-<!--            [(ngModel)]="ticket.description"-->
-<!--            [modules]="quillConfig.modules"-->
-<!--            [theme]="quillConfig.theme"-->
-<!--            [styles]="{height: '200px'}"-->
-<!--          ></quill-editor>-->
+          <quill-editor
+            #descriptionEditor
+            [(ngModel)]="editTextDescription"
+            [modules]="quillConfig.modules"
+            [styles]="{height: '200px'}"
+          ></quill-editor>
           <div class="editor-actions">
             <button class="btn-save" (click)="updateTicket()">💾 Enregistrer</button>
-            <button class="btn-cancel" (click)="isEditing = false">✖ Annuler</button>
+            <button class="btn-cancel" (click)="editTextDescription = '';isEditing = false">✖ Annuler</button>
           </div>
         </div>
       </div>
@@ -94,14 +93,13 @@
               <img src="{{ currentUser.photoURL }}" class="avatar comment-avatar" alt="Votre avatar">
 
               <div class="comment-input-container">
-<!--                <quill-editor-->
-<!--                  #messageEditor-->
-<!--                  class="comment-input-container"-->
-<!--                  formControlName="content"-->
-<!--                  [modules]="quillConfig.modules"-->
-<!--                  [theme]="quillConfig.theme"-->
-<!--                  [styles]="{height: '200px'}"-->
-<!--                ></quill-editor>-->
+                <quill-editor
+                  #messageEditor
+                  class="comment-input-container"
+                  formControlName="content"
+                  [styles]="{height: '200px'}"
+                  [modules]="quillConfig.modules"
+                ></quill-editor>
                 <!-- Attachments Preview -->
                 <div class="attached-files-preview" *ngIf="attachedFiles.length > 0">
                   <div class="attached-file-item" *ngFor="let file of attachedFiles; let i = index">
@@ -247,61 +245,61 @@
 
     <!-- Right Sidebar -->
     <div class="sidebar">
-<!--      <div class="sidebar-section">-->
-<!--        <div class="sidebar-field">-->
-<!--          <label class="label">Statut</label>-->
-<!--          <div class="custom-dropdown" [class.open]="isStatusDropdownOpen" #statusDropdown>-->
-<!--            <button type="button"-->
-<!--                    class="btn btn-dropdown"-->
-<!--                    (click)="toggleStatusDropdown()">-->
-<!--        <span class="status-badge" [ngClass]="getStatusClass(ticket.status)">-->
-<!--          {{ getStatusLabel(ticket.status) }}-->
-<!--        </span>-->
-<!--              <i class="fas fa-chevron-down" [class.rotated]="isStatusDropdownOpen"></i>-->
-<!--            </button>-->
-<!--            <ul class="dropdown-menu custom-dropdown-menu"-->
-<!--                [class.show]="isStatusDropdownOpen">-->
-<!--              <li *ngFor="let option of statusOptions">-->
-<!--                <button class="dropdown-item"-->
-<!--                        type="button"-->
-<!--                        [class.active]="ticket.status === option.value"-->
-<!--                        (click)="changeStatus(option.value); closeDropdown(statusDropdown)">-->
-<!--            <span class="status-badge" [ngClass]="'status-' + option.value">-->
-<!--              {{ option.label }}-->
-<!--            </span>-->
-<!--                </button>-->
-<!--              </li>-->
-<!--            </ul>-->
-<!--          </div>-->
-<!--        </div>-->
+      <div class="sidebar-section">
+        <div class="sidebar-field">
+          <label class="label">Statut</label>
+          <div class="custom-dropdown" [class.open]="isStatusDropdownOpen" #statusDropdown>
+            <button type="button"
+                    class="btn btn-dropdown"
+                    (click)="toggleStatusDropdown()">
+        <span class="status-badge" [ngClass]="getStatusClass(ticket.status)">
+          {{ getStatusLabel(ticket.status) }}
+        </span>
+              <i class="fas fa-chevron-down" [class.rotated]="isStatusDropdownOpen"></i>
+            </button>
+            <ul class="dropdown-menu custom-dropdown-menu"
+                [class.show]="isStatusDropdownOpen">
+              <li *ngFor="let option of statusOptions">
+                <button class="dropdown-item"
+                        type="button"
+                        [class.active]="ticket.status === option.value"
+                        (click)="changeStatus(option.value); closeDropdown(statusDropdown)">
+            <span class="status-badge" [ngClass]="'status-' + option.value">
+              {{ option.label }}
+            </span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
 
-<!--        <div class="sidebar-field">-->
-<!--          <label class="label">Priorité</label>-->
-<!--          <div class="custom-dropdown" [class.open]="isPriorityDropdownOpen" #priorityDropdown>-->
-<!--            <button class="btn btn-dropdown"-->
-<!--                    type="button"-->
-<!--                    (click)="togglePriorityDropdown()">-->
-<!--        <span class="priority-badge" [ngClass]="getPriorityClass(ticket.priority)">-->
-<!--          {{ getPriorityLabel(ticket.priority) }}-->
-<!--        </span>-->
-<!--              <i class="fas fa-chevron-down" [class.rotated]="isPriorityDropdownOpen"></i>-->
-<!--            </button>-->
-<!--            <ul class="dropdown-menu custom-dropdown-menu"-->
-<!--                [class.show]="isPriorityDropdownOpen">-->
-<!--              <li *ngFor="let option of priorityOptions">-->
-<!--                <button class="dropdown-item"-->
-<!--                        type="button"-->
-<!--                        [class.active]="ticket.priority === option.value"-->
-<!--                        (click)="changePriority(option.value); closeDropdown(priorityDropdown)">-->
-<!--            <span class="priority-badge" [ngClass]="'priority-' + option.value">-->
-<!--              {{ option.label }}-->
-<!--            </span>-->
-<!--                </button>-->
-<!--              </li>-->
-<!--            </ul>-->
-<!--          </div>-->
-<!--        </div>-->
-<!--      </div>-->
+        <div class="sidebar-field">
+          <label class="label">Priorité</label>
+          <div class="custom-dropdown" [class.open]="isPriorityDropdownOpen" #priorityDropdown>
+            <button class="btn btn-dropdown"
+                    type="button"
+                    (click)="togglePriorityDropdown()">
+        <span class="priority-badge" [ngClass]="getPriorityClass(ticket.priority)">
+          {{ getPriorityLabel(ticket.priority) }}
+        </span>
+              <i class="fas fa-chevron-down" [class.rotated]="isPriorityDropdownOpen"></i>
+            </button>
+            <ul class="dropdown-menu custom-dropdown-menu"
+                [class.show]="isPriorityDropdownOpen">
+              <li *ngFor="let option of priorityOptions">
+                <button class="dropdown-item"
+                        type="button"
+                        [class.active]="ticket.priority === option.value"
+                        (click)="changePriority(option.value); closeDropdown(priorityDropdown)">
+            <span class="priority-badge" [ngClass]="'priority-' + option.value">
+              {{ option.label }}
+            </span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
       <!-- Details Section -->
       <div class="sidebar-section">
         <h4 class="sidebar-section-title">Détails</h4>
