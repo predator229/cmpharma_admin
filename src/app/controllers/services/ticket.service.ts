@@ -15,6 +15,7 @@ import {
 import { TicketMessage } from 'src/app/models/TicketMessage.class';
 import {TicketStats} from "../../models/TicketStats.class";
 import {TicketTemplate} from "../../models/TicketTemplate.class";
+import {FileClass} from "../../models/File.class";
 
 interface TicketFilter {
   status?: TicketStatus[];
@@ -45,6 +46,7 @@ export class TicketService {
   // Subjects pour les événements temps réel
   private ticketsSubject = new BehaviorSubject<Ticket[]>([]);
   private currentTicketSubject = new BehaviorSubject<Ticket | null>(null);
+  private allAtachementsSubject = new BehaviorSubject<FileClass[]>([]);
   private newMessageSubject = new Subject<TicketMessage>();
   private ticketUpdatedSubject = new Subject<Ticket>();
   private statsSubject = new BehaviorSubject<TicketStats>(new TicketStats());
@@ -257,6 +259,7 @@ export class TicketService {
       if (response.success) {
         const ticket = new Ticket(response.data);
         this.ticketsCache.set(ticketId, ticket);
+        this.allAtachementsSubject.next(response.allAtachements.map((a: any) => new FileClass(a)) ?? []);
         this.currentTicketSubject.next(ticket);
         return ticket;
       }
@@ -369,7 +372,7 @@ export class TicketService {
     }
   }
 
-  async sendMessage(ticketId: string, content: string, attachments: string[] = [], isInternal: boolean = false): Promise<TicketMessage> {
+  async sendMessage(ticketId: string, content: string, attachments: File[] = [], isInternal: boolean = false): Promise<TicketMessage> {
     try {
       const token = await this.authService.getRealToken();
       const uid = await this.authService.getUid();
@@ -384,7 +387,6 @@ export class TicketService {
       const payload = {
         ticketId,
         content,
-        attachments,
         isInternal,
         authorId: uid,
         uid
@@ -396,6 +398,13 @@ export class TicketService {
 
       if (response.success) {
         const message = new TicketMessage(response.data);
+
+        if (attachments){
+          for (const attachment of attachments) {
+            const file = await this.uploadAttachment(attachment, message._id, 'message');
+            if (file !== null) { message.attachments.push(file); }
+          }
+        }
 
         // Émettre via WebSocket si connecté
         if (this.socket?.connected) {
@@ -502,7 +511,7 @@ export class TicketService {
     }
   }
 
-  async uploadAttachment(file: File, ticketId: string): Promise<string> {
+  async uploadAttachment(file: File, ticketId: string, type:string = 'ticket'): Promise<FileClass | null> {
     try {
       const token = await this.authService.getRealToken();
       const uid = await this.authService.getUid();
@@ -512,7 +521,7 @@ export class TicketService {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type_', 'ticket_attachment');
-      formData.append('ticketId', ticketId);
+      formData.append(type == 'ticket' ? 'ticketId' : 'ticketMessageId', ticketId);
       formData.append('uid', uid);
 
       const headers = new HttpHeaders({
@@ -520,17 +529,18 @@ export class TicketService {
       });
 
       const response: any = await firstValueFrom(
-        this.apiService.post('tools/tickets/upload', formData, headers)
+        this.apiService.post(`tools/tickets/upload${type != 'ticket' ? '-message' : ''}`, formData, headers)
       );
 
       if (response.success) {
-        return response.fileId;
+        return new FileClass(response.data);
       }
 
       throw new Error(response.message || 'Erreur lors de l\'upload');
     } catch (error) {
       console.error('❌ Erreur uploadAttachment:', error);
       throw error;
+      return null;
     }
   }
 
@@ -540,6 +550,10 @@ export class TicketService {
 
   getCurrentTicket$(): Observable<Ticket | null> {
     return this.currentTicketSubject.asObservable();
+  }
+
+  getAllAtachements$(): Observable<FileClass[]> {
+    return this.allAtachementsSubject.asObservable();
   }
 
   getNewMessages$(): Observable<TicketMessage> {

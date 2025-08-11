@@ -1,0 +1,529 @@
+
+$primary-color: #d91a72;
+$primary-hover: #b91560;
+$secondary-color: #6c757d;
+$success-color: #28a745;
+$info-color: #17a2b8;
+$light-bg: #f8f9fa;
+$white-bg: #ffffff;
+$dark-text: #343a40;
+$muted-text: #6c757d;
+$text-muted: #6c757d;
+$border-color: #e9ecef;
+$danger-color: #dc3545;
+$sidebar-width: 350px;
+$border-radius-base: 10px;
+$border-radius-pill: 50px;
+$transition-base: all 0.2s ease-in-out;
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+$border-radius-sm: 4px;
+$warning-color: #ffc107;
+
+
+.attachments-section {
+  background: white;
+  border-radius: $border-radius-base;
+  border: 1px solid $border-color;
+  overflow: hidden;
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid $border-color;
+    background: $light-bg;
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: $dark-text;
+      }
+
+      i {
+        color: $primary-color;
+        font-size: 20px;
+      }
+    }
+
+    .section-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .view-toggle {
+        display: flex;
+        gap: 2px;
+        border: 1px solid $border-color;
+        border-radius: $border-radius-sm;
+        overflow: hidden;
+
+        .btn {
+          border: none;
+          border-radius: 0;
+          padding: 6px 10px;
+
+          &.btn-primary {
+            background: $primary-color;
+            color: white;
+          }
+        }
+      }
+    }
+  }
+
+  .filters-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: lighten($light-bg, 2%);
+    border-bottom: 1px solid $border-color;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    .filters-left,
+    .filters-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .filter-group,
+    .search-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      label {
+        margin: 0;
+        font-size: 13px;
+        color: $dark-text;
+        white-space: nowrap;
+      }
+
+      .form-control {
+        min-width: 120px;
+      }
+    }
+
+    .search-group .input-group {
+      width: 250px;
+    }
+  }
+
+  // Vue grille
+  .attachments-grid {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+
+    &.loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .attachment-card {
+      border: 1px solid $border-color;
+      border-radius: $border-radius-base;
+      background: white;
+      overflow: hidden;
+      transition: all 0.2s ease;
+      position: relative;
+
+      &:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+      }
+
+      &.selected {
+        border-color: $primary-color;
+        box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
+      }
+
+      &.loading {
+        opacity: 0.6;
+
+        .loading-bar {
+          display: block;
+        }
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: $light-bg;
+        border-bottom: 1px solid lighten($border-color, 5%);
+
+        .file-checkbox {
+          input[type="checkbox"] {
+            margin: 0;
+          }
+        }
+
+        .file-actions .dropdown-toggle {
+          padding: 4px;
+          color: $muted-text;
+
+          &:hover {
+            color: $dark-text;
+          }
+        }
+      }
+
+      .card-preview {
+        height: 180px;
+        position: relative;
+        cursor: pointer;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: lighten($light-bg, 3%);
+
+        .image-preview,
+        .pdf-preview {
+          width: 100%;
+          height: 100%;
+          position: relative;
+
+          .preview-image,
+          .pdf-frame {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: none;
+          }
+
+          .image-overlay,
+          .pdf-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            color: white;
+            flex-direction: column;
+            gap: 8px;
+
+            i {
+              font-size: 24px;
+            }
+          }
+
+          &:hover .image-overlay,
+          &:hover .pdf-overlay {
+            opacity: 1;
+          }
+        }
+
+        .file-icon-preview {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          color: $primary-color;
+
+          i {
+            font-size: 48px;
+          }
+
+          .file-extension {
+            font-size: 14px;
+            font-weight: 600;
+            color: $dark-text;
+            text-transform: uppercase;
+          }
+        }
+
+        .file-indicators {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          display: flex;
+          gap: 4px;
+
+          .indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+
+            &.private {
+              background: $warning-color;
+              color: white;
+            }
+
+            &.expiring {
+              background: $danger-color;
+              color: white;
+            }
+          }
+        }
+      }
+
+      .card-body {
+        padding: 12px;
+
+        .file-name {
+          font-size: 14px;
+          font-weight: 600;
+          margin: 0 0 8px 0;
+          color: $dark-text;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .file-meta {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 8px;
+          font-size: 12px;
+          color: $muted-text;
+        }
+
+        .file-details {
+          font-size: 11px;
+          margin-bottom: 8px;
+        }
+
+        .file-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+
+          .tag {
+            background: $primary-color;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 500;
+          }
+        }
+      }
+
+      .loading-bar {
+        display: none;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+
+        .progress {
+          height: 3px;
+          margin: 0;
+          background: lighten($primary-color, 40%);
+
+          .progress-bar {
+            background: $primary-color;
+          }
+        }
+      }
+    }
+
+    .no-files-message {
+      grid-column: 1 / -1;
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: $muted-text;
+
+        i {
+          font-size: 48px;
+          margin-bottom: 16px;
+          color: lighten($muted-text, 20%);
+        }
+
+        h4 {
+          margin-bottom: 8px;
+          color: $dark-text;
+        }
+
+        p {
+          margin-bottom: 20px;
+        }
+      }
+    }
+  }
+
+  // Vue liste
+  .attachments-list {
+    .list-header,
+    .list-item {
+      display: grid;
+      grid-template-columns: 40px 1fr 100px 120px 120px 100px;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid lighten($border-color, 5%);
+      font-size: 13px;
+
+      .col-name {
+        font-weight: 600;
+        color: $dark-text;
+      }
+    }
+
+    .list-header {
+      background: $light-bg;
+      font-weight: 600;
+      color: $dark-text;
+    }
+
+    .list-item {
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background: lighten($light-bg, 3%);
+      }
+
+      &.selected {
+        background: lighten($primary-color, 45%);
+      }
+
+      .file-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .file-icon {
+          font-size: 16px;
+          color: $primary-color;
+        }
+
+        .file-details {
+          .file-name {
+            font-weight: 500;
+            color: $dark-text;
+            display: block;
+          }
+
+          .file-path {
+            color: $muted-text;
+            font-size: 11px;
+          }
+        }
+      }
+
+      .col-actions {
+        display: flex;
+        gap: 4px;
+
+        .btn {
+          padding: 4px 8px;
+          border: none;
+          color: $muted-text;
+
+          &:hover {
+            color: $dark-text;
+          }
+
+          &.text-danger:hover {
+            color: $danger-color;
+          }
+        }
+      }
+    }
+  }
+
+  // Actions en lot
+  .bulk-actions {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    border-top: 1px solid $border-color;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+
+    .bulk-actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+
+      .selected-count {
+        font-weight: 500;
+        color: $dark-text;
+      }
+
+      .bulk-buttons {
+        display: flex;
+        gap: 8px;
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .attachments-section {
+    .section-header {
+      flex-direction: column;
+      gap: 12px;
+      align-items: stretch;
+
+      .section-actions {
+        justify-content: space-between;
+      }
+    }
+
+    .filters-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+
+      .filters-left,
+      .filters-right {
+        justify-content: space-between;
+      }
+
+      .search-group .input-group {
+        width: 100%;
+      }
+    }
+
+    .attachments-grid {
+      grid-template-columns: 1fr;
+      padding: 16px;
+    }
+
+    .attachments-list {
+      .list-header,
+      .list-item {
+        grid-template-columns: 30px 1fr 80px 80px;
+        gap: 8px;
+        padding: 8px 16px;
+
+        .col-type,
+        .col-date {
+          display: none;
+        }
+
+        .col-actions {
+          justify-content: flex-end;
+        }
+      }
+    }
+  }
+}

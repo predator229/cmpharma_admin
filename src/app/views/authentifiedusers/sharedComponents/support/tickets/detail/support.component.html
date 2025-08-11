@@ -65,9 +65,9 @@
         <div class="section-header">
           <h3>Description</h3>
         </div>
-        <div class="row col-12" >
+        <div class="row col-12" style="margin: 10px;" >
           <div class="" *ngIf="!isEditing" (click)="enableEdit()" title="Double-cliquez pour éditer"
-          ><p [innerHTML]="ticket.description || '<em>Aucune description</em>'"></p>
+          [innerHTML]="ticket.description || '<em>Aucune description</em>'">
           </div>
         </div>
 
@@ -85,6 +85,17 @@
         </div>
       </div>
 
+      <div class="section" *ngIf="allAttachements.length > 0">
+        <files-preview-component
+          [allAttachements]="allAttachements"
+          [viewMode]="'list'"
+          [selectedFileType]="''"
+          [sortBy]="''"
+          [searchTerm]="''"
+        >
+        </files-preview-component>
+      </div>
+
       <!-- Activity Section -->
       <div class="section activity-section">
         <div class="comment-form">
@@ -100,35 +111,19 @@
                   [styles]="{height: '200px'}"
                   [modules]="quillConfig.modules"
                 ></quill-editor>
-                <!-- Attachments Preview -->
-                <div class="attached-files-preview" *ngIf="attachedFiles.length > 0">
-                  <div class="attached-file-item" *ngFor="let file of attachedFiles; let i = index">
-                    <div class="file-preview">
-                      <i class="fas fa-paperclip"></i>
-                      <span class="file-name">{{ file.name }}</span>
-                      <span class="file-size">({{ (file.size / 1024 / 1024).toFixed(2) }} MB)</span>
-                    </div>
-                    <button type="button"
-                            class="btn btn-icon"
-                            (click)="removeAttachment(i)">
-                      <i class="fas fa-times"></i>
-                    </button>
-                  </div>
-                </div>
 
                 <div class="comment-actions">
                   <div class="comment-tools">
-                    <input #attachmentInput
-                           type="file"
-                           multiple
-                           style="display: none"
-                           (change)="onFileSelected($event)"
-                           accept="image/*,application/pdf,.doc,.docx,.txt">
+                    <input type="file"
+                       #fileInput
+                       (change)="onFileSelected($event)"
+                       accept="image/*,.pdf,.doc,.docx,.txt"
+                       multiple
+                       style="display: none;">
 
-                    <button type="button"
-                            class="btn btn-icon"
-                            (click)="attachmentInput.click()"
-                            title="Joindre un fichier">
+                    <button type="button" class="btn btn-outline-secondary attachment-btn"
+                        (click)="fileInput.click()"
+                        title="Joindre un ou plusieurs fichiers">
                       <i class="fas fa-paperclip"></i>
                     </button>
 
@@ -151,6 +146,49 @@
               </div>
             </div>
           </form>
+          <div class="file-preview" *ngIf="selectedFiles.length > 0">
+            <div class="preview-header">
+              <span>{{ selectedFiles.length }} fichier(s) sélectionné(s)</span>
+              <button type="button" class="clear-all-btn" (click)="clearFiles()">
+                <i class="fas fa-times"></i> Tout supprimer
+              </button>
+            </div>
+
+            <div class="preview-list">
+              <div *ngFor="let file of selectedFiles; let i = index" class="preview-item">
+                <!-- Prévisualisation image -->
+                <div *ngIf="file.type.startsWith('image/') && previewUrls[i]; else fileIcon" class="preview-image">
+                  <img [src]="previewUrls[i]" [alt]="file.name">
+                </div>
+
+                <!-- Icône fichier -->
+                <ng-template #fileIcon>
+                  <div class="preview-icon"
+                       [class.pdf]="file.type === 'application/pdf'"
+                       [class.doc]="file.type.includes('document') || file.type.includes('word')">
+                    <i class="fas"
+                       [class.fa-file-pdf]="file.type === 'application/pdf'"
+                       [class.fa-file-word]="file.type.includes('document')"
+                       [class.fa-file]="!file.type.includes('pdf') && !file.type.includes('document')"></i>
+                  </div>
+                </ng-template>
+
+                <!-- Informations fichier -->
+                <div class="file-info">
+                  <div class="file-name" [title]="file.name">{{ file.name }}</div>
+                  <div class="file-size">{{ formatFileSize(file.size) }}</div>
+                </div>
+
+                <!-- Bouton suppression -->
+                <button type="button"
+                        class="remove-file-btn"
+                        (click)="removeFile(i)"
+                        [title]="'Supprimer ' + file.name">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="section-header">
           <h3>
@@ -183,7 +221,7 @@
                [class.internal-activity]="message.isInternal">
 
             <div class="activity-avatar">
-              <img [src]="message.author.photoURL || 'assets/images/avatars/default.png'"
+              <img [src]="message.author.photoURL || '/assets/images/avatars/default.png'"
                    [alt]="message.author.name"
                    class="avatar">
             </div>
@@ -191,46 +229,120 @@
             <div class="activity-content">
               <div class="activity-header">
                 <span class="activity-author">{{ message.author._id == currentUser.id ? 'Vous' : message.author.name }}</span>
-                <span class="activity-action">{{ message.author._id == currentUser.id ? 'a' : 'avez' }} commenté</span>
+                <span class="activity-action">{{ message.author._id == currentUser.id ? 'avez' : 'a' }} commenté</span>
                 <span class="activity-time">{{ formatRelativeDate(message.createdAt) }}</span>
-                <span class="activity-badges" *ngIf="message.isInternal">
-                  <span class="badge badge-warning">
-                    <i class="fas fa-lock"></i>
-                    Interne
-                  </span>
-                </span>
+                <span class="activity-badges">
+          <span class="badge badge-warning" *ngIf="message.isInternal">
+            <i class="fas fa-lock"></i>
+            Interne
+          </span>
+          <span class="badge badge-info" *ngIf="message.attachments.length > 0">
+            <i class="fas fa-paperclip"></i>
+            {{ message.attachments.length }} fichier(s)
+          </span>
+        </span>
               </div>
 
               <div class="activity-body">
+                <!-- Contenu du message -->
+                <div class="comment-content"
+                     [innerHTML]="message.content || '<em>Aucune description</em>'"
+                     *ngIf="message.content">
+                </div>
 
-                <div class="comment-content" [innerHTML]="message.content || '<em>Aucune description</em>'"></div>
+                <!-- Fichiers attachés -->
+                <div class="comment-attachments" *ngIf="message.attachments && message.attachments.length > 0">
+                  <div class="attachments-header">
+                    <i class="fas fa-paperclip"></i>
+                    <span>{{ message.attachments.length }} fichier{{ message.attachments.length > 1 ? 's' : '' }} joint{{ message.attachments.length > 1 ? 's' : '' }}</span>
+                  </div>
 
-                <!-- Attachments -->
-                <div class="comment-attachments" *ngIf="message.attachments.length > 0">
-                  <div class="attachment-list">
-                    <div class="attachment-item" *ngFor="let attachment of message.attachments">
-                      <i class="fas fa-paperclip"></i>
-                      <a [href]="attachment.url" target="_blank" class="attachment-link">
-                        {{ attachment.originalName }}
-                      </a>
-                      <span class="attachment-size">
-                        ({{ (parseFloat(attachment.fileSize) / 1024 / 1024).toFixed(2) }} MB)
-                      </span>
+                  <div class="attachment-grid">
+                    <div class="attachment-item"
+                         *ngFor="let attachment of message.attachments"
+                         [class.image-attachment]="isImageFile(attachment)"
+                         [class.private-attachment]="attachment.isPrivate">
+
+                      <!-- Aperçu pour les images -->
+                      <div class="attachment-preview" *ngIf="isImageFile(attachment) && attachment.url">
+                        <img [src]="internatPathUrl+attachment.url"
+                             [alt]="attachment.originalName"
+                             class="attachment-thumbnail"
+                             (click)="openFilePreview(attachment)">
+                        <div class="image-overlay">
+                          <i class="fas fa-search-plus"></i>
+                        </div>
+                      </div>
+
+                      <!-- Icône pour les autres types de fichiers -->
+                      <div class="attachment-icon" *ngIf="!isImageFile(attachment)">
+                        <i [class]="getFileIcon(attachment)"></i>
+                      </div>
+
+                      <div class="attachment-info">
+                        <div class="attachment-name"
+                             [title]="attachment.originalName">
+                          {{ attachment.originalName.slice(0, 10) + (attachment.originalName.length > 10 ? '...' : '') }}
+                        </div>
+
+                        <div class="attachment-meta">
+                          <span class="attachment-privacy" *ngIf="attachment.isPrivate">
+                    <i class="fas fa-lock" title="Fichier privé"></i>
+                  </span>
+                        </div>
+
+                        <!-- Métadonnées supplémentaires pour les images -->
+                        <div class="attachment-dimensions"
+                             *ngIf="isImageFile(attachment) && attachment.meta?.width && attachment.meta?.height">
+                          <small>{{ attachment.meta.width }}x{{ attachment.meta.height }}px</small>
+                        </div>
+                      </div>
+
+                      <div class="attachment-actions">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="downloadFile(attachment)"
+                                [disabled]="!attachment.url"
+                                title="Télécharger">
+                          <i class="fas fa-download"></i>
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="openFilePreview(attachment)"
+                                *ngIf="canPreviewFile(attachment)"
+                                title="Aperçu">
+                          <i class="fas fa-eye"></i>
+                        </button>
+                      </div>
+
+                      <!-- Indicateur d'expiration -->
+                      <div class="attachment-expiry"
+                           *ngIf="attachment.expiresAt && isFileExpiringSoon(attachment.expiresAt)">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        <small>Expire {{ formatRelativeDate(attachment.expiresAt) }}</small>
+                      </div>
                     </div>
                   </div>
+
+<!--                  &lt;!&ndash; Informations sur l'upload &ndash;&gt;-->
+<!--                  <div class="attachments-footer" *ngIf="message.attachments[0]?.uploadedBy">-->
+<!--                    <small class="text-muted">-->
+<!--                      Fichier(s) ajouté(s) par {{ message.attachments[0].uploadedBy.name || message.attachments[0].uploadedBy.email }}-->
+<!--                    </small>-->
+<!--                  </div>-->
                 </div>
               </div>
 
               <div class="activity-footer" *ngIf="message.editedAt">
-                <span class="edited-indicator">
-                  <i class="fas fa-edit"></i>
-                  Modifié {{ formatRelativeDate(message.editedAt) }}
-                </span>
+        <span class="edited-indicator">
+          <i class="fas fa-edit"></i>
+          Modifié {{ formatRelativeDate(message.editedAt) }}
+        </span>
               </div>
             </div>
           </div>
-        </div>
-        <div class="section-header">
+        </div>        <div class="section-header">
           <div class="activity-filters" *ngIf="getVisibleMessages().length < ticket.messages.length">
           <button
             class="btn btn-subtle btn-sm"
@@ -245,7 +357,30 @@
 
     <!-- Right Sidebar -->
     <div class="sidebar">
+
       <div class="sidebar-section">
+        <h4 class="sidebar-section-title">Actions</h4>
+
+        <div class="quick-actions">
+          <button class="btn btn-default btn-full"
+                  *ngIf="ticket.status !== 'resolved'"
+                  (click)="changeStatus('resolved')">
+            <i class="fas fa-check"></i>
+            Marquer comme résolu
+          </button>
+
+          <button class="btn btn-danger btn-full"
+                  *ngIf="ticket.status !== 'closed'"
+                  (click)="changeStatus('closed')">
+            <i class="fas fa-times"></i>
+            Fermer le ticket
+          </button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h4 class="sidebar-section-title">Modifications Rapide</h4>
+
         <div class="sidebar-field">
           <label class="label">Statut</label>
           <div class="custom-dropdown" [class.open]="isStatusDropdownOpen" #statusDropdown>
@@ -366,27 +501,6 @@
         <div class="sidebar-field">
           <label class="label">Dernière activité</label>
           <span class="date-value">{{ formatRelativeDate(ticket.lastActivity) }}</span>
-        </div>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="sidebar-section">
-        <h4 class="sidebar-section-title">Actions</h4>
-
-        <div class="quick-actions">
-          <button class="btn btn-default btn-full"
-                  *ngIf="ticket.status !== 'resolved'"
-                  (click)="changeStatus('resolved')">
-            <i class="fas fa-check"></i>
-            Marquer comme résolu
-          </button>
-
-          <button class="btn btn-danger btn-full"
-                  *ngIf="ticket.status !== 'closed'"
-                  (click)="changeStatus('closed')">
-            <i class="fas fa-times"></i>
-            Fermer le ticket
-          </button>
         </div>
       </div>
 

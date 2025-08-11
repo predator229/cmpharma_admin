@@ -267,7 +267,7 @@
         <div class="item-title" (click)="openTicket(ticket)">
           <div class="ticket-number">#{{ ticket.ticketNumber }}</div>
           <div class="ticket-title">{{ ticket.title }}</div>
-          <div class="ticket-description">{{ ticket.description | slice:0:100 }}...</div>
+          <div class="ticket-description" [innerHTML]="ticket.description.slice(0,20)+' ... ' || '<em>Aucune description</em>'"> </div>
         </div>
 
         <div class="item-status">
@@ -296,12 +296,12 @@
           </div>
         </div>
 
-        <div class="item-actions">
-          <button class="btn btn-sm btn-outline-primary" (click)="openTicket(ticket)">
-            <i class="fas fa-eye"></i>
-            Voir
-          </button>
-        </div>
+<!--        <div class="item-actions">-->
+<!--          <button class="btn btn-sm btn-outline-primary" (click)="openTicket(ticket)">-->
+<!--            <i class="fas fa-eye"></i>-->
+<!--            Voir-->
+<!--          </button>-->
+<!--        </div>-->
       </div>
     </div>
 

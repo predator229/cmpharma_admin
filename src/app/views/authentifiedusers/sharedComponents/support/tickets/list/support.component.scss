@@ -480,6 +480,7 @@ $shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
       color: $dark-text;
       font-size: 0.875rem;
       border-bottom: 1px solid $border-color;
+      //width: 100%;
 
       .sortable {
         cursor: pointer;
@@ -511,6 +512,7 @@ $shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
       border-bottom: 1px solid $border-color;
       transition: $transition;
       align-items: center;
+      width: 100%;
 
       &:hover {
         background: rgba($primary-color, 0.02);

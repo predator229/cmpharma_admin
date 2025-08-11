@@ -1,0 +1,279 @@
+<div class="attachments-section">
+  <div class="section-header">
+    <div class="section-title">
+      <i class="fas fa-paperclip"></i>
+      <h3>Tous les fichiers ({{ allAttachements.length }})</h3>
+    </div>
+    <div class="section-actions">
+      <div class="view-toggle">
+        <button type="button"
+                class="btn btn-sm"
+                [class.btn-primary]="viewMode === 'grid'"
+                [class.btn-outline-primary]="viewMode !== 'grid'"
+                (click)="setViewMode('grid')"
+                title="Vue grille">
+          <i class="fas fa-th"></i>
+        </button>
+        <button type="button"
+                class="btn btn-sm"
+                [class.btn-primary]="viewMode === 'list'"
+                [class.btn-outline-primary]="viewMode !== 'list'"
+                (click)="setViewMode('list')"
+                title="Vue liste">
+          <i class="fas fa-list"></i>
+        </button>
+      </div>
+<!--      <button type="button"-->
+<!--              class="btn btn-outline-danger btn-sm"-->
+<!--              (click)="clearFiles()"-->
+<!--              [disabled]="isClearing">-->
+<!--        <i class="fas fa-trash" *ngIf="!isClearing"></i>-->
+<!--        <i class="fas fa-spinner fa-spin" *ngIf="isClearing"></i>-->
+<!--        {{ isClearing ? 'Suppression...' : 'Tout supprimer' }}-->
+<!--      </button>-->
+    </div>
+  </div>
+
+  <!-- Filtres et tri -->
+  <div class="filters-bar">
+    <div class="filters-left">
+      <div class="filter-group">
+        <label>Filtrer par type :</label>
+        <select class="form-control form-control-sm"
+                [(ngModel)]="selectedFileType"
+                (change)="filterFiles()">
+          <option value="">Tous les types</option>
+          <option value="image">Images</option>
+          <option value="document">Documents</option>
+          <option value="archive">Archives</option>
+          <option value="other">Autres</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Trier par :</label>
+        <select class="form-control form-control-sm"
+                [(ngModel)]="sortBy"
+                (change)="sortFiles()">
+          <option value="name">Nom</option>
+          <option value="size">Taille</option>
+          <option value="type">Type</option>
+          <option value="date">Date d'ajout</option>
+        </select>
+      </div>
+    </div>
+    <div class="filters-right">
+      <div class="search-group">
+        <div class="input-group input-group-sm">
+          <input type="text"
+                 class="form-control"
+                 placeholder="Rechercher un fichier..."
+                 [(ngModel)]="searchTerm"
+                 (input)="filterFiles()">
+          <div class="input-group-append">
+            <span class="input-group-text">
+              <i class="fas fa-search"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vue grille -->
+  <div class="attachments-grid"
+       *ngIf="viewMode === 'grid'"
+       [class.loading]="isLoading">
+
+    <div class="attachment-card"
+         *ngFor="let file of getFilteredFiles(); let i = index"
+         [class.selected]="isFileSelected(file)"
+         [class.loading]="isFileLoading(file._id)">
+
+      <!-- Header de la carte -->
+      <div class="card-header">
+        <div class="file-checkbox">
+          <input type="checkbox"
+                 [id]="'file-' + i"
+                 [checked]="isFileSelected(file)"
+                 (change)="toggleFileSelection(file, $event)">
+          <label [for]="'file-' + i"></label>
+        </div>
+        <div class="file-actions">
+          <div class="dropdown">
+            <button class="btn btn-link btn-sm dropdown-toggle"
+                    type="button"
+                    [id]="'dropdownFile' + i"
+                    data-toggle="dropdown">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <div class="dropdown-menu dropdown-menu-right">
+              <a class="dropdown-item"
+                 (click)="downloadFile(file)">
+                <i class="fas fa-download"></i> Télécharger
+              </a>
+              <a class="dropdown-item"
+                 (click)="openFilePreview(file)"
+                 *ngIf="canPreviewFile(file)">
+                <i class="fas fa-eye"></i> Aperçu
+              </a>
+              <a class="dropdown-item"
+                 (click)="shareFile(file)">
+                <i class="fas fa-share"></i> Partager
+              </a>
+              <div class="dropdown-divider"></div>
+<!--              <a class="dropdown-item text-danger"-->
+<!--                 (click)="removeFile(file, i)">-->
+<!--                <i class="fas fa-trash"></i> Supprimer-->
+<!--              </a>-->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aperçu du fichier -->
+      <div class="card-preview" (click)="openFilePreview(file)">
+        <!-- Image -->
+        <div class="image-preview" *ngIf="['jpeg', 'jpg', 'png', 'gif', 'webp'].includes(file.extension)">
+          <img [src]="getFileUrl(file)"
+               [alt]="file.originalName"
+               class="preview-image"
+               (error)="onImageError($event, file)">
+          <div class="image-overlay">
+            <i class="fas fa-search-plus"></i>
+          </div>
+        </div>
+
+        <!-- PDF avec aperçu -->
+        <div class="pdf-preview" *ngIf="file.extension === 'pdf'">
+          <iframe [src]="getPdfPreviewUrl(file)"
+                  frameborder="0"
+                  class="pdf-frame"
+                  [title]="file.originalName">
+          </iframe>
+          <div class="pdf-overlay">
+            <i class="fas fa-file-pdf"></i>
+            <span>Cliquer pour voir en grand</span>
+          </div>
+        </div>
+
+        <!-- Autres fichiers -->
+        <div class="file-icon-preview" *ngIf="!['pdf','jpeg', 'jpg', 'png', 'gif', 'webp', 'doc', 'dox', 'txt', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'json', 'xml', 'html', 'css', 'js', 'ts'].includes(file.extension)">
+          <i [class]="getFileIcon(file)"></i>
+          <span class="file-extension">{{ file.extension }}</span>
+        </div>
+
+        <!-- Indicateurs -->
+        <div class="file-indicators">
+          <span class="indicator private" *ngIf="file.isPrivate" title="Fichier privé">
+            <i class="fas fa-lock"></i>
+          </span>
+        </div>
+      </div>
+
+      <!-- Informations du fichier -->
+      <div class="card-body">
+        <h5 class="file-name" [title]="file.originalName">
+          {{ file.originalName }}
+        </h5>
+        <div class="file-meta">
+          <span class="file-size">{{ getFormattedFileSize(file.fileSize) }}</span>
+          <span class="file-type">{{ getFileTypeLabel(file.extension) }}</span>
+        </div>
+      </div>
+
+      <!-- Barre de progression (si en cours de chargement) -->
+      <div class="loading-bar" *ngIf="isFileLoading(file._id)">
+        <div class="progress">
+          <div class="progress-bar"
+               [style.width.%]="getFileProgress(file._id)">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message si aucun fichier après filtrage -->
+    <div class="no-files-message" *ngIf="getFilteredFiles().length === 0">
+      <div class="empty-state">
+        <i class="fas fa-search"></i>
+        <h4>Aucun fichier trouvé</h4>
+        <p>Essayez de modifier vos critères de recherche ou de filtre.</p>
+        <button class="btn btn-outline-primary" (click)="resetFilters()">
+          Réinitialiser les filtres
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vue liste -->
+  <div class="attachments-list" *ngIf="viewMode === 'list'">
+    <div class="list-header">
+      <div class="col-checkbox">
+        <input type="checkbox"
+               [checked]="areAllFilesSelected()"
+               [indeterminate]="areSomeFilesSelected()"
+               (change)="toggleAllFiles($event)">
+      </div>
+      <div class="col-name">Nom</div>
+      <div class="col-size">Taille</div>
+      <div class="col-type">Type</div>
+      <div class="col-date">Date</div>
+      <div class="col-actions">Actions</div>
+    </div>
+
+    <div class="list-item"
+         *ngFor="let file of getFilteredFiles(); let i = index"
+         [class.selected]="isFileSelected(file)">
+      <div class="col-checkbox">
+        <input type="checkbox"
+               [checked]="isFileSelected(file)"
+               (change)="toggleFileSelection(file, $event)">
+      </div>
+      <div class="col-name">
+        <div class="file-info">
+          <i [class]="getFileIcon(file)" class="file-icon"></i>
+          <div class="file-details">
+            <span class="file-name">{{ file.originalName }}</span>
+            <small class="file-path" *ngIf="file.uploadedBy">
+              Par {{ file.uploadedBy.name || file.uploadedBy.email }}
+            </small>
+          </div>
+        </div>
+      </div>
+      <div class="col-size">{{ getFormattedFileSize(file.fileSize) }}</div>
+      <div class="col-type">{{ getFileTypeLabel(file.extension) }}</div>
+      <div class="col-date">{{ formatRelativeDate(file.createdAt) }}</div>
+      <div class="col-actions">
+        <button class="btn btn-link btn-sm"
+                (click)="downloadFile(file)"
+                title="Télécharger">
+          <i class="fas fa-download"></i>
+        </button>
+        <button class="btn btn-link btn-sm"
+                (click)="openFilePreview(file)"
+                *ngIf="canPreviewFile(file)"
+                title="Aperçu">
+          <i class="fas fa-eye"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions en lot pour les fichiers sélectionnés -->
+  <div class="bulk-actions" *ngIf="selectedFiles.length > 0">
+    <div class="bulk-actions-bar">
+      <span class="selected-count">
+        {{ selectedFiles.length }} fichier(s) sélectionné(s)
+      </span>
+      <div class="bulk-buttons">
+        <button class="btn btn-outline-primary btn-sm"
+                (click)="downloadSelectedFiles()">
+          <i class="fas fa-download"></i> Télécharger
+        </button>
+        <button class="btn btn-outline-danger btn-sm"
+                (click)="removeSelectedFiles()">
+          <i class="fas fa-trash"></i> Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -21,6 +21,10 @@ import { Select2 } from 'ng-select2-component';
 import Swal from 'sweetalert2';
 
 import Toolbar from 'quill/modules/toolbar';
+import {HttpHeaders} from "@angular/common/http";
+import {environment} from "../../../../../../../environments/environment";
+import {FileClass} from "../../../../../../models/File.class";
+import {FilesPreviewComponent} from "../../../files-preview/files-preview.component";
 
 Quill.register('modules/toolbar', Toolbar);
 
@@ -33,11 +37,12 @@ interface FilterOption {
   selector: 'app-pharmacy-ticket-detail',
   templateUrl: './support.component.html',
   styleUrls: ['./support.component.scss'],
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, Select2, QuillModule]
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, QuillModule, FilesPreviewComponent] //Select2
 })
 export class TicketDetailComponent implements OnInit, OnDestroy {
   @ViewChild('messageTextarea') messageTextarea!: ElementRef;
   @ViewChild('attachmentInput') attachmentInput!: ElementRef;
+  @ViewChild('fileInput') fileInput!: ElementRef;
 
   // État du composant
   ticket: Ticket | null = null;
@@ -107,11 +112,27 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
   // Modes d'affichage
   showEditMode = false;
   showInternalMessages = true;
-  attachedFiles: File[] = [];
 
   private destroy$ = new Subject<void>();
   private typingTimer: any;
   notExtendMessage: boolean = false;
+
+  protected readonly parseFloat = parseFloat;
+  selectedFiles: File[] = [];
+  private successMessage: string = '';
+
+  internatPathUrl = environment.internalPathUrl;
+  maxFileSize = 10 * 1024 * 1024; // 10MB
+  maxFiles = 5;
+  allowedFileTypes = [
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain'
+  ];
+  previewUrls: string[] = [];
+  allAttachements: FileClass[];
 
   constructor(
     private route: ActivatedRoute,
@@ -183,7 +204,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
         });
 
     } catch (error) {
-      console.error('❌ Erreur initialisation ticket detail:', error);
       this.errorMessage = 'Erreur lors du chargement du ticket';
     } finally {
       this.isLoading = false;
@@ -200,6 +220,14 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
           this.editTitle = ticket.title;
           this.editTextDescription = ticket.description;
           this.updateEditForm();
+        }
+      });
+
+    this.ticketService.getAllAtachements$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(file_ => {
+        if (file_ !== null) {
+          this.allAttachements = file_;
         }
       });
 
@@ -264,7 +292,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
       }, 1000);
 
     } catch (error) {
-      console.error('❌ Erreur chargement ticket:', error);
       if (error.message?.includes('non trouvé')) {
         this.router.navigate(['/pharmacy/support']);
       } else {
@@ -298,16 +325,13 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
       const message = await this.ticketService.sendMessage(
         this.ticket._id!,
         formValue.content,
-        [], // attachments seront gérés séparément
+        this.selectedFiles ?? [],
         formValue.isInternal
       );
 
       // Réinitialiser le formulaire
       this.messageForm.patchValue({ content: '' });
-      this.attachedFiles = [];
-      if (this.attachmentInput) {
-        this.attachmentInput.nativeElement.value = '';
-      }
+      this.clearFiles();
 
       // Faire défiler vers le bas
       setTimeout(() => {
@@ -315,7 +339,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
       }, 100);
 
     } catch (error) {
-      console.error('❌ Erreur envoi message:', error);
       this.handleError('Erreur lors de l\'envoi du message');
     } finally {
       this.isSendingMessage = false;
@@ -332,7 +355,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
         try {
           await this.ticketService.markMessageAsRead(this.ticket._id!, message._id);
         } catch (error) {
-          console.error('❌ Erreur marquage message lu:', error);
         }
       }
     }
@@ -355,7 +377,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
       this.showEditMode = false;
 
     } catch (error) {
-      console.error('❌ Erreur mise à jour ticket:', error);
       this.handleError('Erreur lors de la mise à jour du ticket');
     } finally {
       this.isUpdatingTicket = false;
@@ -377,7 +398,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
       // Fermer le dropdown après sélection
       this.isStatusDropdownOpen = false;
     } catch (error) {
-      console.error('❌ Erreur changement statut:', error);
       this.handleError('Erreur lors du changement de statut');
     }
   }
@@ -395,7 +415,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
       // Fermer le dropdown après sélection
       this.isPriorityDropdownOpen = false;
     } catch (error) {
-      console.error('❌ Erreur changement priorité:', error);
       this.handleError('Erreur lors du changement de priorité');
     }
   }
@@ -410,7 +429,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
         dropdown.hide();
       }
     } catch (error) {
-      console.warn('Erreur fermeture dropdown:', error);
     }
   }
   // Méthodes de toggle
@@ -437,31 +455,6 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
     if (!target.closest('.custom-dropdown')) {
       this.isStatusDropdownOpen = false;
       this.isPriorityDropdownOpen = false;
-    }
-  }
-
-  // Gestion des fichiers
-  onFileSelected(event: any) {
-    const files = Array.from(event.target.files) as File[];
-    this.attachedFiles = [...this.attachedFiles, ...files];
-  }
-
-  removeAttachment(index: number) {
-    this.attachedFiles.splice(index, 1);
-  }
-
-  async uploadAttachments(): Promise<string[]> {
-    if (this.attachedFiles.length === 0) return [];
-
-    const uploadPromises = this.attachedFiles.map(file =>
-      this.ticketService.uploadAttachment(file, this.ticket!._id!)
-    );
-
-    try {
-      return await Promise.all(uploadPromises);
-    } catch (error) {
-      console.error('❌ Erreur upload fichiers:', error);
-      throw error;
     }
   }
 
@@ -628,5 +621,303 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
     await this.loadTicket();
   }
 
-  protected readonly parseFloat = parseFloat;
+  private clearMessages() {
+    this.errorMessage = '';
+    this.successMessage = '';
+  }
+
+  private showError(message: string) {
+    this.errorMessage = message;
+    this.successMessage = '';
+    setTimeout(() => this.clearMessages(), 5000);
+  }
+
+  onFileSelected(event: any) {
+    const files = Array.from(event.target.files) as File[];
+
+    if (this.selectedFiles.length + files.length > this.maxFiles) {
+      this.showError(`Vous ne pouvez sélectionner que ${this.maxFiles} fichiers maximum`);
+      this.resetFileInput();
+      return;
+    }
+    files.forEach(file => {
+      if (this.validateFile(file)) {
+        this.selectedFiles.push(file);
+
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+            this.previewUrls.push(e.target.result);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          this.previewUrls.push('');
+        }
+      }
+    });
+    this.resetFileInput();
+  }
+
+  private validateFile(file: File): boolean {
+    if (file.size > this.maxFileSize) {
+      this.showError(`Le fichier "${file.name}" est trop volumineux (max ${this.maxFileSize / 1024 / 1024}MB)`);
+      return false;
+    }
+    if (!this.allowedFileTypes.includes(file.type)) {
+      this.showError(`Type de fichier "${file.type}" non autorisé pour "${file.name}"`);
+      return false;
+    }
+    return true;
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles.splice(index, 1);
+    this.previewUrls.splice(index, 1);
+  }
+
+  clearFiles() {
+    this.selectedFiles = [];
+    this.previewUrls = [];
+  }
+
+  private resetFileInput() {
+    if (this.fileInput?.nativeElement) {
+      this.fileInput.nativeElement.value = '';
+    }
+  }
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Vérifie si un fichier est une image
+   */
+  isImageFile(file: FileClass): boolean {
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+    const extension = file.extension?.toLowerCase() || file.originalName.split('.').pop()?.toLowerCase();
+    return imageExtensions.includes(extension || '');
+  }
+
+  /**
+   * Retourne l'icône Font Awesome appropriée selon le type de fichier
+   */
+  getFileIcon(file: FileClass): string {
+    const extension = file.extension?.toLowerCase() || file.originalName.split('.').pop()?.toLowerCase();
+
+    const iconMap: { [key: string]: string } = {
+      // Documents
+      'pdf': 'fas fa-file-pdf file-icon pdf',
+      'doc': 'fas fa-file-word file-icon doc',
+      'docx': 'fas fa-file-word file-icon docx',
+      'txt': 'fas fa-file-alt file-icon txt',
+
+      // Tableurs
+      'xls': 'fas fa-file-excel file-icon xls',
+      'xlsx': 'fas fa-file-excel file-icon xlsx',
+      'csv': 'fas fa-file-csv file-icon csv',
+
+      // Présentations
+      'ppt': 'fas fa-file-powerpoint file-icon ppt',
+      'pptx': 'fas fa-file-powerpoint file-icon pptx',
+
+      // Archives
+      'zip': 'fas fa-file-archive file-icon zip',
+      'rar': 'fas fa-file-archive file-icon rar',
+      '7z': 'fas fa-file-archive file-icon 7z',
+
+      // Images
+      'jpg': 'fas fa-file-image',
+      'jpeg': 'fas fa-file-image',
+      'png': 'fas fa-file-image',
+      'gif': 'fas fa-file-image',
+      'bmp': 'fas fa-file-image',
+      'webp': 'fas fa-file-image',
+      'svg': 'fas fa-file-image',
+
+      // Vidéos
+      'mp4': 'fas fa-file-video',
+      'avi': 'fas fa-file-video',
+      'mov': 'fas fa-file-video',
+      'wmv': 'fas fa-file-video',
+
+      // Audio
+      'mp3': 'fas fa-file-audio',
+      'wav': 'fas fa-file-audio',
+      'flac': 'fas fa-file-audio',
+
+      // Autres
+      'json': 'fas fa-file-code',
+      'xml': 'fas fa-file-code',
+      'html': 'fas fa-file-code',
+      'css': 'fas fa-file-code',
+      'js': 'fas fa-file-code',
+      'ts': 'fas fa-file-code'
+    };
+
+    return iconMap[extension || ''] || 'fas fa-file';
+  }
+
+  /**
+   * Formate la taille du fichier de manière lisible
+   */
+  getFormattedFileSize(sizeInBytes: string | number): string {
+    const size = typeof sizeInBytes === 'string' ? parseFloat(sizeInBytes) : sizeInBytes;
+
+    if (size === 0) return '0 B';
+
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(size) / Math.log(1024));
+
+    return (size / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+  }
+
+  /**
+   * Retourne un label lisible pour le type de fichier
+   */
+  getFileTypeLabel(fileType: string): string {
+    const typeMap: { [key: string]: string } = {
+      'application/pdf': 'PDF',
+      'application/msword': 'Document Word',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Document Word',
+      'application/vnd.ms-excel': 'Tableur Excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Tableur Excel',
+      'application/vnd.ms-powerpoint': 'Présentation PowerPoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'Présentation PowerPoint',
+      'text/plain': 'Texte brut',
+      'text/csv': 'Fichier CSV',
+      'application/json': 'Fichier JSON',
+      'application/xml': 'Fichier XML',
+      'text/html': 'Page HTML',
+      'text/css': 'Feuille de style CSS',
+      'application/javascript': 'Script JavaScript',
+      'application/typescript': 'Script TypeScript',
+      'application/zip': 'Archive ZIP',
+      'application/x-rar-compressed': 'Archive RAR',
+      'application/x-7z-compressed': 'Archive 7Z',
+      'image/jpeg': 'Image JPEG',
+      'image/png': 'Image PNG',
+      'image/gif': 'Image GIF',
+      'image/bmp': 'Image BMP',
+      'image/webp': 'Image WebP',
+      'image/svg+xml': 'Image SVG',
+      'video/mp4': 'Vidéo MP4',
+      'video/avi': 'Vidéo AVI',
+      'video/quicktime': 'Vidéo QuickTime',
+      'audio/mpeg': 'Audio MP3',
+      'audio/wav': 'Audio WAV',
+      'audio/flac': 'Audio FLAC'
+    };
+
+    return typeMap[fileType] || fileType.split('/').pop()?.toUpperCase() || 'Fichier';
+  }
+
+  /**
+   * Vérifie si un fichier peut être prévisualisé
+   */
+  canPreviewFile(file: FileClass): boolean {
+    const previewableTypes = [
+      'application/pdf',
+      'text/plain',
+      'text/html',
+      'text/csv',
+      'application/json',
+      'application/xml'
+    ];
+
+    return this.isImageFile(file) || previewableTypes.includes(file.fileType);
+  }
+
+  /**
+   * Vérifie si un fichier expire bientôt (dans les 7 prochains jours)
+   */
+  isFileExpiringSoon(expiryDate: Date): boolean {
+    if (!expiryDate) return false;
+
+    const now = new Date();
+    const expiry = new Date(expiryDate);
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(now.getDate() + 7);
+
+    return expiry > now && expiry <= sevenDaysFromNow;
+  }
+
+  /**
+   * Télécharge un fichier
+   */
+  downloadFile(file: FileClass): void {
+    if (!file.url) {
+      return;
+    }
+
+    // Créer un lien de téléchargement temporaire
+    const link = document.createElement('a');
+    link.href = this.internatPathUrl+file.url;
+    link.download = file.originalName;
+    link.target = '_blank';
+
+    // Déclencher le téléchargement
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  /**
+   * Ouvre la prévisualisation d'un fichier
+   */
+  openFilePreview(file: FileClass): void {
+    if (!file.url) {
+      return;
+    }
+
+    if (this.isImageFile(file)) {
+      this.openImageModal(file);
+    } else if (this.canPreviewFile(file)) {
+      window.open(this.internatPathUrl+file.url, '_blank');
+    } else {
+      // Fallback : téléchargement
+      this.downloadFile(file);
+    }
+  }
+
+  /**
+   * Ouvre une modal pour prévisualiser une image
+   */
+  private openImageModal(file: FileClass): void {
+    const popup = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+    if (popup) {
+      popup.document.write(`
+      <html>
+        <head>
+          <title>${file.originalName}</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 20px;
+              background: #f5f5f5;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+            }
+            img {
+              max-width: 100%;
+              max-height: 100vh;
+              border-radius: 8px;
+              box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${this.internatPathUrl+file.url}" alt="${file.originalName}" />
+        </body>
+      </html>
+    `);
+    }
+  }
+
+  protected readonly parseInt = parseInt;
 }
