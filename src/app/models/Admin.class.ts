@@ -95,7 +95,6 @@ export class Admin {
     this.updatedAt = new Date(data.updatedAt);
   }
 
-  // Helper methods
   getFullName(): string {
     const parts = [this.name, this.surname].filter(Boolean);
     return parts.length > 0 ? parts.join(' ') : this.email || 'Utilisateur sans nom';
@@ -257,28 +256,4 @@ export class Admin {
     return this.hasRole('pharmacien');
   }
 
-  // toJSON(): any {
-  //   return {
-  //     _id: this._id,
-  //     name: this.name,
-  //     surname: this.surname,
-  //     email: this.email,
-  //     photoURL: this.photoURL,
-  //     disabled: this.disabled,
-  //     isActivated: this.isActivated,
-  //     groups: this.groups.map(g => g.toJSON()),
-  //     pharmaciesManaged: this.pharmaciesManaged.map(p => p.toJSON()),
-  //     country: this.country?.toJSON(),
-  //     city: this.city?.toJSON(),
-  //     address: this.address,
-  //     phone: this.phone?.toJSON(),
-  //     lastLogin: this.lastLogin?.toISOString(),
-  //     createdAt: this.createdAt.toISOString(),
-  //     updatedAt: this.updatedAt.toISOString()
-  //   };
-  // }
-
-  // clone(updates: Partial<Admin> = {}): Admin {
-  //   return new Admin({ ...this.toJSON(), ...updates });
-  // }
 }

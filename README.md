@@ -430,7 +430,7 @@
 									<td style='padding: 8px;'>- Generates Unique Identifiers for Documents**The <code>Uid</code> class generates unique identifiers for documents, serving as a core component of the projects data storage architecture<br>- It provides a standardized way to create and manage user IDs, ensuring consistency across the application<br>- By utilizing this class, developers can easily incorporate unique identifiers into their documents, enabling efficient data retrieval and manipulation.</td>
 								</tr>
 								<tr style='border-bottom: 1px solid #eee;'>
-									<td style='padding: 8px;'><b><a href='https://github.com/predator229/cmpharma_admin/blob/master/src/app/models/Order.ts'>Order.ts</a></b></td>
+									<td style='padding: 8px;'><b><a href='https://github.com/predator229/cmpharma_admin/blob/master/src/app/models/Order.ts'>Order.class.ts</a></b></td>
 									<td style='padding: 8px;'>- The Order class defines the structure of an order document, encapsulating essential information such as total amount, status, and delivery details<br>- It establishes a foundation for data storage and retrieval in the applications database<br>- By providing a standardized model, this class enables efficient data management and facilitates seamless interactions between different components of the system.</td>
 								</tr>
 								<tr style='border-bottom: 1px solid #eee;'>
