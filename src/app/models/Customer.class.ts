@@ -98,7 +98,7 @@ export class CustomerClass {
     this.firstName = data.firstName || '';
     this.lastName = data.lastName || '';
     this.email = data.email || '';
-    this.phones = data.phone.map((phone: any) => new Mobil(phone));
+    this.phones = data.phones ? data.phones.map((phone: any) => new Mobil(phone)) : [];
 
     if (data.defaultPhone) {
       this.defaultPhone = new Mobil(data.defaultPhone);

@@ -9,6 +9,7 @@ import {AuthService} from "./auth.service";
 import {ApiService} from "./api.service";
 import {Conversation} from "../../models/Conversation.class";
 import {ActivityLoged} from "../../models/Activity.class";
+import {OrderClass} from "../../models/Order.class";
 
 interface SocketData {
   socket: Socket;
@@ -27,6 +28,7 @@ export class MiniChatService {
   private messagesSubject = new Subject<MiniChatMessage>();
   private conversationsSubject = new Subject<Conversation>();
   private notificationsSubject = new Subject<ActivityLoged>();
+  private ordersSubject = new Subject<OrderClass>();
   private connectionStatusSubject = new BehaviorSubject<Map<string, boolean>>(new Map());
   private typingUsersSubject = new Subject<{namespace: string, isTyping: boolean}>();
   private unreadCountSubject = new BehaviorSubject<Map<string, number>>(new Map());
@@ -144,6 +146,17 @@ export class MiniChatService {
           this.updateUnreadCount(namespace, 1);
         }
       }
+    });
+    socket.on('new_order', (data: {order: any}) => {
+      const order = new OrderClass(data.order);
+      this.ordersSubject.next(order);
+      this.updateUnreadCount(namespace, 1);
+    });
+
+    socket.on('new_order', (data: {order: any}) => {
+      const order = new OrderClass(data.order);
+      this.ordersSubject.next(order);
+      this.updateUnreadCount(namespace, 1);
     });
 
     socket.on('new_notification', (data: {notification: any, userID: string}) => {
@@ -299,6 +312,16 @@ export class MiniChatService {
   }
 
   /**
+   * Demmarrer/stopper le simulateur de commande
+   */
+  changeOrderStatus(namespace: string, start: boolean): void {
+    const socketData = this.sockets.get(namespace);
+    if (socketData?.isConnected) {
+      console.log(`${start ? 'Demmarage' : 'stoppage'} du simulateur de commande pour ${namespace}`);
+      socketData.socket.emit('toggle_simulator', { start });
+    }
+  }
+  /**
    * Envoie un message dans un namespace spécifique
    */
   sendMessage(namespace: string, iD: string, newMessage: MiniChatMessage, attachments: string[]): boolean {
@@ -452,6 +475,9 @@ export class MiniChatService {
 
   getConversation(): Observable<Conversation> {
     return this.conversationsSubject.asObservable();
+  }
+  getOrders(): Observable<OrderClass> {
+    return this.ordersSubject.asObservable();
   }
 
   getActivities(): Observable<ActivityLoged> {

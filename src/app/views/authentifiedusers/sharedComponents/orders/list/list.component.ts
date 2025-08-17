@@ -17,6 +17,7 @@ import { Select2 } from "ng-select2-component";
 import { OrderClass } from "../../../../../models/Order.class";
 import { CustomerClass } from "../../../../../models/Customer.class";
 import { PharmacyClass } from "../../../../../models/Pharmacy.class";
+import {MiniChatService} from "../../../../../controllers/services/minichat.service";
 
 export enum OrderStatus {
   PENDING = 'pending',
@@ -115,6 +116,7 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
   baseUrl = environment.baseUrl;
   pharmaciesListArray: Array<{value: string, label: string}> = [];
   customersListArray: Array<{value: string, label: string}> = [];
+  private namespace = 'internal_messaging';
 
   constructor(
     modalService: NgbModal,
@@ -122,7 +124,8 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
     private router: Router,
     private apiService: ApiService,
     private loadingService: LoadingService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private chatService: MiniChatService,
   ) {
     this.loadingService.isLoading$.subscribe((loading) => {
       this.isLoading = loading;
@@ -135,18 +138,52 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(async loaded => {
         this.userDetail = this.auth.getUserDetails();
-        this.permissions.viewOrders = this.userDetail.hasPermission('orders.view');
-        this.permissions.editOrders = this.userDetail.hasPermission('orders.edit');
-        this.permissions.deleteOrders = this.userDetail.hasPermission('orders.delete');
-        this.permissions.exportOrders = this.userDetail.hasPermission('orders.export');
-        this.permissions.manageOrderStatus = this.userDetail.hasPermission('orders.manage_status');
+        this.permissions.viewOrders = this.userDetail.hasPermission('commandes.view');
+        this.permissions.editOrders = this.userDetail.hasPermission('commandes.edit');
+        this.permissions.deleteOrders = this.userDetail.hasPermission('commandes.delete');
+        this.permissions.exportOrders = this.userDetail.hasPermission('commandes.export');
+        this.permissions.manageOrderStatus = this.userDetail.hasPermission('commandes.manage_status');
 
         if (loaded && this.userDetail) {
           await this.loadOrders();
+          this.connectToChat();
         }
       });
 
     this.createStatusForm();
+  }
+  async connectToChat() {
+    try {
+      this.isLoading = true;
+      const token = await this.auth.getRealToken();
+      if (!token) {
+        this.isLoading = false;
+        return;
+      }
+      this.chatService.connectToNamespace(this.namespace, token, this.userDetail.id);
+
+      this.chatService.getOrders()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((order: OrderClass) => {
+          const existingOrder = this.orders.find(ord => {
+            return ord._id === order._id;
+          });
+
+          if (!existingOrder) {
+            this.orders.unshift(order);
+          } else {
+            const index = this.orders.findIndex(ord => ord._id === order._id);
+            if (index > -1) {
+              this.orders[index] = new OrderClass(order);
+            }
+          }
+          this.filterOrders();
+        });
+
+    }catch (error) {
+      console.error('❌ Erreur lors de la connexion au chat:', error);
+      this.isLoading = false;
+    }
   }
 
   createStatusForm(): FormGroup {
@@ -179,12 +216,20 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
+      if (!this.permissions.viewOrders) {
+        this.orders = [];
+        this.pharmaciesListArray = [];
+        this.customersListArray = [];
+        this.filterOrders();
+        return;
+      }
+
       this.apiService.post('pharmacy-management/orders/list', { uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
-            if (response && response.data) {
-              this.orders = response.data.map((item: any) => new OrderClass(item));
+            if (response && response.data && response.data.orders && response.data.orders.length > 0) {
+              this.orders = response.data.orders.map((item: any) => new OrderClass(item));
               this.filterOrders();
               this.pharmaciesListArray = response.pharmaciesList ?? [];
               this.customersListArray = response.customersList ?? [];

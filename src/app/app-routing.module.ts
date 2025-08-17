@@ -51,6 +51,7 @@ const routes: Routes = [{
       { path: 'admin/logs/:idPharmacy',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/logs/logs.component').then((c) => c.PharmacyLogsComponent), },
 
       { path: 'orders/list', loadComponent: () =>import('./views/authentifiedusers/sharedComponents/orders/list/list.component').then((c) => c.PharmacyOrderListComponent), },
+      { path: 'orders/:id', loadComponent: () =>import('./views/authentifiedusers/sharedComponents/orders/detail/detail.component').then((c) => c.PharmacyOrderDetailComponent), },
 
       { path: 'messaging',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings/messagerie/messagerie.component').then((c) => c.PharmacyInternalMessagingComponent), },
       { path: 'support/list',  loadComponent: () => import('./views/authentifiedusers/sharedComponents/support/tickets/list/support.component').then((c) => c.TicketListComponent), },

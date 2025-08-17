@@ -2,6 +2,19 @@
 <div class="ms-auto">
   <ul class="list-unstyled">
     <li>
+      <div class="pc-h-item" ngbDropdown>
+        <a
+          [ngbTooltip]="!toggleOrderSimulator ? 'Demmarer le simulateur de cmd' : 'Stopper le simulateur de cmd'"
+          class="pc-head-link arrow-none me-0" [style]="!toggleOrderSimulator ? 'color: #007bff;' : 'color: #dc3545;'"
+          data-bs-toggle="dropdown"
+          href="javascript:"
+          (click)="setChangeOrderStatus()"
+        >
+          <i class="ti " [class.ti-s-turn-down]="toggleOrderSimulator" [class.ti-s-turn-up]="!toggleOrderSimulator"></i>
+        </a>
+      </div>
+    </li>
+    <li>
       <div class="dropdown pc-h-item" ngbDropdown>
         <a
           class="pc-head-link head-link-secondary dropdown-toggle arrow-none me-0"
@@ -47,11 +60,37 @@
                 <!-- Filtre des notifications -->
                 <div class="list-group-item">
                   <select class="form-select" (change)="onFilterChange($event)">
-                    <option value="all">Notifications et messages</option>
+                    <option value="all">Notifications, messages et commandes</option>
+                    <option value="order">Commandes</option>
                     <option value="notif">Notifications</option>
                     <option value="message">Messages</option>
                   </select>
                 </div>
+
+                <!-- Section des conversations si elles existent -->
+                <ng-container *ngIf="orders && orders.length > 0 && toShow.includes('order')">
+                  <div *ngFor="let order of orders" class="list-group-item list-group-item-action">
+                    <div class="d-flex">
+                      <div class="flex-shrink-0">
+                        <div class="user-avtar bg-light-primary">
+                          <i class="ti ti-message-circle"></i>
+                        </div>
+                      </div>
+                      <div class="flex-grow-1 ms-1">
+                        <span class="float-end text-muted">{{ getTimeAgo(order.updatedAt) }}</span>
+                        <h5>
+                          {{ order.orderNumber }}
+                        </h5>
+                        <p class="text-body fs-6">
+                          {{ 'Nouvelle commande entrante #'+order.orderNumber }}
+                        </p>
+                        <div *ngIf="isNewOrder(order)" class="badge rounded-pill bg-light-warning">
+                          Nouveau
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
 
                 <!-- Section des conversations si elles existent -->
                 <ng-container *ngIf="conversations && conversations.length > 0 && toShow.includes('message')">

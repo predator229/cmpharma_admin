@@ -405,59 +405,459 @@
           </button>
         </div>
         <div class="card-body">
-          <form [formGroup]="pricingForm" *ngIf="isEditing; else pricingView">
-            <div class="row">
-              <div class="col-md-4">
-                <div class="mb-3">
-                  <label for="price" class="form-label">Prix <span class="text-danger">*</span></label>
-                  <input type="number" class="form-control" formControlName="price" min="0" step="0.01"
-                         [class.is-valid]="isFieldValid(pricingForm, 'price')"
-                         [class.is-invalid]="isFieldInvalid(pricingForm, 'price')">
-                  <div class="invalid-feedback">{{ getFieldError(pricingForm, 'price') }}</div>
+          <form [formGroup]="pricingForm" *ngIf="isEditing; else pricingView" class="pricing-form">
+            <div class="form-header">
+              <h4 class="form-title">
+                <i class="fas fa-edit me-2"></i>
+                Modification des prix
+              </h4>
+              <p class="form-description">Définissez les prix par défaut et spécifiques par pharmacie</p>
+            </div>
+
+            <div class="form-content">
+              <!-- Section prix par défaut -->
+              <div class="pricing-section default-pricing-form">
+                <div class="section-header">
+                  <h5 class="section-title">
+                    <i class="fas fa-tags me-2"></i>
+                    Prix par défaut
+                  </h5>
+                  <p class="section-description">
+                    Ces prix seront appliqués si des prix n'ont pas été définis par pharmacie
+                  </p>
+                </div>
+
+                <div class="pricing-fields-grid">
+                  <!-- Prix actuel par défaut -->
+                  <div class="form-field-container required-field">
+                    <div class="field-header">
+                      <label for="price" class="form-label">
+                        <i class="fas fa-euro-sign me-2"></i>
+                        Prix de vente
+                        <span class="required-indicator">*</span>
+                      </label>
+                    </div>
+                    <div class="input-wrapper">
+                      <div class="input-group">
+                        <span class="input-group-text">€</span>
+                        <input type="number"
+                               id="price"
+                               class="form-control"
+                               formControlName="price"
+                               min="0"
+                               step="0.01"
+                               placeholder="0.00"
+                               [class.is-valid]="isFieldValid(pricingForm, 'price')"
+                               [class.is-invalid]="isFieldInvalid(pricingForm, 'price')">
+                      </div>
+                      <div class="field-feedback">
+                        <div class="invalid-feedback" *ngIf="isFieldInvalid(pricingForm, 'price')">
+                          <i class="fas fa-exclamation-circle me-1"></i>
+                          {{ getFieldError(pricingForm, 'price') }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Prix original par défaut -->
+                  <div class="form-field-container">
+                    <div class="field-header">
+                      <label for="originalPrice" class="form-label">
+                        <i class="fas fa-tag me-2"></i>
+                        Prix original
+                      </label>
+                    </div>
+                    <div class="input-wrapper">
+                      <div class="input-group">
+                        <span class="input-group-text">€</span>
+                        <input type="number"
+                               id="originalPrice"
+                               class="form-control"
+                               formControlName="originalPrice"
+                               min="0"
+                               step="0.01"
+                               placeholder="0.00">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Coût par défaut -->
+                  <div class="form-field-container">
+                    <div class="field-header">
+                      <label for="cost" class="form-label">
+                        <i class="fas fa-receipt me-2"></i>
+                        Coût d'achat
+                      </label>
+                    </div>
+                    <div class="input-wrapper">
+                      <div class="input-group">
+                        <span class="input-group-text">€</span>
+                        <input type="number"
+                               id="cost"
+                               class="form-control"
+                               formControlName="cost"
+                               min="0"
+                               step="0.01"
+                               placeholder="0.00">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Calculs pour prix par défaut -->
+                <div class="calculations-section"
+                     *ngIf="getDefaultPriceCalculations()">
+                  <div class="calculations-grid">
+                    <div class="calculation-item"
+                         *ngIf="getDefaultProfitMargin() !== null">
+                      <div class="calculation-label">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Marge bénéficiaire
+                      </div>
+                      <div class="calculation-value profit-margin">
+                        {{ getDefaultProfitMargin() | number:'1.1-2' }}%
+                      </div>
+                    </div>
+
+                    <div class="calculation-item"
+                         *ngIf="getDefaultDiscount() !== null">
+                      <div class="calculation-label">
+                        <i class="fas fa-percentage me-2"></i>
+                        Réduction appliquée
+                      </div>
+                      <div class="calculation-value discount">
+                        {{ getDefaultDiscount() | number:'1.0-0' }}%
+                      </div>
+                    </div>
+
+                    <div class="calculation-item"
+                         *ngIf="getDefaultUnitProfit() !== null">
+                      <div class="calculation-label">
+                        <i class="fas fa-coins me-2"></i>
+                        Bénéfice unitaire
+                      </div>
+                      <div class="calculation-value profit">
+                        {{ getDefaultUnitProfit() | currency:'EUR':'symbol':'1.2-2' }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="col-md-4">
-                <div class="mb-3">
-                  <label for="originalPrice" class="form-label">Prix original</label>
-                  <input type="number" class="form-control" formControlName="originalPrice" min="0" step="0.01">
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="mb-3">
-                  <label for="cost" class="form-label">Coût</label>
-                  <input type="number" class="form-control" formControlName="cost" min="0" step="0.01">
+
+              <!-- Section prix par pharmacie -->
+              <div class="pharmacy-pricing-sections">
+                <div formArrayName="pharmacyPricing">
+                  <div class="pricing-section pharmacy-pricing-form"
+                       *ngFor="let pharmacyGroup of getPharmacyFormGroups(); let i = index"  [formGroupName]="i">
+                    <div class="section-header">
+                      <div class="pharmacy-header">
+                        <h5 class="section-title">
+                          <i class="fas fa-store me-2"></i>
+                          {{ getPharmacyName(i) }}
+                        </h5>
+                      </div>
+                      <div class="pharmacy-controls">
+                        <div class="form-check form-switch">
+                          <input class="form-check-input"
+                                 type="checkbox"
+                                 [id]="'enableCustomPricing' + i"
+                                 formControlName="hasCustomPricing"
+                                 (change)="onCustomPricingToggle(i)">
+                          <label class="form-check-label" [for]="'enableCustomPricing' + i">
+                            Prix spécifiques
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="custom-pricing-message"
+                         *ngIf="!pharmacyGroup.get('hasCustomPricing')?.value">
+                      <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Cette pharmacie utilise les prix par défaut.
+                        Activez le switch pour définir des prix spécifiques.
+                      </div>
+                    </div>
+                    <div class="pricing-fields-grid"
+                         *ngIf="pharmacyGroup.get('hasCustomPricing')?.value">
+                      <!-- Prix actuel pharmacie -->
+                      <div class="form-field-container">
+                        <div class="field-header">
+                          <label [for]="'pharmacyPrice' + i" class="form-label">
+                            <i class="fas fa-euro-sign me-2"></i>
+                            Prix de vente
+                          </label>
+                        </div>
+                        <div class="input-wrapper">
+                          <div class="input-group">
+                            <span class="input-group-text">€</span>
+                            <input type="number"
+                                   [id]="'pharmacyPrice' + i"
+                                   class="form-control"
+                                   formControlName="price"
+                                   min="0"
+                                   step="0.01"
+                                   placeholder="0.00">
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Prix original pharmacie -->
+                      <div class="form-field-container">
+                        <div class="field-header">
+                          <label [for]="'pharmacyOriginalPrice' + i" class="form-label">
+                            <i class="fas fa-tag me-2"></i>
+                            Prix original
+                          </label>
+                        </div>
+                        <div class="input-wrapper">
+                          <div class="input-group">
+                            <span class="input-group-text">€</span>
+                            <input type="number"
+                                   [id]="'pharmacyOriginalPrice' + i"
+                                   class="form-control"
+                                   formControlName="originalPrice"
+                                   min="0"
+                                   step="0.01"
+                                   placeholder="0.00">
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Coût pharmacie -->
+                      <div class="form-field-container">
+                        <div class="field-header">
+                          <label [for]="'pharmacyCost' + i" class="form-label">
+                            <i class="fas fa-receipt me-2"></i>
+                            Coût d'achat
+                          </label>
+                        </div>
+                        <div class="input-wrapper">
+                          <div class="input-group">
+                            <span class="input-group-text">€</span>
+                            <input type="number"
+                                   [id]="'pharmacyCost' + i"
+                                   class="form-control"
+                                   formControlName="cost"
+                                   min="0"
+                                   step="0.01"
+                                   placeholder="0.00">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Calculs pour cette pharmacie -->
+                    <div class="calculations-section"
+                         *ngIf="pharmacyGroup.get('hasCustomPricing')?.value && getPharmacyCalculations(i)">
+                      <div class="calculations-grid">
+                        <div class="calculation-item"
+                             *ngIf="getPharmacyProfitMargin(i) !== null">
+                          <div class="calculation-label">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Marge bénéficiaire
+                          </div>
+                          <div class="calculation-value profit-margin">
+                            {{ getPharmacyProfitMargin(i) | number:'1.1-2' }}%
+                          </div>
+                        </div>
+
+                        <div class="calculation-item"
+                             *ngIf="getPharmacyDiscount(i) !== null">
+                          <div class="calculation-label">
+                            <i class="fas fa-percentage me-2"></i>
+                            Réduction appliquée
+                          </div>
+                          <div class="calculation-value discount">
+                            {{ getPharmacyDiscount(i) | number:'1.0-0' }}%
+                          </div>
+                        </div>
+
+                        <div class="calculation-item"
+                             *ngIf="getPharmacyUnitProfit(i) !== null">
+                          <div class="calculation-label">
+                            <i class="fas fa-coins me-2"></i>
+                            Bénéfice unitaire
+                          </div>
+                          <div class="calculation-value profit">
+                            {{ getPharmacyUnitProfit(i) | currency:'EUR':'symbol':'1.2-2' }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </form>
+
+            <!-- Actions de formulaire -->
+<!--            <div class="form-actions">-->
+<!--              <div class="action-buttons">-->
+<!--                <button type="button"-->
+<!--                        class="btn btn-outline-secondary btn-cancel"-->
+<!--                        (click)="cancelEditing()">-->
+<!--                  <i class="fas fa-times me-2"></i>-->
+<!--                  Annuler-->
+<!--                </button>-->
+<!--                <button type="button"-->
+<!--                        class="btn btn-outline-primary btn-reset"-->
+<!--                        (click)="resetToDefaults()"-->
+<!--                        [disabled]="isSaving">-->
+<!--                  <i class="fas fa-undo me-2"></i>-->
+<!--                  Réinitialiser-->
+<!--                </button>-->
+<!--                <button type="submit"-->
+<!--                        class="btn btn-primary btn-save"-->
+<!--                        [disabled]="pricingForm.invalid || isSaving"-->
+<!--                        (click)="savePricing()">-->
+<!--                  <i class="fas fa-save me-2"></i>-->
+<!--                  Enregistrer tout-->
+<!--                  <span class="btn-spinner" *ngIf="isSaving">-->
+<!--            <i class="fas fa-spinner fa-spin ms-2"></i>-->
+<!--          </span>-->
+<!--                </button>-->
+<!--              </div>-->
+
+<!--              <div class="form-status">-->
+<!--                <div class="validation-summary" *ngIf="pricingForm.invalid && pricingForm.touched">-->
+<!--                  <small class="text-danger">-->
+<!--                    <i class="fas fa-exclamation-triangle me-1"></i>-->
+<!--                    {{ getValidationSummary() }}-->
+<!--                  </small>-->
+<!--                </div>-->
+<!--                <div class="save-status" *ngIf="pricingForm.valid && pricingForm.dirty && !isSaving">-->
+<!--                  <small class="text-success">-->
+<!--                    <i class="fas fa-check me-1"></i>-->
+<!--                    Prêt à sauvegarder-->
+<!--                  </small>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--        </div>-->
+        </form>
 
           <ng-template #pricingView>
-            <div class="row">
-              <div class="col-md-4">
-                <div class="info-group">
-                  <label>Prix actuel:</label>
-                  <p class="h4 text-success">{{ product.price | currency:'EUR':'symbol':'1.2-2' }}</p>
+            <div class="pricing-container">
+              <!-- Section prix par défaut -->
+              <div class="pricing-section default-pricing">
+                <div class="section-header">
+                  <div class="header-content">
+                    <h4 class="section-title">
+                      <i class="fas fa-tags me-2"></i>
+                      Prix par défaut
+                    </h4>
+                    <p class="section-description">
+                      Ces prix seront appliqués si des prix n'ont pas été définis par pharmacie
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-4" *ngIf="product.originalPrice">
-                <div class="info-group">
-                  <label>Prix original:</label>
-                  <p class="text-muted"><s>{{ product.originalPrice | currency:'EUR':'symbol':'1.2-2' }}</s></p>
-                </div>
-              </div>
-              <div class="col-md-4" *ngIf="product.cost">
-                <div class="info-group">
-                  <label>Coût:</label>
-                  <p>{{ product.cost | currency:'EUR':'symbol':'1.2-2' }}</p>
-                </div>
-              </div>
-            </div>
 
-            <div class="row mt-3" *ngIf="product.originalPrice && product.originalPrice > product.price">
-              <div class="col-12">
-                <div class="alert alert-success">
-                  <i class="fas fa-percentage"></i>
-                  Réduction de {{ ((product.originalPrice - product.price) / product.originalPrice * 100) | number:'1.0-0' }}%
+                <div class="pricing-cards">
+                  <div class="price-card current-price">
+                    <div class="price-header">
+                      <label class="price-label">Prix actuel</label>
+                    </div>
+                    <div class="price-value">
+            <span class="price-amount text-success">
+              {{ product.price | currency:'EUR':'symbol':'1.2-2' }}
+            </span>
+                    </div>
+                  </div>
+
+                  <div class="price-card original-price" *ngIf="product.originalPrice">
+                    <div class="price-header">
+                      <label class="price-label">Prix original</label>
+                    </div>
+                    <div class="price-value">
+            <span class="price-amount text-muted strikethrough">
+              {{ product.originalPrice | currency:'EUR':'symbol':'1.2-2' }}
+            </span>
+                    </div>
+                  </div>
+
+                  <div class="price-card cost-price" *ngIf="product.cost">
+                    <div class="price-header">
+                      <label class="price-label">Coût</label>
+                    </div>
+                    <div class="price-value">
+            <span class="price-amount">
+              {{ product.cost | currency:'EUR':'symbol':'1.2-2' }}
+            </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Badge de réduction -->
+                <div class="discount-badge" *ngIf="product.originalPrice && product.originalPrice > product.price">
+                  <div class="badge-content">
+                    <i class="fas fa-percentage me-2"></i>
+                    <span class="discount-text">
+            Réduction de {{ ((product.originalPrice - product.price) / product.originalPrice * 100) | number:'1.0-0' }}%
+          </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sections prix par pharmacie -->
+              <div class="pharmacy-pricing-sections">
+                <div class="pricing-section pharmacy-pricing" *ngFor="let perPharmacy of product.pharmacies">
+                  <div class="section-header">
+                    <div class="header-content">
+                      <h4 class="section-title">
+                        <i class="fas fa-store me-2"></i>
+                        {{ perPharmacy.pharmacy.name }}
+                      </h4>
+                      <div class="pharmacy-status" *ngIf="!perPharmacy.price">
+              <span class="status-badge no-custom-price">
+                <i class="fas fa-info-circle me-1"></i>
+                Prix par défaut appliqués
+              </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="pricing-cards" *ngIf="perPharmacy.price">
+                    <div class="price-card current-price">
+                      <div class="price-header">
+                        <label class="price-label">Prix actuel</label>
+                      </div>
+                      <div class="price-value">
+              <span class="price-amount text-success">
+                {{ perPharmacy.price | currency:'EUR':'symbol':'1.2-2' }}
+              </span>
+                      </div>
+                    </div>
+
+                    <div class="price-card original-price" *ngIf="perPharmacy.originalPrice">
+                      <div class="price-header">
+                        <label class="price-label">Prix original</label>
+                      </div>
+                      <div class="price-value">
+              <span class="price-amount text-muted strikethrough">
+                {{ perPharmacy.originalPrice | currency:'EUR':'symbol':'1.2-2' }}
+              </span>
+                      </div>
+                    </div>
+
+                    <div class="price-card cost-price" *ngIf="perPharmacy.cost">
+                      <div class="price-header">
+                        <label class="price-label">Coût</label>
+                      </div>
+                      <div class="price-value">
+              <span class="price-amount">
+                {{ perPharmacy.cost | currency:'EUR':'symbol':'1.2-2' }}
+              </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Badge de réduction par pharmacie -->
+                  <div class="discount-badge" *ngIf="perPharmacy.originalPrice && perPharmacy.originalPrice > perPharmacy.price">
+                    <div class="badge-content">
+                      <i class="fas fa-percentage me-2"></i>
+                      <span class="discount-text">
+              Réduction de {{ ((perPharmacy.originalPrice - perPharmacy.price) / perPharmacy.originalPrice * 100) | number:'1.0-0' }}%
+            </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -15,6 +15,7 @@ import {environment} from "../../../../../../../environments/environment";
 import {Conversation} from "../../../../../../models/Conversation.class";
 import {ActivityLoged} from "../../../../../../models/Activity.class";
 import {Ticket} from "../../../../../../models/Ticket.class";
+import {OrderClass} from "../../../../../../models/Order.class";
 
 @Component({
   selector: 'app-nav-right',
@@ -30,17 +31,18 @@ export class NavRightComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   isChatOpen = false;
   isConnected = false;
-  previewDoc: string;
   unreadCount = 0;
   internatPathUrl = environment.internalPathUrl;
-  toShow = ['message', 'notif'];
+  toShow = ['order','message', 'notif'];
 
   // Nouvelles propriétés pour le filtrage
   currentFilter = 'all';
-  showStaticNotifications = false; // Pour masquer/afficher les notifications statiques
+  showStaticNotifications = false;
+  toggleOrderSimulator = false;
 
   @Input() userDetails!: UserDetails;
   conversations: Conversation[] = [];
+  orders: OrderClass[] = [];
   notifications: ActivityLoged[] = [];
   private shouldScrollToBottom = false;
 
@@ -143,6 +145,31 @@ export class NavRightComponent implements OnInit, OnDestroy {
           }
         });
 
+      this.chatService.getOrders()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((order: OrderClass) => {
+          const existingOrder = this.orders.find(ord => {
+            return ord._id === order._id;
+          });
+
+          if (!existingOrder) {
+            this.orders.unshift(order); // Ajouter en début de liste
+            console.log(`💬 Nouvelle commande reçue dans namespace ${this.namespace}:`, order);
+
+            this.updateUnreadCount(1);
+
+            this.shouldScrollToBottom = true;
+            this.changeDetectorRef.detectChanges();
+          } else {
+            // Mettre à jour la commande existante
+            const index = this.orders.findIndex(ord => ord._id === order._id);
+            if (index > -1) {
+              this.orders[index] = new OrderClass(order);
+              this.changeDetectorRef.detectChanges();
+            }
+          }
+        });
+
       // Écoute des nouvelles activités avec filtrage par namespace
       this.chatService.getActivities()
         .pipe(takeUntil(this.destroy$))
@@ -204,7 +231,7 @@ export class NavRightComponent implements OnInit, OnDestroy {
   // Nouvelle méthode pour filtrer les éléments
   onFilterChange(event: any) {
     this.currentFilter = event.target.value;
-    this.toShow = event.target.value === 'all' ? ['message', 'notif'] : [event.target.value];
+    this.toShow = event.target.value === 'all' ? ['order', 'message', 'notif'] : [event.target.value];
     this.changeDetectorRef.detectChanges();
   }
 
@@ -285,6 +312,14 @@ export class NavRightComponent implements OnInit, OnDestroy {
     const notificationDate = new Date(notification.createdAt);
     const diffHours = (now.getTime() - notificationDate.getTime()) / (1000 * 60 * 60);
     return diffHours < 24; // Nouvelle si créée dans les dernières 24h
+  }
+
+  // Méthode pour déterminer si c'est une nouvelle commande
+  isNewOrder(order: OrderClass): boolean {
+    const now = new Date();
+    const conversationDate = new Date(order.createdAt);
+    const diffHours = (now.getTime() - conversationDate.getTime()) / (1000 * 60 * 60);
+    return diffHours < 1; // Nouvelle si créée dans les dernières 24h
   }
 
   // Méthode pour obtenir l'icône selon le type d'activité
@@ -416,5 +451,9 @@ export class NavRightComponent implements OnInit, OnDestroy {
     ).length;
 
     return recentConversations + recentNotifications;
+  }
+  setChangeOrderStatus() {
+    this.toggleOrderSimulator = !this.toggleOrderSimulator;
+    this.chatService.changeOrderStatus(this.namespace, this.toggleOrderSimulator);
   }
 }

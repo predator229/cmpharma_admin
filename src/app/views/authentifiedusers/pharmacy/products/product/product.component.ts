@@ -7,7 +7,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { HttpHeaders } from '@angular/common/http';
 import { ApiService } from '../../../../../controllers/services/api.service';
 import Swal from 'sweetalert2';
-import { FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
+import {FormArray, FormBuilder, FormGroup, FormsModule, Validators} from '@angular/forms';
 import { LoadingService } from 'src/app/controllers/services/loading.service';
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { UserDetails } from "../../../../../models/UserDatails";
@@ -17,6 +17,7 @@ import { Product } from "../../../../../models/Product";
 import { Category } from "../../../../../models/Category.class";
 import {ActivityTimelineComponent} from "../../../sharedComponents/activity-timeline/activity-timeline.component";
 import {ActivityLoged} from "../../../../../models/Activity.class";
+import {PharmacyClass} from "../../../../../models/Pharmacy.class";
 
 @Component({
   selector: 'app-pharmacy-product-detail',
@@ -88,6 +89,7 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
   internatPathUrl = environment.internalPathUrl;
 
   @ViewChild('editModal') editModal: ElementRef | undefined;
+  // pharmacyGroup: FormArray;
 
   constructor(
     private modalService: NgbModal,
@@ -162,7 +164,8 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
     this.pricingForm = this.fb.group({
       price: [0, [Validators.required, Validators.min(0)]],
       originalPrice: [0],
-      cost: [0]
+      cost: [0],
+      pharmacyPricing: [[]],
     });
 
     // Formulaire pour les informations médicales
@@ -200,6 +203,24 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
     // Formulaire pour les pharmacies
     this.pharmaciesForm = this.fb.group({
       pharmacies: [[], [Validators.required]]
+    });
+  }
+
+  createPharmacyFormGroup(pharmacyData: {
+    pharmacy: PharmacyClass;
+    price?: number;
+    originalPrice?: number;
+    discountPercentage?: number;
+    cost?: number;
+    isAvailable: boolean;
+  }): FormGroup {
+    return this.fb.group({
+      pharmacyId: [pharmacyData.pharmacy.id],
+      pharmacyName: [pharmacyData.pharmacy.name],
+      hasCustomPricing: [!!pharmacyData.price], // true si des prix spécifiques existent
+      price: [pharmacyData.price, [Validators.min(0)]],
+      originalPrice: [pharmacyData.originalPrice, [Validators.min(0)]],
+      cost: [pharmacyData.cost, [Validators.min(0)]]
     });
   }
 
@@ -311,7 +332,12 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
     this.pricingForm.patchValue({
       price: this.product.price,
       originalPrice: this.product.originalPrice,
-      cost: this.product.cost
+      cost: this.product.cost,
+
+      //damien
+      pharmacyPricing: this.fb.array(
+        this.product.pharmacies.map(pharmacy => this.createPharmacyFormGroup(pharmacy))
+      )
     });
 
     // Remplir le formulaire médical
@@ -792,5 +818,125 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
           this.productsActivities = [];
         }
       });
+  }
+
+  get pharmacyPricingArray(): FormArray {
+    return this.pricingForm.get('pharmacyPricing') as FormArray;
+  }
+
+  /**
+   * Récupère les FormGroups des pharmacies pour *ngFor
+   */
+  getPharmacyFormGroups(): FormGroup[] {
+    return this.pharmacyPricingArray.controls as FormGroup[];
+  }
+
+  /**
+   * Récupère le nom d'une pharmacie par son index
+   */
+  getPharmacyName(index: number): string {
+    return this.pharmacyPricingArray.at(index).get('pharmacyName')?.value || '';
+  }
+
+  /**
+   * Gère le toggle des prix personnalisés pour une pharmacie
+   */
+  onCustomPricingToggle(index: number): void {
+    const pharmacyGroup = this.pharmacyPricingArray.at(index) as FormGroup;
+    const hasCustomPricing = pharmacyGroup.get('hasCustomPricing')?.value;
+
+    if (!hasCustomPricing) {
+      // Réinitialise les prix si on désactive les prix personnalisés
+      pharmacyGroup.patchValue({
+        price: null,
+        originalPrice: null,
+        cost: null
+      });
+    }
+  }
+
+  // ========== CALCULS POUR PRIX PAR DÉFAUT ==========
+
+  /**
+   * Vérifie s'il y a des calculs à afficher pour les prix par défaut
+   */
+  getDefaultPriceCalculations(): boolean {
+    const price = this.pricingForm.get('price')?.value;
+    const originalPrice = this.pricingForm.get('originalPrice')?.value;
+    const cost = this.pricingForm.get('cost')?.value;
+
+    return !!(price || originalPrice || cost);
+  }
+
+  /**
+   * Calcule la marge bénéficiaire par défaut
+   */
+  getDefaultProfitMargin(): number | null {
+    const price = this.pricingForm.get('price')?.value;
+    const cost = this.pricingForm.get('cost')?.value;
+
+    if (!price || !cost || cost === 0) {
+      return null;
+    }
+
+    return ((price - cost) / cost) * 100;
+  }
+  getPharmacyProfitMargin(index: number): number | null {
+    const pharmacyGroup = this.pharmacyPricingArray.at(index) as FormGroup;
+    const price = pharmacyGroup.get('price')?.value;
+    const cost = pharmacyGroup.get('cost')?.value;
+
+    if (!price || !cost || cost === 0) {
+      return null;
+    }
+    return ((price - cost) / cost) * 100;
+  }
+  getDefaultDiscount(): number | null {
+    const originalPrice = this.pricingForm.get('originalPrice')?.value;
+    const currentPrice = this.pricingForm.get('price')?.value;
+
+    if (!originalPrice || !currentPrice) {
+      return null;
+    }
+
+    return originalPrice - currentPrice;
+  }
+  getPharmacyDiscount(index: number): number | null {
+    const pharmacyGroup = this.pharmacyPricingArray.at(index) as FormGroup;
+    const originalPrice = pharmacyGroup.get('originalPrice')?.value;
+    const currentPrice = pharmacyGroup.get('price')?.value;
+
+    if (!originalPrice || !currentPrice) {
+      return null;
+    }
+    return originalPrice - currentPrice;
+  }
+
+  getDefaultUnitProfit(): number | null {
+    const price = this.pricingForm.get('price')?.value;
+    const cost = this.pricingForm.get('cost')?.value;
+
+    if (!price || !cost || cost === 0) {
+      return null;
+    }
+    return (price - cost) ;
+  }
+  getPharmacyUnitProfit(index: number): number | null {
+    const pharmacyGroup = this.pharmacyPricingArray.at(index) as FormGroup;
+    const price = pharmacyGroup.get('price')?.value;
+    const cost = pharmacyGroup.get('cost')?.value;
+
+    if (!price || !cost || cost === 0) {
+      return null;
+    }
+    return (price - cost) ;
+  }
+  getPharmacyCalculations(index: number): boolean {
+    const pharmacyGroup = this.pharmacyPricingArray.at(index) as FormGroup;
+    const price = pharmacyGroup.get('price')?.value;
+    const originalPrice = pharmacyGroup.get('originalPrice')?.value;
+    const cost = pharmacyGroup.get('cost')?.value;
+    const hasCustomPricing = pharmacyGroup.get('hasCustomPricing')?.value;
+    return !!(price || originalPrice || cost || hasCustomPricing);
   }
 }

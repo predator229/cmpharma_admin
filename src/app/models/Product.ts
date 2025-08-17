@@ -75,6 +75,9 @@ export class Product {
   pharmacies: {
     pharmacy: PharmacyClass;
     price?: number;
+    originalPrice?: number;
+    discountPercentage?: number;
+    cost?: number;
     isAvailable: boolean;
   }[];
 
@@ -167,7 +170,10 @@ export class Product {
 
     this.pharmacies = (data.pharmacies || []).map((p: any) => ({
       pharmacy: CommonFunctions.mapToPharmacy(p.pharmacy),
-      price: p.price,
+      price: p.price ?? null,
+      originalPrice : p.originalPrice ?? null,
+      discountPercentage : p.discountPercentage ?? null,
+      cost : p.cost ?? null,
       isAvailable: p.isAvailable ?? true
     }));
 

@@ -120,7 +120,7 @@ export class OrderClass {
     this.orderNumber = data.orderNumber || '';
 
     // Relations
-    this.customer = data.client ? new CustomerClass(data.customer) : new CustomerClass({});
+    this.customer = data.customer ? new CustomerClass(data.customer) : new CustomerClass({});
     this.pharmacy = data.pharmacy ? new PharmacyClass(data.pharmacy) : null;
 
     // Statut
