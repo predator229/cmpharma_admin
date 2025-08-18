@@ -1,0 +1,45 @@
+.notify-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notify {
+  min-width: 200px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.notify.success { background-color: #4caf50; }
+.notify.error   { background-color: #f44336; }
+.notify.info    { background-color: #2196f3; }
+.notify.warning { background-color: #ff9800; }
+.notify.order_received   { background-color: #673ab7; }
+.notify.message_received { background-color: #009688; }
+.notify.message_sent     { background-color: #3f51b5; }
+.notify.start_service    { background-color: #00bcd4; }
+.notify.stop_service     { background-color: #e91e63; }
+.notify.receive          { background-color: #ff5722; }
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+//.notify.
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

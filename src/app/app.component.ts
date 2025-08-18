@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { SpinnerComponent } from './views/theme/shared/components/spinner/spinner.component';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './controllers/interceptors/auth.interceptor';
+import {NotifyComponent} from "./views/theme/shared/components/notification/notification.component";
 
 @Component({
   selector: 'app-root',
@@ -12,6 +13,7 @@ import { AuthInterceptor } from './controllers/interceptors/auth.interceptor';
   imports: [
     RouterOutlet,
     SpinnerComponent,
+    NotifyComponent,
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }

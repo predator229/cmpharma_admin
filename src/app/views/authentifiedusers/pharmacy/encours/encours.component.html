@@ -1,0 +1,251 @@
+<div class="orders-display" [class.fullscreen]="isFullscreen">
+  <!-- Header avec stats et contrôles -->
+  <div class="display-header">
+    <div class="header-left">
+      <div class="pharmacy-info" *ngFor="let pharm of pharmaciesList">
+        <h1><i class="fas fa-prescription-bottle-alt"></i> {{ pharm.name }}</h1>
+        <p class="pharmacy-address">{{ pharm.address }}, {{ pharm.city }}</p>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="current-time">
+        <div class="time">{{ currentTime | date:'HH:mm:ss' }}</div>
+        <div class="date">{{ currentTime | date:'EEEE dd MMMM yyyy':'fr-FR' }}</div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="queue-stats">
+        <div class="stat-item urgent" *ngIf="queueStats.overdueCount > 0">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span class="stat-value">{{ queueStats.overdueCount }}</span>
+          <span class="stat-label">En retard</span>
+        </div>
+        <div class="stat-item preparing">
+          <i class="fas fa-pills"></i>
+          <span class="stat-value">{{ queueStats.preparing }}</span>
+          <span class="stat-label">En préparation</span>
+        </div>
+        <div class="stat-item pending">
+          <i class="fas fa-clock"></i>
+          <span class="stat-value">{{ queueStats.pending }}</span>
+          <span class="stat-label">En attente</span>
+        </div>
+        <div class="stat-item ready">
+          <i class="fas fa-check-circle"></i>
+          <span class="stat-value">{{ queueStats.ready }}</span>
+          <span class="stat-label">Prêtes</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="control-btn" (click)="toggleSound()" [class.active]="soundEnabled">
+          <i class="fas" [class.fa-volume-up]="soundEnabled" [class.fa-volume-mute]="!soundEnabled"></i>
+        </button>
+        <button class="control-btn" (click)="toggleFullscreen()">
+          <i class="fas" [class.fa-expand]="!isFullscreen" [class.fa-compress]="isFullscreen"></i>
+        </button>
+        <button class="control-btn" (click)="refreshOrders()">
+          <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message d'état -->
+  <div class="status-message" *ngIf="!isConnected" class="disconnected">
+    <i class="fas fa-wifi"></i>
+    <span>Reconnexion en cours...</span>
+  </div>
+
+  <!-- Zone principale des commandes -->
+  <div class="orders-grid" *ngIf="!isLoading && orderCards.length > 0">
+    <!-- Commandes en préparation (priorité haute) -->
+    <div class="orders-section preparing" *ngIf="preparingOrders.length > 0">
+      <h2 class="section-title">
+        <i class="fas fa-pills"></i>
+        En préparation ({{ preparingOrders.length }})
+      </h2>
+      <div class="cards-container">
+        <div class="order-card preparing"
+             *ngFor="let orderCard of preparingOrders; trackBy: trackByOrderId"
+             [class.overdue]="orderCard.isOverdue"
+             >
+<!--          [class.urgent]="orderCard.order.priority === 'urgent'"-->
+
+          <div class="card-header">
+            <div class="order-number">#{{ orderCard.order.orderNumber }}</div>
+            <div class="order-time">
+                  <span class="preparation-time" [class.overdue]="orderCard.isOverdue">
+                    <i class="fas fa-clock"></i>
+                    {{ formatDuration(orderCard.preparationTime) }}
+                  </span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="customer-info">
+              <h3>{{ orderCard.order.customer?.getFullName() || 'Client anonyme' }}</h3>
+              <p class="delivery-info">
+                <i class="fas" [class.fa-home]="orderCard.order.deliveryInfo.method === 'home_delivery'"
+                   [class.fa-store]="orderCard.order.deliveryInfo.method === 'pickup'"></i>
+                {{ orderCard.order.getDeliveryMethodLabel() }}
+              </p>
+            </div>
+
+            <div class="items-preview">
+              <div class="item-count">
+                <i class="fas fa-pills"></i>
+                {{ orderCard.order.getTotalItems() }} article(s)
+              </div>
+              <div class="prescription-warning" *ngIf="orderCard.order.requiresPrescription()">
+                <i class="fas fa-prescription"></i>
+                Ordonnance requise
+              </div>
+            </div>
+
+            <div class="progress-section">
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="orderCard.progress"></div>
+              </div>
+              <div class="progress-text">{{ orderCard.currentStep }}</div>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button class="action-btn details" (click)="viewOrderDetails(orderCard.order)">
+              <i class="fas fa-eye"></i>
+              Détails
+            </button>
+            <button class="action-btn ready" (click)="markAsReady(orderCard.order)">
+              <i class="fas fa-check"></i>
+              Prêt
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commandes en attente -->
+    <div class="orders-section pending" *ngIf="pendingOrders.length > 0">
+      <h2 class="section-title">
+        <i class="fas fa-hourglass-start"></i>
+        File d'attente ({{ pendingOrders.length }})
+      </h2>
+      <div class="cards-container">
+        <div class="order-card pending"
+             *ngFor="let orderCard of pendingOrders; trackBy: trackByOrderId; let i = index"
+             [class.next]="i === 0">
+
+          <div class="card-header">
+            <div class="order-number">#{{ orderCard.order.orderNumber }}</div>
+            <div class="queue-position" *ngIf="i === 0">
+              <span class="next-badge">Suivant</span>
+            </div>
+            <div class="queue-position" *ngIf="i > 0">
+              <span class="position-number">{{ i + 1 }}</span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="customer-info">
+              <h3>{{ orderCard.order.customer?.getFullName() || 'Client anonyme' }}</h3>
+              <p class="order-time">
+                <i class="fas fa-clock"></i>
+                Commande à {{ orderCard.order.orderDate | date:'HH:mm' }}
+              </p>
+            </div>
+
+            <div class="items-summary">
+              <div class="item-count">{{ orderCard.order.getTotalItems() }} article(s)</div>
+              <div class="estimated-time">
+                <i class="fas fa-timer"></i>
+                ~{{ orderCard.estimatedTime }} min
+              </div>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button class="action-btn start" (click)="startPreparation(orderCard.order)" [disabled]="i > 0">
+              <i class="fas fa-play"></i>
+              {{ i === 0 ? 'Commencer' : 'En attente' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commandes prêtes -->
+    <div class="orders-section ready" *ngIf="readyOrders.length > 0">
+      <h2 class="section-title">
+        <i class="fas fa-check-circle"></i>
+        Prêtes pour retrait ({{ readyOrders.length }})
+      </h2>
+      <div class="cards-container">
+        <div class="order-card ready"
+             *ngFor="let orderCard of readyOrders; trackBy: trackByOrderId"
+             [class.pickup-overdue]="isPickupOverdue(orderCard.order)">
+
+          <div class="card-header">
+            <div class="order-number">#{{ orderCard.order.orderNumber }}</div>
+            <div class="ready-time">
+              <i class="fas fa-check"></i>
+              Prêt depuis {{ getReadyDuration(orderCard.order) }}
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="customer-info">
+              <h3>{{ orderCard.order.customer?.getFullName() || 'Client anonyme' }}</h3>
+              <p class="contact-info" *ngIf="orderCard.order.customer?.defaultPhone">
+                <i class="fas fa-phone"></i>
+                {{ orderCard.order.customer.defaultPhone.digits }}
+              </p>
+            </div>
+
+            <div class="delivery-method">
+              <i class="fas" [class.fa-home]="orderCard.order.deliveryInfo.method === 'home_delivery'"
+                 [class.fa-store]="orderCard.order.deliveryInfo.method === 'pickup'"></i>
+              {{ orderCard.order.getDeliveryMethodLabel() }}
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button class="action-btn notify" (click)="notifyCustomer(orderCard.order)">
+              <i class="fas fa-bell"></i>
+              Notifier
+            </button>
+            <button class="action-btn complete" (click)="completeOrder(orderCard.order)">
+              <i class="fas fa-hand-holding"></i>
+              Remettre
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- État vide -->
+  <div class="empty-state" *ngIf="!isLoading && orderCards.length === 0">
+    <div class="empty-icon">
+      <i class="fas fa-clipboard-check"></i>
+    </div>
+    <h2>Aucune commande en cours</h2>
+    <p>Toutes les commandes sont traitées ✨</p>
+  </div>
+
+  <!-- Loading spinner -->
+  <div class="loading-spinner" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Chargement des commandes...</p>
+  </div>
+</div>
+
+<!-- Sons pour notifications -->
+<audio #newOrderSound preload="auto">
+  <source src="assets/sounds/new-order.mp3" type="audio/mpeg">
+</audio>
+<audio #orderReadySound preload="auto">
+  <source src="assets/sounds/order-ready.mp3" type="audio/mpeg">
+</audio>

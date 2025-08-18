@@ -16,6 +16,7 @@ import {Conversation} from "../../../../../../models/Conversation.class";
 import {ActivityLoged} from "../../../../../../models/Activity.class";
 import {Ticket} from "../../../../../../models/Ticket.class";
 import {OrderClass} from "../../../../../../models/Order.class";
+import {NotifyService} from "../../../../../../controllers/services/notification.service";
 
 @Component({
   selector: 'app-nav-right',
@@ -55,7 +56,7 @@ export class NavRightComponent implements OnInit, OnDestroy {
     private router: Router,
     private loadingService: LoadingService,
     private chatService: MiniChatService,
-    private changeDetectorRef: ChangeDetectorRef
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.loadingService.isLoading$.subscribe((loading) => {
       this.isLoading = loading;
@@ -153,8 +154,7 @@ export class NavRightComponent implements OnInit, OnDestroy {
           });
 
           if (!existingOrder) {
-            this.orders.unshift(order); // Ajouter en début de liste
-            console.log(`💬 Nouvelle commande reçue dans namespace ${this.namespace}:`, order);
+            this.orders.unshift(order);
 
             this.updateUnreadCount(1);
 

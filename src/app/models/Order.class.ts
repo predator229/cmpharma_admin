@@ -2,6 +2,7 @@ import {Product} from "./Product";
 import {Country} from "./Country";
 import {CustomerClass} from "./Customer.class";
 import {PharmacyClass} from "./Pharmacy.class";
+import {CommonFunctions} from "../controllers/comonsfunctions";
 
 export interface OrderItem {
   product: Product;
@@ -121,7 +122,7 @@ export class OrderClass {
 
     // Relations
     this.customer = data.customer ? new CustomerClass(data.customer) : new CustomerClass({});
-    this.pharmacy = data.pharmacy ? new PharmacyClass(data.pharmacy) : null;
+    this.pharmacy = data.pharmacy ? CommonFunctions.mapToPharmacy(data.pharmacy) : null;
 
     // Statut
     this.status = data.status || 'pending';

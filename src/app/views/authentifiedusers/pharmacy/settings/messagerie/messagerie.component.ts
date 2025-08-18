@@ -24,6 +24,7 @@ import { HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../../../../environments/environment';
 import {ActivatedRoute, Router} from "@angular/router";
 import {UserDetails} from "../../../../../models/UserDatails";
+import {NotifyService} from "../../../../../controllers/services/notification.service";
 
 interface MessageGroup {
   date: string;
@@ -106,6 +107,7 @@ export class PharmacyInternalMessagingComponent implements OnInit, OnDestroy, Af
     private auth: AuthService,
     private router: Router,
     private route: ActivatedRoute,
+    private notifyService: NotifyService
   ) {
     this.messageForm = this.fb.group({
       message: ['', [Validators.maxLength(2000)]]
@@ -224,36 +226,6 @@ export class PharmacyInternalMessagingComponent implements OnInit, OnDestroy, Af
             this.handleNewConversation(conversation);
           }
         });
-
-      // this.chatService.getMessages()
-      //   .pipe(takeUntil(this.destroy$))
-      //   .subscribe((message: MiniChatMessage) => {
-      //     console.log('Message recu !!');
-      //     if (message.namespace === this.namespace) {
-      //       const existingMessage = this.messages.find(m => {
-      //         return m.createdAt === message.createdAt &&
-      //           m.senderId === message.senderId &&
-      //           m.message === message.message;
-      //       });
-      //
-      //       if (!existingMessage) {
-      //         this.messages.push(message);
-      //         this.groupMessagesByDate();
-      //
-      //         // Mettre à jour la conversation
-      //         this.activeConversation.lastMessage = message;
-      //         this.activeConversation.updatedAt = new Date();
-      //         this.shouldScrollToBottom = true;
-      //
-      //         if (message.senderId !== this.userDetail.id) {
-      //           this.unreadCount++;
-      //         }
-      //
-      //         // this.shouldScrollToBottom = true;
-      //         // this.changeDetectorRef.detectChanges();
-      //       }
-      //     }
-      //   });
 
       // Écouter les erreurs
       this.chatService.getErrors()
@@ -518,6 +490,7 @@ export class PharmacyInternalMessagingComponent implements OnInit, OnDestroy, Af
         newMessage,
         attachments
       );
+      this.notifyService.custom('', 'message_sent');
 
       if (success) {
         this.messageForm.get('message')?.setValue('');
@@ -539,8 +512,8 @@ export class PharmacyInternalMessagingComponent implements OnInit, OnDestroy, Af
     );
 
     if (!exists) {
+
       this.messages.push(message);
-      console.log(message)
       this.groupMessagesByDate();
 
       // Mettre à jour la conversation active
@@ -549,6 +522,7 @@ export class PharmacyInternalMessagingComponent implements OnInit, OnDestroy, Af
         this.activeConversation.updatedAt = new Date();
 
         if (message.senderId !== this.userDetail.id) {
+          this.notifyService.custom(`nouveau message`, 'message_received');
           this.activeConversation.unreadCount = 0; // Déjà dans la conversation
         }
       }

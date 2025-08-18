@@ -10,6 +10,7 @@ import {ApiService} from "./api.service";
 import {Conversation} from "../../models/Conversation.class";
 import {ActivityLoged} from "../../models/Activity.class";
 import {OrderClass} from "../../models/Order.class";
+import {NotifyService} from "./notification.service";
 
 interface SocketData {
   socket: Socket;
@@ -39,7 +40,9 @@ export class MiniChatService {
   private readonly API_BASE_SOCKET = environment.socketUrl;
   private currentUserId: string | null = null;
 
-  constructor(private apiService: ApiService, private http: HttpClient, private auth: AuthService) {
+  constructor(
+    private notify: NotifyService,
+    private apiService: ApiService, private http: HttpClient, private auth: AuthService) {
     this.currentUserId = this.auth.getUid();
   }
 
@@ -149,11 +152,13 @@ export class MiniChatService {
     });
     socket.on('new_order', (data: {order: any}) => {
       const order = new OrderClass(data.order);
+      this.notify.custom(`Nouvelle commande reçue 🎉 #${order.orderNumber}`, 'receive');
       this.ordersSubject.next(order);
       this.updateUnreadCount(namespace, 1);
     });
 
     socket.on('new_order', (data: {order: any}) => {
+      console.log(data.order);
       const order = new OrderClass(data.order);
       this.ordersSubject.next(order);
       this.updateUnreadCount(namespace, 1);
@@ -312,12 +317,16 @@ export class MiniChatService {
   }
 
   /**
-   * Demmarrer/stopper le simulateur de commande
+   * Demmarer/stopper le simulateur de commande
    */
   changeOrderStatus(namespace: string, start: boolean): void {
     const socketData = this.sockets.get(namespace);
     if (socketData?.isConnected) {
-      console.log(`${start ? 'Demmarage' : 'stoppage'} du simulateur de commande pour ${namespace}`);
+      if (start) {
+        this.notify.custom(`Stimulateur de commande demarer avec success!`, 'start_service');
+      }else{
+        this.notify.custom(`Stimulateur de commande arreter avec success!`, 'stop_service');
+      }
       socketData.socket.emit('toggle_simulator', { start });
     }
   }

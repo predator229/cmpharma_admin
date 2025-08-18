@@ -174,7 +174,7 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
           } else {
             const index = this.orders.findIndex(ord => ord._id === order._id);
             if (index > -1) {
-              this.orders[index] = new OrderClass(order);
+              this.orders[index] = order;
             }
           }
           this.filterOrders();
