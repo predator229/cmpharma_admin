@@ -3,14 +3,14 @@
 <!-- HEADER STYLE: CLASSIC -->
 <div align="center">
 
-<img src="https://img.shields.io/github/predator229/cmpharma_admin/src/assets/images/logo.png" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
+<img src="https://github.com/predator229/cmpharma_admin/blob/main/src/assets/images/logo.png" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
 
 # CMPHARMA_ADMIN
 
 <em></em>
 
 <!-- BADGES -->
-<img src="https://github.com/predator229/cmpharma_admin/blob/main/src/assets/images/logo.png" alt="license">
+<img src="https://img.shields.io/github/license/predator229/cmpharma_admin?style=default&logo=opensourceinitiative&logoColor=white&color=0080ff" alt="license">
 <img src="https://img.shields.io/github/last-commit/predator229/cmpharma_admin?style=default&logo=git&logoColor=white&color=0080ff" alt="last-commit">
 <img src="https://img.shields.io/github/languages/top/predator229/cmpharma_admin?style=default&color=0080ff" alt="repo-top-language">
 <img src="https://img.shields.io/github/languages/count/predator229/cmpharma_admin?style=default&color=0080ff" alt="repo-language-count">
