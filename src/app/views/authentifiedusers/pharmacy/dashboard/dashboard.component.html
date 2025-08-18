@@ -1,126 +1,410 @@
-<div class="row">
-  <div class="col-xl-4 col-md-6">
-    <div class="card earning-card bg-secondary-dark text-white overflow-hidden">
-      <span class="round secondary-round small"></span>
-      <span class="round secondary-round big"></span>
-      <div class="card-body">
-        <div class="row">
-          <div class="col">
-            <div class="avatar avatar-lg">
-              <i class="text-white ti ti-credit-card f-24"></i>
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="dashboard-title">
+        <i class="fas fa-tachometer-alt me-2"></i>
+        Tableau de Bord
+      </h2>
+      <p class="text-muted mb-0">
+        Vue d'overview de votre activité pharmaceutique
+        <small class="ms-2">
+          <i class="fas fa-clock me-1"></i>
+          Dernière mise à jour: {{ lastUpdated | date:'short':'fr-FR' }}
+        </small>
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <!-- Statut de connexion -->
+      <span class="badge" [ngClass]="isConnected ? 'bg-success' : 'bg-danger'">
+        <i class="fas" [ngClass]="isConnected ? 'fa-wifi' : 'fa-wifi-slash'"></i>
+        {{ isConnected ? 'Connecté' : 'Déconnecté' }}
+      </span>
+
+      <!-- Boutons d'action -->
+      <button class="btn btn-outline-primary btn-sm" (click)="refreshDashboard()" [disabled]="isLoading">
+        <i class="fas fa-sync-alt" [ngClass]="{'fa-spin': isLoading}"></i>
+        Actualiser
+      </button>
+
+      <button class="btn btn-outline-secondary btn-sm" (click)="exportDashboard()">
+        <i class="fas fa-download"></i>
+        Exporter
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtres et vues -->
+  <div class="dashboard-filters mb-4">
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <div class="table-responsive btn-group" role="group">
+          <button
+            *ngFor="let view of availableViews"
+            type="button"
+            class="btn btn-outline-primary btn-sm"
+            [ngClass]="{'active': selectedView === view.value}"
+            style="margin-right: 5px;"
+            (click)="changeView(view.value)">
+            <i [class]="view.icon"></i>
+            {{ view.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="d-flex justify-content-end gap-2">
+<!--          <select-->
+<!--            class="form-select form-select-sm"-->
+<!--            style="width: auto;"-->
+<!--            [formControl]="filterForm.get('timeRange')!">-->
+<!--            <option value="1d">Aujourd'hui</option>-->
+<!--            <option value="7d">7 derniers jours</option>-->
+<!--            <option value="30d">30 derniers jours</option>-->
+<!--            <option value="90d">90 derniers jours</option>-->
+<!--          </select>-->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chargement -->
+<div *ngIf="isLoading" class="text-center py-5">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Chargement...</span>
+  </div>
+  <p class="mt-2 text-muted">Chargement des données du dashboard...</p>
+</div>
+
+<!-- Erreur -->
+<div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="fas fa-exclamation-triangle me-2"></i>
+  {{ errorMessage }}
+  <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+</div>
+
+<!-- Contenu principal -->
+<div *ngIf="!isLoading" class="dashboard-content">
+
+  <!-- Vue d'overview -->
+  <div *ngIf="selectedView === 'overview'">
+
+    <!-- Statistiques principales -->
+    <div class="row mb-4">
+      <!-- Commandes -->
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card orders-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="stats-icon">
+                  <i class="fas fa-shopping-cart"></i>
+                </div>
+                <h3 class="stats-number">{{ formatNumber(stats.orders.total) }}</h3>
+                <p class="stats-label">Commandes Totales</p>
+                <div class="stats-growth" [ngClass]="getGrowthClass(stats.orders.growthRate)">
+                  <i [class]="getGrowthIcon(stats.orders.growthRate)"></i>
+                  {{ formatPercentage(stats.orders.growthRate) }}
+                </div>
+              </div>
+              <div class="stats-chart-mini">
+                <!-- Mini graphique pourrait être ajouté ici -->
+              </div>
+            </div>
+            <div class="stats-details mt-3">
+              <div class="row text-center">
+                <div class="col-4">
+                  <span class="badge bg-warning">{{ stats.orders.pending }}</span>
+                  <small class="d-block">En attente</small>
+                </div>
+                <div class="col-4">
+                  <span class="badge bg-success">{{ stats.orders.completed }}</span>
+                  <small class="d-block">Complétées</small>
+                </div>
+                <div class="col-4">
+                  <span class="badge bg-danger">{{ stats.orders.cancelled }}</span>
+                  <small class="d-block">Annulées</small>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="col-auto">
-            <div class="btn-group" ngbDropdown>
-              <a type="button" class="avatar avatar-xs bg-secondary dropdown-toggle arrow-none" ngbDropdownToggle>
-                <i class="ti ti-dots"></i>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-                <li><button class="dropdown-item" type="button">Import Card</button></li>
-                <li><button class="dropdown-item" type="button">Export</button></li>
+        </div>
+      </div>
+
+      <!-- Revenus -->
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card revenue-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="stats-icon">
+                  <i class="fas fa-dollar-sign"></i>
+                </div>
+                <h3 class="stats-number">{{ formatCurrency(stats.orders.revenue) }}</h3>
+                <p class="stats-label">Revenus Totaux</p>
+                <div class="stats-growth" [ngClass]="getGrowthClass(stats.orders.growthRate)">
+                  <i [class]="getGrowthIcon(stats.orders.growthRate)"></i>
+                  {{ formatPercentage(stats.orders.growthRate) }}
+                </div>
+              </div>
+              <div class="stats-chart-mini">
+                <!-- Mini graphique pourrait être ajouté ici -->
+              </div>
+            </div>
+            <div class="stats-details mt-3">
+              <div class="row text-center">
+                <div class="col-6">
+                  <small class="d-block">Commandes Aujourd'hui</small>
+                  <span class="fw-bold">{{ stats.orders.todayOrders }}</span>
+                </div>
+                <div class="col-6">
+                  <small class="d-block">Val. Moy. Commande</small>
+                  <span class="fw-bold">{{ formatCurrency(stats.orders.averageOrderValue) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tickets -->
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card tickets-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="stats-icon">
+                  <i class="fas fa-ticket-alt"></i>
+                </div>
+                <h3 class="stats-number">{{ formatNumber(stats.tickets.total) }}</h3>
+                <p class="stats-label">Tickets Totaux</p>
+                <div class="stats-growth text-muted">
+                  <small>Temps de réponse: {{ stats.tickets.responseTime | number:'1.0-0' }}h</small>
+                </div>
+              </div>
+              <div class="stats-chart-mini">
+                <!-- Mini graphique pourrait être ajouté ici -->
+              </div>
+            </div>
+            <div class="stats-details mt-3">
+              <div class="row text-center">
+                <div class="col-4">
+                  <span class="badge bg-info">{{ stats.tickets.open }}</span>
+                  <small class="d-block">Ouverts</small>
+                </div>
+                <div class="col-4">
+                  <span class="badge bg-primary">{{ stats.tickets.inProgress }}</span>
+                  <small class="d-block">En cours</small>
+                </div>
+                <div class="col-4">
+                  <span class="badge bg-success">{{ stats.tickets.resolved }}</span>
+                  <small class="d-block">Résolus</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activités -->
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card activities-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="stats-icon">
+                  <i class="fas fa-chart-line"></i>
+                </div>
+                <h3 class="stats-number">{{ formatNumber(stats.activities.total) }}</h3>
+                <p class="stats-label">Activités Totales</p>
+                <div class="stats-growth text-muted">
+                  <small>Aujourd'hui: {{ stats.activities.todayActivities }}</small>
+                </div>
+              </div>
+              <div class="stats-chart-mini">
+                <!-- Mini graphique pourrait être ajouté ici -->
+              </div>
+            </div>
+            <div class="stats-details mt-3">
+              <small class="d-block text-center">Utilisateurs les plus actifs:</small>
+              <ul class="list-unstyled mb-0">
+                <li *ngFor="let user of stats.activities.mostActiveUsers | slice:0:3; trackBy: trackByIndex" class="d-flex justify-content-between align-items-center">
+                  <span>{{ user.name }}</span>
+                  <span class="badge bg-secondary">{{ user.count }}</span>
+                </li>
+                <li *ngIf="stats.activities.mostActiveUsers.length === 0" class="text-center text-muted">
+                  <small>Aucun utilisateur actif.</small>
+                </li>
               </ul>
             </div>
           </div>
         </div>
-        <span class="text-white d-block f-34 f-w-500 my-2">
-          $500.00
-          <i class="ti ti-circle-arrow-up-right opacity-50"></i>
-        </span>
-        <p class="mb-0 opacity-50">Total Earning</p>
       </div>
-    </div>
-  </div>
-  <div class="col-xl-4 col-md-6">
-    <div class="card earning-card bg-primary-dark text-white overflow-hidden">
-      <span class="round primary-round small"></span>
-      <span class="round primary-round big"></span>
-      <div class="card-body">
-        <app-chart-data-month />
-      </div>
-    </div>
-  </div>
-  <div class="col-xl-4 col-md-12">
-    <div class="card total-income-card overflow-hidden bg-primary-dark text-white">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="avatar avatar-lg icon m-r-5">
-            <i class="text-white ti ti-layout-board-split f-24"></i>
+
+      <!-- Pharmacies -->
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card pharmacies-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="stats-icon">
+                  <i class="fas fa-hospital"></i>
+                </div>
+                <h3 class="stats-number">{{ formatNumber(stats.pharmacies.total) }}</h3>
+                <p class="stats-label">Pharmacies Totales</p>
+                <div class="stats-growth text-muted">
+                  <small>Actives: {{ stats.pharmacies.active }}</small>
+                </div>
+              </div>
+              <div class="stats-chart-mini">
+                <!-- Mini graphique pourrait être ajouté ici -->
+              </div>
+            </div>
+            <div class="stats-details mt-3">
+              <small class="d-block text-center">Top Performantes:</small>
+              <ul class="list-unstyled mb-0">
+                <li *ngFor="let pharmacy of stats.pharmacies.topPerforming | slice:0:3; trackBy: trackByIndex" class="d-flex justify-content-between align-items-center">
+                  <span>{{ pharmacy.name }}</span>
+                  <span class="badge bg-success">{{ formatCurrency(pharmacy.revenue) }}</span>
+                </li>
+                <li *ngIf="stats.pharmacies.topPerforming.length === 0" class="text-center text-muted">
+                  <small>Aucune pharmacie top.</small>
+                </li>
+              </ul>
+            </div>
           </div>
-          <div class="ms-2">
-            <h4 class="text-white f-w-600 mb-1">$203k</h4>
-            <p class="mb-0 opacity-50 text-sm">Total Income</p>
+        </div>
+      </div>
+
+      <!-- Utilisateurs -->
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card users-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="stats-icon">
+                  <i class="fas fa-users"></i>
+                </div>
+                <h3 class="stats-number">{{ formatNumber(stats.users.total) }}</h3>
+                <p class="stats-label">Utilisateurs Totaux</p>
+                <div class="stats-growth text-muted">
+                  <small>En ligne: {{ stats.users.onlineNow }}</small>
+                </div>
+              </div>
+              <div class="stats-chart-mini">
+                <!-- Mini graphique pourrait être ajouté ici -->
+              </div>
+            </div>
+            <div class="stats-details mt-3">
+              <div class="row text-center">
+                <div class="col-6">
+                  <small class="d-block">Actifs</small>
+                  <span class="fw-bold">{{ stats.users.active }}</span>
+                </div>
+                <div class="col-6">
+                  <small class="d-block">Nouveaux ce mois</small>
+                  <span class="fw-bold">{{ stats.users.newThisMonth }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="card total-income-card warning overflow-hidden">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="avatar avatar-lg icon-warning m-r-5">
-            <i class="text-warning ti ti-layout-board-split f-24"></i>
+
+    <!-- Actions Rapides -->
+    <h4 class="mb-3">Actions Rapides</h4>
+    <div class="row mb-4">
+      <div *ngFor="let action of quickActions; trackBy: trackByIndex" class="col-xl-2 col-md-4 col-sm-6 mb-3">
+        <div class="card quick-action-card h-100" (click)="navigateToQuickAction(action)">
+          <div class="card-body text-center">
+            <div class="quick-action-icon" [ngClass]="'text-' + action.color">
+              <i [class]="action.icon"></i>
+            </div>
+            <h5 class="mt-3 mb-1">{{ action.title }}</h5>
+            <p class="text-muted mb-0">{{ action.description }}</p>
           </div>
-          <div class="ms-2">
-            <h4 class="f-w-600 mb-1">$203k</h4>
-            <p class="mb-0 opacity-50 text-sm">Total Income</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graphiques du Dashboard -->
+    <h4 class="mb-3">Analytiques</h4>
+    <div class="row mb-4">
+      <div class="col-lg-6 col-md-12 mb-3">
+        <div class="card chart-card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Commandes par Période</h5>
+          </div>
+          <div class="card-body">
+            <canvas #ordersChart></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6 col-md-12 mb-3">
+        <div class="card chart-card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Revenus par Période</h5>
+          </div>
+          <div class="card-body">
+            <canvas #revenueChart></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6 col-md-12 mb-3">
+        <div class="card chart-card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Statut des Tickets</h5>
+          </div>
+          <div class="card-body">
+            <canvas #ticketsChart></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activités Récentes -->
+    <h4 class="mb-3">Activités Récentes</h4>
+    <div class="row">
+      <div class="col-12">
+        <div class="card recent-activities-card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Journal des Activités</h5>
+          </div>
+          <div class="card-body p-0" style="height: 400px; overflow: auto; ">
+            <app-activity-timeline
+              [activites]="recentActivities"
+              [usersInfo]="usersInfo">
+            </app-activity-timeline>
+            <div *ngIf="recentActivities.length === 0" class="p-3 text-center text-muted">
+              <p class="mb-0">Aucune activité récente à afficher.</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="col-xl-8 col-md-12">
-    <app-bar-chart />
+  <!-- Vue Commandes (placeholder) -->
+  <div *ngIf="selectedView === 'orders'" class="py-5 text-center text-muted">
+    <h3><i class="fas fa-shopping-cart me-2"></i> Vue des Commandes</h3>
+    <p>Cette section affichera les détails et la gestion des commandes.</p>
+    <!-- Contenu détaillé des commandes ici -->
   </div>
-  <div class="col-xl-4 col-md-12">
-    <div class="card">
-      <div class="card-body">
-        <div class="row mb-3 align-items-center">
-          <div class="col">
-            <h4>Popular Stocks</h4>
-          </div>
-          <div class="col-auto"></div>
-        </div>
-        <div class="rounded bg-light-secondary overflow-hidden mb-3">
-          <div class="px-3 pt-3">
-            <div class="row mb-1 align-items-start">
-              <div class="col">
-                <h5 class="text-secondary mb-0">Bajaj Finery</h5>
-                <small class="text-muted">10% Profit</small>
-              </div>
-              <div class="col-auto">
-                <h4 class="mb-0">$1839.00</h4>
-              </div>
-            </div>
-          </div>
-          <app-bajaj-chart />
-        </div>
-        <ul class="list-group list-group-flush">
-          @for (list of ListGroup; track list) {
-            <li class="list-group-item px-0 {{ list.space }}">
-              <div class="row align-items-start">
-                <div class="col">
-                  <h5 class="mb-0">{{ list.name }}</h5>
-                  <small class="{{ list.color }}">{{ list.profit }}</small>
-                </div>
-                <div class="col-auto">
-                  <h4 class="mb-0">
-                    {{ list.invest }}
-                    <span class="ms-2 align-top avatar avatar-xxs {{ list.bgColor }}">
-                      <i class="{{ list.icon }} {{ list.color }}"></i>
-                    </span>
-                  </h4>
-                </div>
-              </div>
-            </li>
-          }
-        </ul>
-        <div class="text-center">
-          <a href="javascript:" class="b-b-primary text-primary f-w-500">
-            View all
-            <i class="ti ti-chevron-right"></i>
-          </a>
-        </div>
-      </div>
-    </div>
+
+  <!-- Vue Support (placeholder) -->
+  <div *ngIf="selectedView === 'tickets'" class="py-5 text-center text-muted">
+    <h3><i class="fas fa-ticket-alt me-2"></i> Vue du Support (Tickets)</h3>
+    <p>Cette section affichera les détails et la gestion des tickets de support.</p>
+    <!-- Contenu détaillé des tickets ici -->
   </div>
+
+  <!-- Vue Analytiques (placeholder) -->
+  <div *ngIf="selectedView === 'analytics'" class="py-5 text-center text-muted">
+    <h3><i class="fas fa-chart-bar me-2"></i> Vue Analytiques</h3>
+    <p>Cette section affichera des rapports et des analyses plus approfondis.</p>
+    <!-- Contenu détaillé des analytiques ici -->
+  </div>
+
 </div>

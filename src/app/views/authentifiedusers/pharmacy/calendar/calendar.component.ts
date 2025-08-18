@@ -278,7 +278,7 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
             endDate: endDate.toISOString()
           }
         };
-        this.apiService.post('tools/activities', activitiesPayload, headers).
+        this.apiService.post('tools/activitiesAll', activitiesPayload, headers).
           pipe(takeUntil(this.destroy$))
           .subscribe({
             next: (response: any) => {
@@ -344,8 +344,10 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
       this.currentEvents.push(event);
     });
 
+
     // Trier par date
     this.currentEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
+
   }
 
   private generateCalendarDays(): void {
@@ -367,23 +369,39 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
-      const dayEvents = this.getEventsForDate(currentDate);
-      const dayOrders = dayEvents.filter(e => e.type === 'order');
-      const dayActivities = dayEvents.filter(e => e.type === 'activity');
-
-      const calendarDay: CalendarDay = {
+      const dayKeyCurrentDate = currentDate.toISOString().split("T")[0];
+      const ccalendarDay: CalendarDay = {
         date: new Date(currentDate),
         isCurrentMonth: currentDate.getMonth() === month,
         isToday: this.isSameDate(currentDate, new Date()),
         isSelected: this.selectedDate ? this.isSameDate(currentDate, this.selectedDate) : false,
-        orders: dayOrders.map(e => e.data as OrderClass),
-        activities: dayActivities.map(e => e.data as ActivityLoged),
-        ordersCount: dayOrders.length,
-        activitiesCount: dayActivities.length,
-        hasEvents: dayEvents.length > 0
+        orders: [],
+        activities: [],
+        ordersCount: 0,
+        activitiesCount: 0,
+        hasEvents: false
       };
+      this.orders.map(order => {
+        const dayKey = new Date(order.createdAt.toISOString());
+        dayKey.setDate(dayKey.getDate() - 1);
 
-      this.calendarDays.push(calendarDay);
+        if (dayKeyCurrentDate == dayKey.toISOString().split("T")[0]) {
+          ccalendarDay.orders.push(order);
+          ccalendarDay.ordersCount = ccalendarDay.orders.length;
+          ccalendarDay.hasEvents = true;
+        }
+      })
+      this.activities.map(activiy => {
+        const dayKey = new Date(activiy.createdAt);
+        dayKey.setDate(dayKey.getDate() - 1);
+
+        if (dayKeyCurrentDate == dayKey.toISOString().split("T")[0]) {
+          ccalendarDay.activities.push(activiy);
+          ccalendarDay.activitiesCount = ccalendarDay.activities.length;
+          ccalendarDay.hasEvents = true;
+        }
+      })
+      this.calendarDays.push(ccalendarDay);
       currentDate.setDate(currentDate.getDate() + 1);
     }
   }

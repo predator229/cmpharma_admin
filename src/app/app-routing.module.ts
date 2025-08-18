@@ -8,6 +8,7 @@ import { GroupGuard } from './controllers/guards/group.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
 import {GroupCode} from "./models/Group.class";
 import {CalendarPharmacyTrackingComponent} from "./views/authentifiedusers/pharmacy/calendar/calendar.component";
+import {PharmacyDashboardComponent} from "./views/authentifiedusers/pharmacy/dashboard/dashboard.component";
 
 const routes: Routes = [{
     path: 'admin',
@@ -32,7 +33,7 @@ const routes: Routes = [{
     data: { roles: [GroupCode.MANAGER_PHARMACY, GroupCode.PHARMACIEN, GroupCode.CAISSIER, GroupCode.CONSULTANT, GroupCode.SUPERADMIN] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard',loadComponent: () =>import('./views/authentifiedusers/pharmacy/dashboard/dashboard.component').then((c) => c.DefaultComponent), },
+      { path: 'dashboard',loadComponent: () =>import('./views/authentifiedusers/pharmacy/dashboard/dashboard.component').then((c) => c.PharmacyDashboardComponent), },
       { path:'preparation',loadComponent: () =>import('./views/authentifiedusers/pharmacy/encours/encours.component').then((c) => c.PharmacyOrdersEnCoursComponent), },
       { path:'calendar',loadComponent: () =>import('./views/authentifiedusers/pharmacy/calendar/calendar.component').then((c) => c.CalendarPharmacyTrackingComponent), },
 
