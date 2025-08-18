@@ -3,7 +3,7 @@
 <!-- HEADER STYLE: CLASSIC -->
 <div align="center">
 
-<img src="readmeai/assets/logos/purple.svg" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
+<img src="https://img.shields.io/github/license/predator229/cmpharma_admin/assets/images/logo.png" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
 
 # CMPHARMA_ADMIN
 
