@@ -37,7 +37,7 @@ export class PharmacyLogsComponent implements OnInit {
   zoneRecherche: { [key: string]: { name: string; endpoint: string } } = {
     all: {
       name: 'Toutes les sections',
-      endpoint: 'tools/activities',
+      endpoint: 'tools/activitiesAll',
     },
     category: {
       name: 'Categories',
