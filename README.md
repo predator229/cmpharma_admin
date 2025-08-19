@@ -2925,6 +2925,7 @@ npm test
 <img src="https://github.com/predator229/cmpharma_admin/blob/main/src/assets/forreadme/Screenshot%202025-08-18%20at%2011.05.28%E2%80%AFPM.png" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
 
 
+
 ---
 
 Cmpharma_admin is protected under the [LICENSE](https://choosealicense.com/licenses) License. For more details, refer to the [LICENSE](https://choosealicense.com/licenses/) file.
