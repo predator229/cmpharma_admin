@@ -2,6 +2,7 @@ import {Product} from "./Product";
 import {CustomerClass} from "./Customer.class";
 import {PharmacyClass} from "./Pharmacy.class";
 import {OrderClass} from "./Order.class";
+import {FileClass} from "./File.class";
 
 export interface Doctor {
   name: string;
@@ -58,6 +59,8 @@ export class PrescriptionClass {
   // Informations complémentaires
   patientInfo: PatientInfo;
 
+  document?: FileClass | null;
+
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
@@ -68,6 +71,7 @@ export class PrescriptionClass {
     this.customer = data.customer ? new CustomerClass(data.customer) : null;
     this.pharmacy = data.pharmacy ? new PharmacyClass(data.pharmacy) : null;
     this.order = data.order ? new OrderClass(data.order) : null;
+    this.document = data.document ? new FileClass(data.document) : null;
 
     this.doctor = {
       name: data.doctor?.name || '',

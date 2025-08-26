@@ -3,6 +3,7 @@ import {Country} from "./Country";
 import {CustomerClass} from "./Customer.class";
 import {PharmacyClass} from "./Pharmacy.class";
 import {CommonFunctions} from "../controllers/comonsfunctions";
+import {PrescriptionClass} from "./Prescription.class";
 
 export interface OrderItem {
   product: Product;
@@ -11,10 +12,11 @@ export interface OrderItem {
   totalPrice: number;
   prescriptionRequired: boolean;
   prescriptionProvided: boolean;
-  prescriptionDocument?: string;
+  prescriptionDocument?: PrescriptionClass;
 }
 
 export interface DeliveryInfo {
+  trackingUrl?: string;
   method: 'home_delivery' | 'pickup' | 'express' | 'scheduled';
   address: {
     firstName: string;
@@ -142,6 +144,7 @@ export class OrderClass {
 
     // Livraison
     this.deliveryInfo = {
+      trackingUrl: data.deliveryInfo?.trackingUrl ?? '',
       method: data.deliveryInfo?.method || 'home_delivery',
       address: {
         ...data.deliveryInfo?.address,

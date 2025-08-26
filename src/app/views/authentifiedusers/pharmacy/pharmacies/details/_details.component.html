@@ -132,44 +132,150 @@
           </div>
           <div class="col-md-12">
             <div class="card mb-4">
-            <div class="card-header">
-              <h5><i class="fas fa-chart-line"></i> Performance</h5>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-4">
-                  <div class="performance-stat">
-                    <div class="stat-value">{{ pharmacy.orders30days || 0 }}</div>
-                    <div class="stat-label">Commandes <small>(30 derniers jours)</small></div>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="performance-stat">
-                    <div class="stat-value">{{ (pharmacy.revenue30days || 0) | currency:'EUR' }}</div>
-                    <div class="stat-label">Revenus <small>(30 derniers jours)</small></div>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="performance-stat">
-                    <div class="stat-value">
-                      <i class="fas fa-star"></i> {{ pharmacy.rating?.toFixed(1) || 'N/A' }}
-                    </div>
-                    <div class="stat-label">Note moyenne</div>
-                  </div>
-                </div>
+              <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Performance (Statistiques sur 12 mois)</h5>
+
+                <!-- Navigation des onglets -->
+                <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="chart-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#chart-pane"
+                            type="button"
+                            role="tab"
+                            aria-controls="chart-pane"
+                            aria-selected="true"
+                            [class.active]="tabCahrt == 'monthlyStatsChart'"
+                            (click)="setTabChartActive ('monthlyStatsChart')"
+                    >
+                      <i class="fas fa-chart-line me-2"></i>
+                      Graphique
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="table-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#table-pane"
+                            type="button"
+                            role="tab"
+                            aria-controls="table-pane"
+                            aria-selected="false"
+                            [class.active]="tabCahrt == 'monthlyStatsDetails'"
+                            (click)="setTabChartActive ('monthlyStatsDetails')"
+                    >
+                      <i class="fas fa-table me-2"></i>
+                      Détail mensuel
+                    </button>
+                  </li>
+                </ul>
               </div>
 
-              <div class="chart-container mt-4">
-                <canvas id="revenueChart"></canvas>
+              <div class="card-body">
+                <!-- Résumé des statistiques -->
+                <div class="row mb-4" style="margin-top: 50px;">
+                  <div class="col-md-3">
+                    <div class="text-center p-3 bg-primary bg-opacity-10 rounded">
+                      <h4 class="text-success mb-1">{{ countOrders }}</h4>
+                      <small class="text-muted">Total Commandes</small>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="text-center p-3 bg-success bg-opacity-10 rounded">
+                      <h4 class="text-success mb-1">{{ getMonthlyStatsSummary().totalRevenue | currency:'EUR':'symbol':'1.0-0' }}</h4>
+                      <small class="text-muted">Total Revenus</small>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="text-center p-3 bg-warning bg-opacity-10 rounded">
+                      <h4 class="text-warning mb-1">{{ getMonthlyStatsSummary().totalNewCustomers }}</h4>
+                      <small class="text-muted">Nouveaux Clients</small>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="text-center p-3 bg-info bg-opacity-10 rounded">
+                      <h4 class="text-info mb-1">{{ countOrders/12 }}</h4>
+                      <small class="text-muted">Moy. Commandes/Mois</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Contenu des onglets -->
+                <div class="tab-content">
+
+                  <!-- Onglet Graphique -->
+                  <div class="tab-pane fade"
+                       [class.show]="tabCahrt == 'monthlyStatsChart'"
+                       [class.active]="tabCahrt == 'monthlyStatsChart'"
+                  >
+                    <div class="chart-container" style="height: 400px; position: relative;">
+                      <canvas #monthlyStatsChart></canvas>
+                    </div>
+                  </div>
+
+                  <!-- Onglet Tableau -->
+                  <div class="tab-pane fade"
+                       [class.show]="tabCahrt == 'monthlyStatsDetails'"
+                       [class.active]="tabCahrt == 'monthlyStatsDetails'"
+                  >
+                    <div class="table-responsive">
+                      <table class="table table-hover">
+                        <thead class="table-light">
+                        <tr>
+                          <th>Mois</th>
+                          <th>Commandes</th>
+                          <th>Revenus</th>
+                          <th>Bénéfices</th>
+                          <th>Nouveaux Clients</th>
+                          <th>Revenus/Commande</th>
+                          <th>Évolution</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr *ngFor="let stat of monthlyStats; let i = index">
+                          <td>{{ stat.month }}</td>
+                          <td>
+                            <span class="badge bg-primary">{{ stat.orders }}</span>
+                          </td>
+                          <td>
+                            <span class="text-success fw-bold">{{ stat.revenue | currency:'EUR':'symbol':'1.0-2' }}</span>
+                          </td>
+                          <td>
+                            <span class="text-info fw-bold">{{ stat.profit | currency:'EUR':'symbol':'1.0-2' }}</span>
+                          </td>
+                          <td>
+                            <span class="badge bg-warning text-dark">{{ stat.newCustomers }}</span>
+                          </td>
+                          <td>
+                    <span class="text-muted">
+                      {{ stat.orders > 0 ? ((stat.revenue / stat.orders) | currency:'EUR':'symbol':'1.0-2' ): '0 €' }}
+                    </span>
+                          </td>
+                          <td>
+                            <ng-container *ngIf="i > 0">
+                      <span [class]="getEvolutionClass(monthlyStats[i-1].revenue, stat.revenue)"
+                            [title]="getEvolutionText(monthlyStats[i-1].revenue, stat.revenue)">
+                        {{ getEvolutionPercentage(monthlyStats[i-1].revenue, stat.revenue) }}%
+                        <i [class]="getEvolutionIcon(monthlyStats[i-1].revenue, stat.revenue)"></i>
+                      </span>
+                            </ng-container>
+                            <span *ngIf="i === 0" class="text-muted">-</span>
+                          </td>
+                        </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
           </div>
           <div class="col-md-12">
             <div class="card mb-4">
               <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-shopping-cart"></i> Commandes récentes</h5>
-                <button class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/orders']" [queryParams]="{pharmacy: pharmacy.id}">
+                <button class="btn btn-sm btn-outline-primary" [routerLink]="['/pharmacy/orders/list']" [queryParams]="{pharmacy: pharmacy.id}">
                   Voir toutes les commandes
                 </button>
               </div>
@@ -188,17 +294,17 @@
                     </thead>
                     <tbody>
                     <tr *ngFor="let order of recentOrders">
-                      <td>{{ order.id }}</td>
-                      <td>{{ order.clientName }}</td>
-                      <td>{{ order.date | date: 'dd/MM/yyyy HH:mm' }}</td>
-                      <td>{{ order.amount | currency:'EUR' }}</td>
+                      <td>{{ order.orderNumber }}</td>
+                      <td>{{ order.customer?.getFullName() || 'Client inconnu' }}</td>
+                      <td>{{ order.orderDate | date: 'dd/MM/yyyy HH:mm' }}</td>
+                      <td>{{ order.totalAmount | currency:'EUR' }}</td>
                       <td>
                         <span class="status-badge" [ngClass]="getOrderStatusClass(order.status)">
                           {{ order.status }}
                         </span>
                       </td>
                       <td>
-                        <button class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/orders', order.id]">
+                        <button class="btn btn-sm btn-outline-primary" [routerLink]="['/pharmacy/orders', order._id]">
                           <i class="fas fa-eye"></i>
                         </button>
                       </td>
@@ -208,6 +314,12 @@
                   <div class="text-center py-3" *ngIf="recentOrders.length === 0">
                     <p class="text-muted">Aucune commande récente</p>
                   </div>
+                  <div class="text-center py-3" *ngIf="recentOrders.length > 0">
+                    <button class="btn btn-sm btn-outline-primary" [routerLink]="['/pharmacy/orders/list']" [queryParams]="{pharmacy: pharmacy.id}">
+                      Voir toutes les commandes
+                    </button>
+                  </div>
+
                 </div>
               </div>
             </div>

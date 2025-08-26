@@ -41,7 +41,7 @@
 
       <!-- Quick actions -->
       <div class="btn-group">
-        <button class="btn btn-outline-primary" (click)="printOrder()">
+        <button class="btn btn-outline-primary" (click)="printOrder('invoice')">
           <i class="fas fa-print"></i> Imprimer
         </button>
         <div class="btn-group">
@@ -49,9 +49,9 @@
             <i class="fas fa-download"></i> Exporter
           </button>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="javascript:void(0)" (click)=" console.log('a faire'); //exportOrderData('json')">JSON</a></li>
-            <li><a class="dropdown-item" href="javascript:void(0)" (click)="console.log('a faire'); //exportOrderData('excel')">Excel</a></li>
-            <li><a class="dropdown-item" href="javascript:void(0)" (click)="console.log('a faire'); //exportOrderData('pdf')">PDF</a></li>
+            <li><a class="dropdown-item" href="javascript:void(0)" (click)="exportOrderData('json')">JSON</a></li>
+            <li><a class="dropdown-item" href="javascript:void(0)" (click)="exportOrderData('excel')">Excel</a></li>
+            <li><a class="dropdown-item" href="javascript:void(0)" (click)="exportOrderData('pdf')">PDF</a></li>
           </ul>
         </div>
         <a routerLink="/pharmacy/orders" class="btn btn-outline-secondary">
@@ -66,32 +66,38 @@
     <div class="d-flex gap-2 flex-wrap">
       <button class="btn btn-sm btn-outline-info"
               *ngIf="order.status === 'pending'"
-              (click)="quickStatusUpdate('confirmed')">
+              (click)="quickStatusUpdate('confirmed')"
+              [disabled]="isSubmitting">
         <i class="fas fa-check"></i> Confirmer
       </button>
       <button class="btn btn-sm btn-outline-primary"
               *ngIf="order.status === 'confirmed'"
-              (click)="quickStatusUpdate('preparing')">
+              (click)="quickStatusUpdate('preparing')"
+              [disabled]="isSubmitting">
         <i class="fas fa-cogs"></i> En préparation
       </button>
       <button class="btn btn-sm btn-outline-success"
               *ngIf="order.status === 'preparing'"
-              (click)="quickStatusUpdate('ready_for_pickup')">
+              (click)="quickStatusUpdate('ready_for_pickup')"
+              [disabled]="isSubmitting">
         <i class="fas fa-check-circle"></i> Prêt
       </button>
       <button class="btn btn-sm btn-outline-warning"
               *ngIf="order.status === 'ready_for_pickup'"
-              (click)="quickStatusUpdate('out_for_delivery')">
+              (click)="quickStatusUpdate('out_for_delivery')"
+              [disabled]="isSubmitting">
         <i class="fas fa-truck"></i> Expédier
       </button>
       <button class="btn btn-sm btn-outline-success"
               *ngIf="order.status === 'out_for_delivery'"
-              (click)="quickStatusUpdate('delivered')">
+              (click)="quickStatusUpdate('delivered')"
+              [disabled]="isSubmitting">
         <i class="fas fa-check-double"></i> Livré
       </button>
       <button class="btn btn-sm btn-outline-danger"
               *ngIf="order.isCancellable()"
-              (click)="quickStatusUpdate('cancelled')">
+              (click)="quickStatusUpdate('cancelled')"
+              [disabled]="isSubmitting">
         <i class="fas fa-times"></i> Annuler
       </button>
     </div>
@@ -303,9 +309,9 @@
                   <span>Remise:</span>
                   <span>-{{ formatCurrency(order.discountAmount) }}</span>
                 </div>
-                <div class="summary-row d-flex justify-content-between mb-3 text-success" *ngIf="order.coupon.appliedDiscount > 0">
-                  <span>Coupon ({{ order.coupon.code }}):</span>
-                  <span>-{{ formatCurrency(order.coupon.appliedDiscount) }}</span>
+                <div class="summary-row d-flex justify-content-between mb-3 text-success" *ngIf="order.coupon?.appliedDiscount > 0">
+                  <span>Coupon ({{ order.coupon?.code }}):</span>
+                  <span>-{{ formatCurrency(order.coupon?.appliedDiscount) }}</span>
                 </div>
                 <hr>
                 <div class="summary-row d-flex justify-content-between total-row">
@@ -353,7 +359,7 @@
                 <div class="pharmacy-address text-muted">
                   <i class="fas fa-map-marker-alt me-2"></i>
                   {{ order.pharmacy.address }}<br>
-                  {{ order.pharmacy.address }} {{ order.pharmacy.city }}
+                  {{ order.pharmacy.city }}
                 </div>
                 <div class="pharmacy-contact mt-3" *ngIf="order.pharmacy.phoneNumber">
                   <i class="fas fa-phone text-muted me-2"></i>
@@ -443,11 +449,12 @@
               <tbody>
               <tr *ngFor="let item of order.items; let i = index">
                 <td>
-                  <div class="product-info">
-                    <div class="product-image me-3" *ngIf="item.product.mainImage || item.product.images.length > 0">
-                      <img [src]="baseUrl + (item.product.mainImage.url ?? item.product.images[0].url)"
+                  <div class="product-info d-flex">
+                    <div class="product-image me-3" *ngIf="item.product.mainImage || item.product.images?.length > 0">
+                      <img [src]="baseUrl + (item.product.mainImage?.url ?? item.product.images[0]?.url)"
                            [alt]="item.product.name"
-                           class="product-thumb">
+                           class="product-thumb"
+                           style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
                     </div>
                     <div class="product-details">
                       <h6 class="product-name mb-1">{{ item.product.name }}</h6>
@@ -458,8 +465,6 @@
                         {{ cat.name }}
                       </small>
                       <div class="product-badges mt-1">
-<!--                        <span class="badge bg-success badge-sm" *ngIf="item.product.inStock">En stock</span>-->
-<!--                        <span class="badge bg-danger badge-sm" *ngIf="!item.product.inStock">Rupture</span>-->
                         <span class="badge bg-warning badge-sm" *ngIf="item.product.requiresPrescription">
                             <i class="fas fa-prescription"></i>
                           </span>
@@ -474,7 +479,7 @@
                   </small>
                 </td>
                 <td>
-                  <span class="quantity-badge">{{ item.quantity }}</span>
+                  <span class="quantity-badge badge bg-light text-dark">{{ item.quantity }}</span>
                 </td>
                 <td>
                   <strong>{{ formatCurrency(item.totalPrice) }}</strong>
@@ -498,7 +503,7 @@
                   <div class="btn-group-sm">
                     <button class="btn btn-outline-primary btn-sm me-1"
                             *ngIf="item.prescriptionRequired && !item.prescriptionProvided"
-                            (click)="viewPrescription(item.prescriptionDocument, 2)">
+                            (click)="uploadPrescription(item)">
                       <i class="fas fa-upload"></i>
                     </button>
                     <button class="btn btn-outline-info btn-sm"
@@ -512,7 +517,7 @@
               <tfoot class="table-light">
               <tr>
                 <th colspan="3">Total</th>
-                <th>{{ formatCurrency(makeThing()) }}</th>
+                <th>{{ formatCurrency(getItemsTotal()) }}</th>
                 <th colspan="2"></th>
               </tr>
               </tfoot>
@@ -547,10 +552,7 @@
                   </div>
                   <div class="col-sm-8">
                     <span class="badge"
-                          [ngClass]="{'bg-success': order.payment.status === 'paid',
-                                      'bg-warning': order.payment.status === 'pending',
-                                      'bg-danger': order.payment.status === 'failed',
-                                      'bg-secondary': ['refunded', 'partially_refunded'].includes(order.payment.status)}">
+                          [ngClass]="getPaymentStatusBadgeClass(order.payment.status)">
                       {{ getPaymentStatusLabel(order.payment.status) }}
                     </span>
                   </div>
@@ -619,9 +621,9 @@
                   <span>Remise:</span>
                   <span>-{{ formatCurrency(order.discountAmount) }}</span>
                 </div>
-                <div class="d-flex justify-content-between mb-3 text-success" *ngIf="order.coupon.appliedDiscount > 0">
+                <div class="d-flex justify-content-between mb-3 text-success" *ngIf="order.coupon?.appliedDiscount > 0">
                   <span>Coupon:</span>
-                  <span>-{{ formatCurrency(order.coupon.appliedDiscount) }}</span>
+                  <span>-{{ formatCurrency(order.coupon?.appliedDiscount) }}</span>
                 </div>
                 <hr>
                 <div class="d-flex justify-content-between mb-2">
@@ -667,19 +669,21 @@
                   </div>
                 </div>
 
-                <div class="row mb-3" *ngIf="order.deliveryInfo.trackingNumber">
+                <div class="row mb-3" *ngIf="order.deliveryInfo?.trackingNumber">
                   <div class="col-sm-4">
                     <strong>Numéro de suivi:</strong>
                   </div>
                   <div class="col-sm-8">
                     <code>{{ order.deliveryInfo.trackingNumber }}</code>
-<!--                    <button class="btn btn-link btn-sm p-0 ms-2" *ngIf="order.deliveryInfo.trackingUrl">-->
-<!--                      <i class="fas fa-external-link-alt"></i>-->
-<!--                    </button>-->
+                    <button class="btn btn-link btn-sm p-0 ms-2"
+                            *ngIf="order.deliveryInfo?.trackingUrl"
+                            (click)="openTrackingModal()">
+                      <i class="fas fa-external-link-alt"></i>
+                    </button>
                   </div>
                 </div>
 
-                <div class="row mb-3" *ngIf="order.deliveryInfo.deliveryProvider">
+                <div class="row mb-3" *ngIf="order.deliveryInfo?.deliveryProvider">
                   <div class="col-sm-4">
                     <strong>Transporteur:</strong>
                   </div>
@@ -688,7 +692,7 @@
                   </div>
                 </div>
 
-                <div class="row mb-3" *ngIf="order.deliveryInfo.estimatedDeliveryDate">
+                <div class="row mb-3" *ngIf="order.deliveryInfo?.estimatedDeliveryDate">
                   <div class="col-sm-4">
                     <strong>Livraison prévue:</strong>
                   </div>
@@ -718,18 +722,18 @@
                 </h6>
                 <div class="address-card p-3 border rounded">
                   <div class="recipient-name mb-2">
-                    <strong>{{ order.deliveryInfo.address.firstName }} {{ order.deliveryInfo.address.lastName }}</strong>
+                    <strong>{{ order.deliveryInfo?.address?.firstName }} {{ order.deliveryInfo?.address?.lastName }}</strong>
                   </div>
                   <div class="address-lines">
-                    <div>{{ order.deliveryInfo.address.street }}</div>
-                    <div>{{ order.deliveryInfo.address.postalCode }} {{ order.deliveryInfo.address.city }}</div>
-                    <div *ngIf="order.deliveryInfo.address.country">{{ order.deliveryInfo.address.country.name }}</div>
+                    <div>{{ order.deliveryInfo?.address?.street }}</div>
+                    <div>{{ order.deliveryInfo?.address?.postalCode }} {{ order.deliveryInfo?.address?.city }}</div>
+                    <div *ngIf="order.deliveryInfo?.address?.country">{{ order.deliveryInfo.address.country.name }}</div>
                   </div>
-                  <div class="contact-info mt-2" *ngIf="order.deliveryInfo.address.phone">
+                  <div class="contact-info mt-2" *ngIf="order.deliveryInfo?.address?.phone">
                     <i class="fas fa-phone text-muted me-2"></i>
                     {{ order.deliveryInfo.address.phone }}
                   </div>
-                  <div class="delivery-instructions mt-2" *ngIf="order.deliveryInfo.address.instructions">
+                  <div class="delivery-instructions mt-2" *ngIf="order.deliveryInfo?.address?.instructions">
                     <i class="fas fa-info-circle text-muted me-2"></i>
                     <em>{{ order.deliveryInfo.address.instructions }}</em>
                   </div>
@@ -747,7 +751,7 @@
             <div class="card-body">
               <div class="delivery-timeline">
                 <div class="timeline-item"
-                     [class.completed]="['confirmed', 'preparing', 'ready_for_pickup', 'out_for_delivery', 'delivered', 'completed'].includes(order.status)">
+                     [class.completed]="isStatusCompleted('confirmed')">
                   <div class="timeline-marker"></div>
                   <div class="timeline-content">
                     <h6>Commande confirmée</h6>
@@ -756,7 +760,7 @@
                 </div>
 
                 <div class="timeline-item"
-                     [class.completed]="['preparing', 'ready_for_pickup', 'out_for_delivery', 'delivered', 'completed'].includes(order.status)">
+                     [class.completed]="isStatusCompleted('preparing')">
                   <div class="timeline-marker"></div>
                   <div class="timeline-content">
                     <h6>En préparation</h6>
@@ -764,7 +768,7 @@
                 </div>
 
                 <div class="timeline-item"
-                     [class.completed]="['ready_for_pickup', 'out_for_delivery', 'delivered', 'completed'].includes(order.status)">
+                     [class.completed]="isStatusCompleted('ready_for_pickup')">
                   <div class="timeline-marker"></div>
                   <div class="timeline-content">
                     <h6>Prête pour expédition</h6>
@@ -772,7 +776,7 @@
                 </div>
 
                 <div class="timeline-item"
-                     [class.completed]="['out_for_delivery', 'delivered', 'completed'].includes(order.status)">
+                     [class.completed]="isStatusCompleted('out_for_delivery')">
                   <div class="timeline-marker"></div>
                   <div class="timeline-content">
                     <h6>En cours de livraison</h6>
@@ -781,7 +785,7 @@
                 </div>
 
                 <div class="timeline-item"
-                     [class.completed]="['delivered', 'completed'].includes(order.status)">
+                     [class.completed]="isStatusCompleted('delivered')">
                   <div class="timeline-marker"></div>
                   <div class="timeline-content">
                     <h6>Livrée</h6>
@@ -816,30 +820,30 @@
           </div>
 
           <!-- History timeline -->
-<!--          <div *ngIf="!isLoadingHistory && orderHistory.length > 0" class="history-timeline">-->
-<!--            <div *ngFor="let entry of orderHistory" class="timeline-entry mb-3">-->
-<!--              <div class="d-flex">-->
+          <div *ngIf="!isLoadingHistory && orderHistory.length > 0" class="history-timeline">
+            <div *ngFor="let entry of orderHistory" class="timeline-entry mb-3">
+              <div class="d-flex">
 <!--                <div class="timeline-icon me-3">-->
 <!--                  <i class="fas" [ngClass]="getTimelineIcon(entry.action)"></i>-->
 <!--                </div>-->
-<!--                <div class="timeline-content flex-grow-1">-->
-<!--                  <div class="d-flex justify-content-between align-items-start">-->
-<!--                    <div>-->
-<!--                      <h6 class="mb-1">{{ entry.title }}</h6>-->
-<!--                      <p class="mb-1" *ngIf="entry.description">{{ entry.description }}</p>-->
-<!--                      <small class="text-muted">-->
-<!--                        {{ formatDate(entry.timestamp) }}-->
-<!--                        <span *ngIf="entry.user"> • {{ entry.user }}</span>-->
-<!--                      </small>-->
-<!--                    </div>-->
+                <div class="timeline-content flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1">{{ entry.title }}</h6>
+                      <p class="mb-1" *ngIf="entry.description">{{ entry.description }}</p>
+                      <small class="text-muted">
+                        {{ formatDate(entry.timestamp) }}
+                        <span *ngIf="entry.user"> • {{ entry.user }}</span>
+                      </small>
+                    </div>
 <!--                    <span class="badge" [ngClass]="'bg-' + getTimelineColor(entry.action)">-->
 <!--                      {{ entry.action }}-->
 <!--                    </span>-->
-<!--                  </div>-->
-<!--                </div>-->
-<!--              </div>-->
-<!--            </div>-->
-<!--          </div>-->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- Empty state -->
           <div *ngIf="!isLoadingHistory && orderHistory.length === 0" class="text-center py-4">
@@ -921,3 +925,543 @@
     </div>
   </div>
 </div>
+
+<!-- Modals -->
+
+<!-- Update Status Modal -->
+<ng-template #updateStatusModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Modifier le statut de la commande</h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <form [formGroup]="updateStatusForm">
+      <div class="mb-3">
+        <label for="status" class="form-label">Nouveau statut *</label>
+        <select id="status" class="form-select" formControlName="status">
+          <option value="pending">En attente</option>
+          <option value="confirmed">Confirmée</option>
+          <option value="prescription_pending">Ordonnance en attente</option>
+          <option value="preparing">En préparation</option>
+          <option value="ready_for_pickup">Prête pour retrait</option>
+          <option value="out_for_delivery">En livraison</option>
+          <option value="delivered">Livrée</option>
+          <option value="completed">Terminée</option>
+          <option value="cancelled">Annulée</option>
+          <option value="returned">Retournée</option>
+          <option value="refunded">Remboursée</option>
+        </select>
+      </div>
+
+      <div class="mb-3" *ngIf="['out_for_delivery', 'delivered'].includes(updateStatusForm.value.status)">
+        <label for="trackingNumber" class="form-label">Numéro de suivi</label>
+        <input type="text" id="trackingNumber" class="form-control" formControlName="trackingNumber">
+      </div>
+
+      <div class="mb-3" *ngIf="updateStatusForm.value.status === 'out_for_delivery'">
+        <label for="estimatedDeliveryDate" class="form-label">Date de livraison estimée</label>
+        <input type="datetime-local" id="estimatedDeliveryDate" class="form-control" formControlName="estimatedDeliveryDate">
+      </div>
+
+      <div class="mb-3">
+        <label for="note" class="form-label">Note (optionnel)</label>
+        <textarea id="note" class="form-control" rows="3" formControlName="note" placeholder="Ajouter une note sur ce changement de statut..."></textarea>
+      </div>
+
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="notifyCustomer" formControlName="notifyCustomer">
+        <label class="form-check-label" for="notifyCustomer">
+          Notifier le client par email
+        </label>
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+    <button type="button" class="btn btn-primary"
+            [disabled]="updateStatusForm.invalid || isSubmitting"
+            (click)="updateOrderStatus()">
+      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+      Modifier le statut
+    </button>
+  </div>
+</ng-template>
+
+<!-- Add Note Modal -->
+<ng-template #addNoteModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Ajouter une note</h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <form [formGroup]="addNoteForm">
+      <div class="mb-3">
+        <label for="noteType" class="form-label">Type de note *</label>
+        <select id="noteType" class="form-select" formControlName="type">
+          <option value="internal">Note interne</option>
+          <option value="pharmacy">Note pharmacie</option>
+          <option value="customer">Note client</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="noteContent" class="form-label">Contenu de la note *</label>
+        <textarea id="noteContent" class="form-control" rows="4" formControlName="note" placeholder="Saisir la note..."></textarea>
+      </div>
+
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="isPrivate" formControlName="isPrivate">
+        <label class="form-check-label" for="isPrivate">
+          Note privée (visible uniquement en interne)
+        </label>
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+    <button type="button" class="btn btn-primary"
+            [disabled]="addNoteForm.invalid || isSubmitting"
+            (click)="addNote()">
+      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+      Ajouter la note
+    </button>
+  </div>
+</ng-template>
+
+<!-- Refund Modal -->
+<ng-template #refundModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Traiter un remboursement</h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <form [formGroup]="refundForm">
+      <div class="alert alert-info">
+        <strong>Montant total de la commande:</strong> {{ formatCurrency(order?.totalAmount || 0) }}
+      </div>
+
+      <div class="mb-3">
+        <label for="refundAmount" class="form-label">Montant à rembourser *</label>
+        <div class="input-group">
+          <input type="number" id="refundAmount" class="form-control"
+                 formControlName="amount" step="0.01" min="0" [max]="order?.totalAmount || 0">
+          <span class="input-group-text">€</span>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="refundReason" class="form-label">Raison du remboursement *</label>
+        <textarea id="refundReason" class="form-control" rows="3" formControlName="reason" placeholder="Expliquer la raison du remboursement..."></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label for="refundMethod" class="form-label">Méthode de remboursement *</label>
+        <select id="refundMethod" class="form-select" formControlName="refundMethod">
+          <option value="original">Moyen de paiement original</option>
+          <option value="manual">Remboursement manuel</option>
+        </select>
+      </div>
+
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="notifyCustomerRefund" formControlName="notifyCustomer">
+        <label class="form-check-label" for="notifyCustomerRefund">
+          Notifier le client par email
+        </label>
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+    <button type="button" class="btn btn-warning"
+            [disabled]="refundForm.invalid || isSubmitting"
+            (click)="processRefund()">
+      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+      Traiter le remboursement
+    </button>
+  </div>
+</ng-template>
+
+<!-- Return Modal -->
+<ng-template #returnModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Traiter un retour</h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <form [formGroup]="returnForm">
+      <div class="mb-3">
+        <label for="returnReason" class="form-label">Raison du retour *</label>
+        <textarea id="returnReason" class="form-control" rows="3" formControlName="reason" placeholder="Expliquer la raison du retour..."></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label for="condition" class="form-label">État du produit *</label>
+        <select id="condition" class="form-select" formControlName="condition">
+          <option value="damaged">Endommagé</option>
+          <option value="expired">Périmé</option>
+          <option value="wrong_item">Mauvais article</option>
+          <option value="changed_mind">Changement d'avis</option>
+          <option value="defective">Défectueux</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="returnRefundAmount" class="form-label">Montant du remboursement</label>
+        <div class="input-group">
+          <input type="number" id="returnRefundAmount" class="form-control"
+                 formControlName="refundAmount" step="0.01" min="0" [max]="order?.totalAmount || 0">
+          <span class="input-group-text">€</span>
+        </div>
+      </div>
+
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="restockable" formControlName="restockable">
+        <label class="form-check-label" for="restockable">
+          Produit remettable en stock
+        </label>
+      </div>
+
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="notifyCustomerReturn" formControlName="notifyCustomer">
+        <label class="form-check-label" for="notifyCustomerReturn">
+          Notifier le client par email
+        </label>
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+    <button type="button" class="btn btn-info"
+            [disabled]="returnForm.invalid || isSubmitting"
+            (click)="processReturn()">
+      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+      Traiter le retour
+    </button>
+  </div>
+</ng-template>
+
+<!-- Tracking Modal -->
+<ng-template #trackingModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Mettre à jour le suivi</h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <form [formGroup]="trackingForm">
+      <div class="mb-3">
+        <label for="trackingNumberInput" class="form-label">Numéro de suivi *</label>
+        <input type="text" id="trackingNumberInput" class="form-control" formControlName="trackingNumber" placeholder="Saisir le numéro de suivi...">
+      </div>
+
+      <div class="mb-3">
+        <label for="carrier" class="form-label">Transporteur</label>
+        <input type="text" id="carrier" class="form-control" formControlName="carrier" placeholder="Nom du transporteur...">
+      </div>
+
+      <div class="mb-3">
+        <label for="estimatedDelivery" class="form-label">Date de livraison estimée</label>
+        <input type="datetime-local" id="estimatedDelivery" class="form-control" formControlName="estimatedDelivery">
+      </div>
+
+      <div class="mb-3">
+        <label for="trackingUrlInput" class="form-label">URL de suivi</label>
+        <input type="url" id="trackingUrlInput" class="form-control" formControlName="trackingUrl" placeholder="https://...">
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+    <button type="button" class="btn btn-primary"
+            [disabled]="trackingForm.invalid || isSubmitting"
+            (click)="updateTracking()">
+      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+      Mettre à jour
+    </button>
+  </div>
+</ng-template>
+
+<!-- Prescription Modal -->
+<ng-template #prescriptionModal>
+  <div class="modal-header">
+    <h4 class="modal-title">{{ prescriptionModalData?.prescriptionNumber || 'Ordonnance' }}</h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <div *ngIf="permissions.editOrder" class="prescription-viewer">
+      <div *ngIf="prescriptionModalData?.document" class="text-center">
+        <img [src]="prescriptionModalData.document" class="img-fluid" style="max-height: 500px;">
+      </div>
+      <div *ngIf="!prescriptionModalData?.document" class="text-center text-muted py-4">
+        <i class="fas fa-file-medical fa-3x mb-3"></i>
+        <p>Aucune ordonnance disponible</p>
+      </div>
+    </div>
+
+<!--    *ngIf="prescriptionModalData?.type === 'upload'"-->
+<!--    <div class="prescription-uploader"> -->
+<!--      <div class="mb-3">-->
+<!--        <label for="prescriptionFile" class="form-label">Télécharger l'ordonnance</label>-->
+<!--        <input type="file" id="prescriptionFile" class="form-control"-->
+<!--               accept="image/*,.pdf" (change)="onPrescriptionFileSelected($event)">-->
+<!--        <div class="form-text">Formats acceptés: JPG, PNG, PDF (max 5MB)</div>-->
+<!--      </div>-->
+
+<!--      <div *ngIf="selectedPrescriptionFile" class="alert alert-info">-->
+<!--        <strong>Fichier sélectionné:</strong> {{ selectedPrescriptionFile.name }}-->
+<!--        ({{ (selectedPrescriptionFile.size / 1024 / 1024).toFixed(2) }} MB)-->
+<!--      </div>-->
+<!--    </div>-->
+  </div>
+<!--  <div class="modal-footer">-->
+<!--    <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>-->
+<!--    <button *ngIf="prescriptionModalData?.type === 'upload'"-->
+<!--            type="button" class="btn btn-primary"-->
+<!--            [disabled]="!selectedPrescriptionFile || isSubmitting"-->
+<!--            (click)="uploadPrescriptionFile()">-->
+<!--      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>-->
+<!--      Télécharger-->
+<!--    </button>-->
+<!--  </div>-->
+</ng-template>
+
+<!-- Modals manquants à ajouter à la fin du HTML existant -->
+
+<!-- Product Details Modal -->
+<ng-template #productModal>
+  <div class="modal-header">
+    <h4 class="modal-title">{{ selectedProduct?.name }}</h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body" *ngIf="selectedProduct">
+    <div class="row">
+      <div class="col-md-4" *ngIf="selectedProduct.mainImage || selectedProduct.images?.length > 0">
+        <img [src]="baseUrl + (selectedProduct.mainImage?.url ?? selectedProduct.images[0]?.url)"
+             [alt]="selectedProduct.name" class="img-fluid rounded">
+      </div>
+      <div class="col-md-8">
+        <h5>{{ selectedProduct.name }}</h5>
+        <p class="text-muted" *ngIf="selectedProduct.description">{{ selectedProduct.description }}</p>
+
+        <div class="product-details">
+          <div class="mb-2" *ngIf="selectedProduct.sku">
+            <strong>Référence:</strong> {{ selectedProduct.sku }}
+          </div>
+          <div class="mb-2" *ngIf="selectedProduct.categories?.length > 0">
+            <strong>Catégories:</strong>
+            <span *ngFor="let cat of selectedProduct.categories; let last = last" class="badge bg-secondary me-1">
+              {{ cat.name }}
+            </span>
+          </div>
+          <div class="mb-2">
+            <strong>Prix:</strong>
+            <span class="h5 text-primary">{{ formatCurrency(selectedProduct.price || 0) }}</span>
+            <del class="text-muted ms-2" *ngIf="selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price">
+              {{ formatCurrency(selectedProduct.originalPrice) }}
+            </del>
+          </div>
+          <div class="mb-2" *ngIf="selectedProduct.requiresPrescription">
+            <span class="badge bg-warning">
+              <i class="fas fa-prescription me-1"></i>
+              Ordonnance requise
+            </span>
+          </div>
+          <div class="mb-2" *ngIf="selectedProduct.laboratoire">
+            <strong>Fabricant:</strong> {{ selectedProduct.laboratoire }}
+          </div>
+          <div class="mb-2" *ngIf="selectedProduct.expiryDate">
+            <strong>Date d'expiration:</strong> {{ formatDate(selectedProduct.expiryDate) }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
+    <button type="button" class="btn btn-primary" *ngIf="selectedProduct">
+      <i class="fas fa-external-link-alt me-2"></i>
+      Voir détails complets
+    </button>
+  </div>
+</ng-template>
+
+<!-- Prescription Upload/View Modal -->
+<ng-template #prescriptionModal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      {{ permissions.editOrder ? 'Télécharger l\'ordonnance' : 'Visualiser l\'ordonnance' }}
+    </h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <!-- View prescription -->
+    <div class="prescription-viewer">
+      <div class="text-center mb-3" *ngIf="prescriptionModalData.document">
+        <img [src]="prescriptionModalData.document"
+             class="img-fluid"
+             style="max-height: 500px; border: 1px solid #ddd; border-radius: 8px;">
+      </div>
+
+      <div *ngIf="prescriptionModalData" class="prescription-info">
+        <h6>Détails de l'ordonnance</h6>
+        <div class="row">
+          <div class="col-sm-6">
+            <strong>Numéro:</strong> {{ prescriptionModalData.prescriptionNumber }}
+          </div>
+          <div class="col-sm-6">
+            <strong>Date:</strong> {{ formatDate(prescriptionModalData.issueDate) }}
+          </div>
+        </div>
+        <div class="mt-2" *ngIf="prescriptionModalData.doctor">
+          <strong>Médecin:</strong> {{ prescriptionModalData.doctor.name }}
+        </div>
+<!--        <div class="mt-2" *ngIf="prescriptionModalData.">-->
+<!--          <strong>Notes:</strong> {{ prescriptionModalData.notes }}-->
+<!--        </div>-->
+      </div>
+
+      <div *ngIf="!prescriptionModalData.document" class="text-center text-muted py-4">
+        <i class="fas fa-file-medical fa-3x mb-3"></i>
+        <p>Aucune ordonnance disponible</p>
+      </div>
+    </div>
+
+    <!-- Upload prescription -->
+<!--    <div *ngIf="permissions.editOrder" class="prescription-uploader">-->
+<!--      <div class="mb-3">-->
+<!--        <label for="prescriptionFile" class="form-label">Sélectionner le fichier de l'ordonnance</label>-->
+<!--        <input type="file"-->
+<!--               id="prescriptionFile"-->
+<!--               class="form-control"-->
+<!--               accept="image/*,.pdf"-->
+<!--               (change)="onPrescriptionFileSelected($event)">-->
+<!--        <div class="form-text">Formats acceptés: JPG, PNG, PDF (taille max: 5MB)</div>-->
+<!--      </div>-->
+
+<!--      <div *ngIf="selectedPrescriptionFile" class="alert alert-info">-->
+<!--        <i class="fas fa-file me-2"></i>-->
+<!--        <strong>Fichier sélectionné:</strong> {{ selectedPrescriptionFile.name }}-->
+<!--        <br>-->
+<!--        <small>Taille: {{ (selectedPrescriptionFile.size / 1024 / 1024).toFixed(2) }} MB</small>-->
+<!--      </div>-->
+
+<!--      <div class="mb-3">-->
+<!--        <label for="prescriptionNotes" class="form-label">Notes (optionnel)</label>-->
+<!--        <textarea id="prescriptionNotes"-->
+<!--                  class="form-control"-->
+<!--                  rows="3"-->
+<!--                  [(ngModel)]="prescriptionNotes"-->
+<!--                  placeholder="Ajouter des notes sur cette ordonnance..."></textarea>-->
+<!--      </div>-->
+
+<!--      <div *ngIf="prescriptionModalData.orderItem" class="alert alert-light">-->
+<!--        <strong>Produit concerné:</strong> {{ prescriptionModalData.orderItem.product.name }}-->
+<!--        <br>-->
+<!--        <small>Quantité: {{ prescriptionModalData.orderItem.quantity }}</small>-->
+<!--      </div>-->
+<!--    </div>-->
+  </div>
+<!--  <div class="modal-footer">-->
+<!--    <button type="button" class="btn btn-secondary" (click)="closeModal()">-->
+<!--      {{ prescriptionModalData?.type === 'upload' ? 'Annuler' : 'Fermer' }}-->
+<!--    </button>-->
+<!--    <button *ngIf="prescriptionModalData?.type === 'upload'"-->
+<!--            type="button"-->
+<!--            class="btn btn-primary"-->
+<!--            [disabled]="!selectedPrescriptionFile || isSubmitting"-->
+<!--            (click)="uploadPrescriptionFile()">-->
+<!--      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>-->
+<!--      <i class="fas fa-upload me-2" *ngIf="!isSubmitting"></i>-->
+<!--      Télécharger l'ordonnance-->
+<!--    </button>-->
+<!--    <button *ngIf="prescriptionModalData?.type === 'view' && prescriptionModalData.document"-->
+<!--            type="button"-->
+<!--            class="btn btn-outline-primary"-->
+<!--            (click)="downloadPrescription()">-->
+<!--      <i class="fas fa-download me-2"></i>-->
+<!--      Télécharger-->
+<!--    </button>-->
+<!--  </div>-->
+</ng-template>
+
+<!-- Print Options Modal -->
+<ng-template #printModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Options d'impression</h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="mb-4">
+      <h6>Format d'impression</h6>
+      <div class="btn-group" role="group">
+        <input type="radio" class="btn-check" name="printFormat" id="format-invoice"
+               [(ngModel)]="printOptions.format" value="invoice">
+        <label class="btn btn-outline-primary" for="format-invoice">
+          <i class="fas fa-file-invoice me-2"></i>Facture
+        </label>
+
+        <input type="radio" class="btn-check" name="printFormat" id="format-receipt"
+               [(ngModel)]="printOptions.format" value="receipt">
+        <label class="btn btn-outline-primary" for="format-receipt">
+          <i class="fas fa-receipt me-2"></i>Reçu
+        </label>
+
+        <input type="radio" class="btn-check" name="printFormat" id="format-label"
+               [(ngModel)]="printOptions.format" value="label">
+        <label class="btn btn-outline-primary" for="format-label">
+          <i class="fas fa-tag me-2"></i>Étiquette
+        </label>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <h6>Éléments à inclure</h6>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="include-customer"
+               [(ngModel)]="printOptions.includeCustomerInfo">
+        <label class="form-check-label" for="include-customer">
+          Informations client
+        </label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="include-items"
+               [(ngModel)]="printOptions.includeItems">
+        <label class="form-check-label" for="include-items">
+          Liste des articles
+        </label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="include-payment"
+               [(ngModel)]="printOptions.includePayment">
+        <label class="form-check-label" for="include-payment">
+          Informations de paiement
+        </label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="include-delivery"
+               [(ngModel)]="printOptions.includeDelivery">
+        <label class="form-check-label" for="include-delivery">
+          Adresse de livraison
+        </label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="include-notes"
+               [(ngModel)]="printOptions.includeNotes">
+        <label class="form-check-label" for="include-notes">
+          Notes et commentaires
+        </label>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle me-2"></i>
+      L'impression s'ouvrira dans une nouvelle fenêtre
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+    <button type="button" class="btn btn-primary" (click)="printOrder(printOptions.format)">
+      <i class="fas fa-print me-2"></i>Imprimer
+    </button>
+  </div>
+</ng-template>
+

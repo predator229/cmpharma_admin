@@ -316,7 +316,7 @@
     <!-- Actions Rapides -->
     <h4 class="mb-3">Actions Rapides</h4>
     <div class="row mb-4">
-      <div *ngFor="let action of quickActions; trackBy: trackByIndex" class="col-xl-2 col-md-4 col-sm-6 mb-3">
+      <div *ngFor="let action of quickActions; trackBy: trackByIndex" class="col-3">
         <div class="card quick-action-card h-100" (click)="navigateToQuickAction(action)">
           <div class="card-body text-center">
             <div class="quick-action-icon" [ngClass]="'text-' + action.color">
@@ -331,27 +331,113 @@
 
     <!-- Graphiques du Dashboard -->
     <h4 class="mb-3">Analytiques</h4>
-    <div class="row mb-4">
-      <div class="col-lg-6 col-md-12 mb-3">
-        <div class="card chart-card">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Commandes par Période</h5>
+
+    <div class="col-lg-12 col-md-12 mb-3">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5><i class="fas fa-chart-line me-2"></i>Performance</h5>
+          <ul class="nav nav-tabs card-header-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active">
+                <i class="fas fa-chart-line me-2"></i>
+                Graphique
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="card-body">
+          <!-- Résumé des statistiques -->
+          <div class="row mb-4" style="margin-top: 50px;">
+            <div class="col-md-3">
+              <div class="text-center p-3 bg-primary bg-opacity-10 rounded">
+                <h4 class="text-success mb-1">{{ countOrders }}</h4>
+                <small class="text-muted">Total Commandes</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="text-center p-3 bg-success bg-opacity-10 rounded">
+                <h4 class="text-success mb-1">{{ getMonthlyStatsSummary().totalRevenue | currency:'EUR':'symbol':'1.0-0' }}</h4>
+                <small class="text-muted">Total Revenus</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="text-center p-3 bg-warning bg-opacity-10 rounded">
+                <h4 class="text-warning mb-1">{{ getMonthlyStatsSummary().totalNewCustomers }}</h4>
+                <small class="text-muted">Nouveaux Clients</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="text-center p-3 bg-info bg-opacity-10 rounded">
+                <h4 class="text-info mb-1">{{ countOrders/12 }}</h4>
+                <small class="text-muted">Moy. Commandes/Mois</small>
+              </div>
+            </div>
           </div>
-          <div class="card-body">
-            <canvas #ordersChart></canvas>
+
+          <div class="chart-container" style="height: 400px; position: relative;">
+            <canvas #monthlyStatsChart></canvas>
           </div>
         </div>
       </div>
-      <div class="col-lg-6 col-md-12 mb-3">
-        <div class="card chart-card">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Revenus par Période</h5>
-          </div>
-          <div class="card-body">
-            <canvas #revenueChart></canvas>
+    </div>
+    <div class="col-md-12 mb-3">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5><i class="fas fa-chart-line me-2"></i>Détail mensuel</h5>
+        </div>
+
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+              <tr>
+                <th>Mois</th>
+                <th>Commandes</th>
+                <th>Revenus</th>
+                <th>Bénéfices</th>
+                <th>Nouveaux Clients</th>
+                <th>Revenus/Commande</th>
+                <th>Évolution</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let stat of monthlyStats; let i = index">
+                <td>{{ stat.month }}</td>
+                <td>
+                  <span class="badge bg-primary">{{ stat.orders }}</span>
+                </td>
+                <td>
+                  <span class="text-success fw-bold">{{ stat.revenue | currency:'EUR':'symbol':'1.0-2' }}</span>
+                </td>
+                <td>
+                  <span class="text-info fw-bold">{{ stat.profit | currency:'EUR':'symbol':'1.0-2' }}</span>
+                </td>
+                <td>
+                  <span class="badge bg-warning text-dark">{{ stat.newCustomers }}</span>
+                </td>
+                <td>
+                    <span class="text-muted">
+                      {{ stat.orders > 0 ? ((stat.revenue / stat.orders) | currency:'EUR':'symbol':'1.0-2' ): '0 €' }}
+                    </span>
+                </td>
+                <td>
+                  <ng-container *ngIf="i > 0">
+                      <span [class]="getEvolutionClass(monthlyStats[i-1].revenue, stat.revenue)"
+                            [title]="getEvolutionText(monthlyStats[i-1].revenue, stat.revenue)">
+                        {{ getEvolutionPercentage(monthlyStats[i-1].revenue, stat.revenue) }}%
+                        <i [class]="getEvolutionIcon(monthlyStats[i-1].revenue, stat.revenue)"></i>
+                      </span>
+                  </ng-container>
+                  <span *ngIf="i === 0" class="text-muted">-</span>
+                </td>
+              </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
+
       <div class="col-lg-6 col-md-12 mb-3">
         <div class="card chart-card">
           <div class="card-header">
@@ -364,7 +450,7 @@
       </div>
     </div>
 
-    <!-- Activités Récentes -->
+      <!-- Activités Récentes -->
     <h4 class="mb-3">Activités Récentes</h4>
     <div class="row">
       <div class="col-12">

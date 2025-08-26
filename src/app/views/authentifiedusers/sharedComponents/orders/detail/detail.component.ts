@@ -13,9 +13,10 @@ import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { CommonFunctions } from "../../../../../controllers/comonsfunctions";
 import { UserDetails } from "../../../../../models/UserDatails";
 import { environment } from "../../../../../../environments/environment";
-import { OrderClass } from "../../../../../models/Order.class";
+import {OrderClass, OrderItem} from "../../../../../models/Order.class";
 import { MiniChatService } from "../../../../../controllers/services/minichat.service";
 import {Product} from "../../../../../models/Product";
+import {PrescriptionClass} from "../../../../../models/Prescription.class";
 
 export enum OrderStatus {
   PENDING = 'pending',
@@ -112,6 +113,7 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
   @ViewChild('trackingModal') trackingModal: ElementRef | undefined;
   @ViewChild('prescriptionModal') prescriptionModal: ElementRef | undefined;
   @ViewChild('printModal') printModal: ElementRef | undefined;
+  @ViewChild('productModal') productModal: ElementRef | undefined;
 
   userDetail: UserDetails;
   baseUrl = environment.baseUrl;
@@ -121,6 +123,8 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
   private modalService: NgbModal;
   private namespace = 'internal_messaging';
 
+  selectedProduct: Product = null;
+
   // Print options
   printOptions = {
     includeCustomerInfo: true,
@@ -128,8 +132,9 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
     includePayment: true,
     includeDelivery: true,
     includeNotes: false,
-    format: 'invoice' // invoice, receipt, label
+    format: 'invoice' // 'invoice' | 'receipt' | 'label'
   };
+  prescriptionModalData: PrescriptionClass = null;
 
   constructor(
     modalService: NgbModal,
@@ -702,8 +707,9 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  printOrder(format: 'invoice' | 'receipt' | 'label' = 'invoice'): void {
+  printOrder(format: string): void {
     if (!this.order) return;
+    if (!['invoice', 'receipt', 'label'].includes(format)) return;
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -962,17 +968,103 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
 
   quickStatusUpdate(confirmed: string) {
     // ici on va faire les appels rapide api pour la modification du statut de la commande
+  }
+  // onPrescriptionFileSelected(event: Event): void {
+  //   const target = event.target as HTMLInputElement;
+  //   const file = target.files?.[0];
+  //
+  //   if (!file) {
+  //     this.selectedPrescriptionFile = null;
+  //     return;
+  //   }
+  //
+  //   // Vérifier la taille du fichier (5MB max)
+  //   const maxSize = 5 * 1024 * 1024; // 5MB
+  //   if (file.size > maxSize) {
+  //     this.handleError('Le fichier est trop volumineux. Taille maximale: 5MB');
+  //     target.value = '';
+  //     return;
+  //   }
+  //
+  //   // Vérifier le type de fichier
+  //   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+  //   if (!allowedTypes.includes(file.type)) {
+  //     this.handleError('Format de fichier non supporté. Utilisez: JPG, PNG ou PDF');
+  //     target.value = '';
+  //     return;
+  //   }
+  //
+  //   this.selectedPrescriptionFile = file;
+  // }
 
+
+  viewPrescription(prescriptionDocument: PrescriptionClass, orderItem?: OrderItem): void {
+    if (!prescriptionDocument) return;
+
+    this.prescriptionModalData = orderItem ? orderItem?.prescriptionDocument : prescriptionDocument;
+
+    this.modalService.open(this.prescriptionModal, {
+      size: 'lg',
+      backdrop: 'static',
+      centered: true
+    });
   }
 
-  viewPrescription(prescriptionDocument: string, type: number = 0) {
-    // ici on affiche le modal qui montre les ordonnances
+  viewProductDetails(product: Product): void {
+    if (!product) return;
+
+    this.selectedProduct = product;
+
+    this.modalService.open(this.productModal, {
+      size: 'lg',
+      backdrop: 'static',
+      centered: true
+    });
   }
-  viewProductDetails(product: Product) {
-    // ici on affiche le modal de vue rapide du produit
+  downloadPrescription(): void {
+    if (!this.prescriptionModalData?.document) return;
+
+    const link = document.createElement('a');
+    link.href = this.prescriptionModalData?.document?.url;
+    link.download = `ordonnance_${this.order?.orderNumber || 'commande'}.pdf`;
+    link.click();
   }
 
   makeThing() {
     return this.order.items.reduce((sum, item) => sum + item.totalPrice, 0)
   }
+
+  exportOrderData(json: string) {
+    console.log('data exported');
+  }
+
+  uploadPrescription(item: OrderItem) {
+    console.log('upload prescription');
+  }
+
+  getItemsTotal() {
+    return this.order.items.reduce((sum, item) => sum + item.totalPrice, 0);
+  }
+
+  getPaymentStatusBadgeClass(status: "pending" | "paid" | "failed" | "refunded" | "partially_refunded") {
+    if (status) {
+      switch (status) {
+        case "pending":
+          return "badge badge-warning";
+        case "paid":
+          return "badge badge-success";
+        case "failed":
+          return "badge badge-danger";
+        case "refunded":
+          return "badge badge-success";
+        case "partially_refunded":
+      }
+    }
+    return undefined;
+  }
+
+  isStatusCompleted(confirmed: string) {
+    return confirmed == this.order.status;
+  }
+
 }

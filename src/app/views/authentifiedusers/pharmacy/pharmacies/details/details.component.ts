@@ -11,7 +11,6 @@ import { LoadingService } from 'src/app/controllers/services/loading.service';
 import {FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import Swal from 'sweetalert2';
 import { DomSanitizer } from '@angular/platform-browser';
-import {Chart, ChartConfiguration} from 'chart.js';
 import {CommonFunctions} from "../../../../../controllers/comonsfunctions";
 import {NgbModal, NgbModalRef} from "@ng-bootstrap/ng-bootstrap";
 import {OpeningHoursClass} from "../../../../../models/OpeningHours.class";
@@ -26,9 +25,12 @@ import {DeliveryZoneClass} from "../../../../../models/DeliveryZone.class";
 import {ActivityTimelineComponent} from "../../../sharedComponents/activity-timeline/activity-timeline.component";
 import {ActivityLoged} from "../../../../../models/Activity.class";
 import {AdminChatComponent} from "../../../sharedComponents/minichat/minichat.component";
+import {OrderClass} from "../../../../../models/Order.class";
+import { Chart, ChartConfiguration, ChartData, registerables } from 'chart.js';
 
 declare var bootstrap: any;
 declare var google: any;
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-pharmacy-detail-pharmacies',
@@ -52,7 +54,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
     viewPharmacy: false,
   };
 
-  recentOrders: any[] = [];
+  recentOrders: OrderClass[] = [];
   pharmacyActivities: ActivityLoged[] = [];
   commonsFunction: CommonFunctions;
   pharmacyForm: FormGroup;
@@ -110,9 +112,17 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
   @ViewChild('formCoordonatesInfos') formCoordonatesInfos: ElementRef | undefined;
   @ViewChild('formCoordonatesZoneInfos') formCoordonatesZoneInfos: ElementRef | undefined;
   @ViewChild('editOrViewDocument') editOrViewDocument: ElementRef | undefined;
+  @ViewChild('monthlyStatsChart', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
 
   //select2
   @ViewChild('countrySelect', { static: false }) countrySelect!: ElementRef;
+  orders30days: OrderClass[] = [];
+  revenue30days = [];
+
+  private chart?: Chart;
+  monthlyStats: any[] = [];
+  countOrders: number = 0;
+  tabCahrt: string = 'monthlyStatsChart';
 
   constructor( private modalService: NgbModal,  private auth: AuthService,  private router: Router,  private route: ActivatedRoute,  private apiService: ApiService,  private loadingService: LoadingService,  private fb: FormBuilder,  private sanitizer: DomSanitizer) {
     this.loadingService.isLoading$.subscribe((loading) => {
@@ -163,9 +173,17 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
 
-    if (this.revenueChart) { this.revenueChart.destroy();}
     if (this.modalRef) { this.modalRef.close();}
+    if (this.chart) {
+      this.chart.destroy();
+    }
   }
+  ngAfterViewInit() {
+    if (this.monthlyStats.length > 0) {
+      this.initMonthlyStatsChart();
+    }
+  }
+
   onSubmit(type : number): void {
     let form = this.pharmacyForm;
     switch (type) {
@@ -223,7 +241,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
     if (!ctx) return;
 
     const labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
-    const data = this.pharmacy?.revenue30days || Array(12).fill(0);
+    const data = this.revenue30days || Array(12).fill(0);
 
     if (this.revenueChart) {
       this.revenueChart.destroy();
@@ -680,12 +698,19 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
           next: async (response: any) => {
             if (response && response.data) {
               this.pharmacy = CommonFunctions.mapToPharmacy(response.data);
+              this.recentOrders = response.orders.map((item: any) => new OrderClass(item));
+
+              // Nouvelles données pour le graphique
+              this.monthlyStats = response.monthlyStats || [];
+              this.countOrders = response.countOrders ?? 0;
+
+              this.revenue30days = response.revenue30days ?? 0;
               await this.loadOpeningHours(pharmacyId);
               if (!["pending"].includes(this.pharmacy.status)) {
                 await this.loadPharmacyActivities(pharmacyId);
-                // this.loadPharmacyActivities(pharmacyId);
                 setTimeout(() => {
                   this.initRevenueChart();
+                  this.initMonthlyStatsChart(); // Nouveau graphique
                   this.initMap();
                 }, 500);
               }
@@ -707,6 +732,172 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       this.handleError('Une erreur s\'est produite');
       this.loadingService.setLoading(false);
     }
+  }
+
+  initMonthlyStatsChart() {
+    if (!this.monthlyStats || this.monthlyStats.length === 0) {
+      return;
+    }
+
+    // Détruire le graphique existant s'il existe
+    if (this.chart) {
+      this.chart.destroy();
+    }
+
+    const ctx = this.chartCanvas.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    const labels = this.monthlyStats.map(stat => stat.monthShort);
+
+    const config: ChartConfiguration = {
+      type: 'bar', // Type principal
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            type: 'line',
+            label: 'Commandes',
+            data: this.monthlyStats.map(stat => stat.orders),
+            borderColor: '#4f46e5',
+            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y'
+          },
+          {
+            type: 'bar',
+            label: 'Revenus (€)',
+            data: this.monthlyStats.map(stat => stat.revenue),
+            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+            borderColor: '#22c55e',
+            borderWidth: 1,
+            yAxisID: 'y1'
+          },
+          {
+            type: 'line',
+            label: 'Nouveaux clients',
+            data: this.monthlyStats.map(stat => stat.newCustomers),
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: 'Évolution sur 12 mois - Commandes, Revenus et Nouveaux Clients'
+          },
+          legend: {
+            display: true,
+            position: 'top'
+          }
+        },
+        scales: {
+          x: {
+            display: true,
+            title: {
+              display: true,
+              text: 'Mois'
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Commandes / Nouveaux clients'
+            },
+            grid: {
+              drawOnChartArea: false,
+            },
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Revenus (€)'
+            },
+            grid: {
+              drawOnChartArea: false,
+            },
+          }
+        }
+      }
+    };
+
+    this.chart = new Chart(ctx, config);
+  }
+  getMonthlyStatsSummary() {
+    if (!this.monthlyStats || this.monthlyStats.length === 0) {
+      return {
+        totalOrders: 0,
+        totalRevenue: 0,
+        totalNewCustomers: 0,
+        averageOrdersPerMonth: 0,
+        averageRevenuePerMonth: 0
+      };
+    }
+
+    const totalOrders = this.monthlyStats.reduce((sum, stat) => sum + stat, 0);
+    const totalRevenue = this.monthlyStats.reduce((sum, stat) => sum + stat.revenue, 0);
+    const totalNewCustomers = this.monthlyStats.reduce((sum, stat) => sum + stat.newCustomers, 0);
+
+    return {
+      totalOrders,
+      totalRevenue,
+      totalNewCustomers,
+      averageOrdersPerMonth: Math.round(totalOrders / 12),
+      averageRevenuePerMonth: Math.round(totalRevenue / 12)
+    };
+  }
+  getEvolutionPercentage(previousValue: number, currentValue: number): string {
+    if (previousValue === 0) {
+      return currentValue > 0 ? '+100' : '0';
+    }
+
+    const percentage = ((currentValue - previousValue) / previousValue) * 100;
+    return percentage > 0 ? `+${percentage.toFixed(1)}` : percentage.toFixed(1);
+  }
+  getEvolutionClass(previousValue: number, currentValue: number): string {
+    if (previousValue === 0) {
+      return currentValue > 0 ? 'text-success' : 'text-muted';
+    }
+
+    const percentage = ((currentValue - previousValue) / previousValue) * 100;
+    if (percentage > 0) return 'text-success';
+    if (percentage < 0) return 'text-danger';
+    return 'text-muted';
+  }
+  getEvolutionIcon(previousValue: number, currentValue: number): string {
+    if (previousValue === 0) {
+      return currentValue > 0 ? 'fas fa-arrow-up' : 'fas fa-minus';
+    }
+
+    const percentage = ((currentValue - previousValue) / previousValue) * 100;
+    if (percentage > 0) return 'fas fa-arrow-up';
+    if (percentage < 0) return 'fas fa-arrow-down';
+    return 'fas fa-minus';
+  }
+  getEvolutionText(previousValue: number, currentValue: number): string {
+    if (previousValue === 0) {
+      return currentValue > 0 ? 'Première valeur positive' : 'Aucune évolution';
+    }
+
+    const percentage = ((currentValue - previousValue) / previousValue) * 100;
+    if (percentage > 0) return `Augmentation de ${percentage.toFixed(1)}%`;
+    if (percentage < 0) return `Diminution de ${Math.abs(percentage).toFixed(1)}%`;
+    return 'Stable';
   }
 
   onCitySelected(city: string, type: number = 0) {
@@ -1051,6 +1242,8 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       this.handleError('Erreur lors du téléchargement du document');
     }
   }
-
+  setTabChartActive (tabname: 'monthlyStatsChart' | 'monthlyStatsDetails'): void {
+    this.tabCahrt = tabname;
+  }
   protected readonly HTMLInputElement = HTMLInputElement;
 }
