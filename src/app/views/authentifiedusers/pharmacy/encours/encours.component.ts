@@ -12,6 +12,11 @@ import {UserDetails} from "../../../../models/UserDatails";
 import {PharmacyClass} from "../../../../models/Pharmacy.class";
 import {CommonFunctions} from "../../../../controllers/comonsfunctions";
 
+import { registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
+import {NotifyService} from "../../../../controllers/services/notification.service";
+
+registerLocaleData(localeFr, 'fr');
 
 interface OrderCard {
   order: OrderClass;
@@ -70,7 +75,8 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
     private auth: AuthService,
     private apiService: ApiService,
     private loadingService: LoadingService,
-    private chatService: MiniChatService
+    private chatService: MiniChatService,
+    // private notify: NotifyService
   ) {}
 
   ngOnInit(): void {
@@ -115,9 +121,6 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe((order: OrderClass) => {
           this.handleNewOrder(order);
-          if (this.soundEnabled) {
-            this.playNewOrderSound();
-          }
         });
 
       // Statut de connexion
@@ -315,11 +318,10 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
     const existingIndex = this.orderCards.findIndex(card => card.order._id === order._id);
 
     if (existingIndex > -1) {
-      // Mise à jour d'une commande existante
       this.orderCards[existingIndex] = this.createOrderCard(order);
     } else {
-      // Nouvelle commande
       this.orderCards.push(this.createOrderCard(order));
+      // this.notify.custom(`Nouvelle commande reçue 🎉 #${order.orderNumber}`, 'receive');
     }
 
     this.categorizeOrders();

@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import {LOCALE_ID, NgModule} from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { AppRoutingModule } from './app-routing.module';
@@ -13,6 +13,10 @@ import { GroupGuard } from './controllers/guards/group.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
 import {SharedModule} from "./views/theme/shared/shared.module";
 import {RouterModule} from "@angular/router";
+import { registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
+
+registerLocaleData(localeFr, 'fr');
 
 @NgModule({
   imports: [
@@ -25,6 +29,7 @@ import {RouterModule} from "@angular/router";
     RouterModule,
   ],
   providers: [
+    { provide: LOCALE_ID, useValue: 'fr' },
     AuthGuard,
     GroupGuard,
     LoginGuard

@@ -10,8 +10,8 @@
 
     <div class="header-center">
       <div class="current-time">
-        <div class="time">{{ currentTime | date:'HH:mm:ss' }}</div>
-        <div class="date">{{ currentTime | date:'EEEE dd MMMM yyyy':'fr-FR' }}</div>
+        <div class="time">{{ currentTime | date:'HH:mm:ss': 'fr-FR' }}</div>
+        <div class="date">{{ currentTime | date:'EEEE d MMMM yyyy':'fr' | titlecase }}</div>
       </div>
     </div>
 

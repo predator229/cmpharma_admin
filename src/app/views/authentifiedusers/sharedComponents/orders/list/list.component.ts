@@ -18,6 +18,7 @@ import { OrderClass } from "../../../../../models/Order.class";
 import { CustomerClass } from "../../../../../models/Customer.class";
 import { PharmacyClass } from "../../../../../models/Pharmacy.class";
 import {MiniChatService} from "../../../../../controllers/services/minichat.service";
+import {NotifyService} from "../../../../../controllers/services/notification.service";
 
 export enum OrderStatus {
   PENDING = 'pending',
@@ -126,6 +127,7 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
     private loadingService: LoadingService,
     private fb: FormBuilder,
     private chatService: MiniChatService,
+    // private notify: NotifyService
   ) {
     this.loadingService.isLoading$.subscribe((loading) => {
       this.isLoading = loading;
@@ -172,6 +174,7 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
           if (!existingOrder) {
             this.orders.unshift(order);
           } else {
+            // this.notify.custom(`Nouvelle commande reçue 🎉 #${order.orderNumber}`, 'receive');
             const index = this.orders.findIndex(ord => ord._id === order._id);
             if (index > -1) {
               this.orders[index] = order;

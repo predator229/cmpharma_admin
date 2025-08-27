@@ -387,9 +387,9 @@
             <button type="button"
                     class="btn btn-dropdown"
                     (click)="toggleStatusDropdown()">
-        <span class="status-badge" [ngClass]="getStatusClass(ticket.status)">
-          {{ getStatusLabel(ticket.status) }}
-        </span>
+              <span class="status-badge" [ngClass]="getStatusClass(ticket.status)">
+                {{ getStatusLabel(ticket.status) }}
+              </span>
               <i class="fas fa-chevron-down" [class.rotated]="isStatusDropdownOpen"></i>
             </button>
             <ul class="dropdown-menu custom-dropdown-menu"

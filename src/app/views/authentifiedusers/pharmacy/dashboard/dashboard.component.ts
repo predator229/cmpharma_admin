@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import {Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Subject, takeUntil, interval, forkJoin } from 'rxjs';
@@ -16,7 +16,7 @@ import { UserDetails } from '../../../../models/UserDatails';
 import { OrderClass } from '../../../../models/Order.class';
 import { ActivityLoged } from '../../../../models/Activity.class';
 import { PharmacyClass } from '../../../../models/Pharmacy.class';
-import { Ticket } from '../../../../models/Ticket.class';
+import {Ticket, TicketStatus} from '../../../../models/Ticket.class';
 
 // Imports de composants
 import { SharedModule } from '../../../theme/shared/shared.module';
@@ -25,6 +25,9 @@ import {
   UsersMap,
 } from "../../sharedComponents/activity-timeline/activity-timeline.component";
 import { Chart, ChartConfiguration, ChartData, registerables } from 'chart.js';
+import {NotifyService} from "../../../../controllers/services/notification.service";
+import {Select2} from "ng-select2-component";
+import {PHARMACY_RESTRICTIONS} from "../../../../models/Category.class";
 
 Chart.register(...registerables);
 
@@ -38,6 +41,7 @@ interface DashboardStats {
     revenue: number;
     averageOrderValue: number;
     growthRate: number;
+    ordersNumbers: string[];
   };
   tickets: {
     total: number;
@@ -65,18 +69,6 @@ interface DashboardStats {
     onlineNow: number;
   };
 }
-
-// interface ChartData {
-//   labels: string[];
-//   datasets: Array<{
-//     label: string;
-//     data: number[];
-//     backgroundColor?: string | string[];
-//     borderColor?: string;
-//     borderWidth?: number;
-//     fill?: boolean;
-//   }>;
-// }
 
 interface QuickAction {
   icon: string;
@@ -107,6 +99,8 @@ interface RecentActivity {
 })
 export class PharmacyDashboardComponent implements OnInit, OnDestroy {
   @ViewChild('ordersChart') ordersChart!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('analyticsChart') analyticsChart!: ElementRef<HTMLCanvasElement>;
+
   @ViewChild('revenueChart') revenueChart!: ElementRef<HTMLCanvasElement>;
   @ViewChild('ticketsChart') ticketsChart!: ElementRef<HTMLCanvasElement>;
 
@@ -120,7 +114,8 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
       todayOrders: 0,
       revenue: 0,
       averageOrderValue: 0,
-      growthRate: 0
+      growthRate: 0,
+      ordersNumbers: []
     },
     tickets: {
       total: 0,
@@ -213,8 +208,9 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
   availableViews = [
     { value: 'overview', label: 'Vue d\'ensemble', icon: 'fas fa-tachometer-alt' },
     { value: 'orders', label: 'Commandes', icon: 'fas fa-shopping-cart' },
+    { value: 'activites', label: 'Activités', icon: 'fas fa-timeline' },
     { value: 'tickets', label: 'Support', icon: 'fas fa-ticket-alt' },
-    { value: 'analytics', label: 'Analytiques', icon: 'fas fa-chart-bar' }
+    { value: 'analytics', label: 'Analytiques', icon: 'fas fa-chart-bar' },
   ];
 
   // États
@@ -230,14 +226,50 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
   @ViewChild('monthlyStatsChart', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
   orders30days: OrderClass[] = [];
-  orders30daysTotal: number = 0;
-  revenue30daysTotal: number = 0;
   revenue30days = [];
 
   private chart?: Chart;
   monthlyStats: any[] = [];
   countOrders: number = 0;
-  tabCahrt: string = 'monthlyStatsChart';
+
+  filteredRecentOrders: OrderClass[] = [];
+  availablePharmacies: PharmacyClass[] = [];
+  activeAnalyticsTab = 'performance';
+  analyticsData = {
+    conversionRate: 0,
+    customerSatisfaction: 0,
+    avgResponseTime: 0,
+    retentionRate: 0
+  };
+
+// Filtres pour les commandes
+  ordersFilter = {
+    status: '',
+    pharmacy: '',
+    dateFrom: '',
+    dateTo: ''
+  };
+
+// Charts instances
+  private ordersChartInstance?: Chart;
+  private revenueChartInstance?: Chart;
+  private ticketsChartInstance?: Chart;
+  private analyticsChartInstance?: Chart;
+
+  selectedRangeLabel = '';
+
+  dateStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  dateEnd = new Date();
+
+  selectedPeriod = 'yersterdatT0Today';
+  optionsPeriodDatas = [
+    { value: 'year', label: 'Dernière année' },
+    { value: 'month', label: 'Dernier mois (30 derniers jours)' },
+    { value: 'week', label: 'Dernière semaine' },
+    { value: 'today', label: 'Aujourd\'hui' },
+    { value: 'yersterdatT0Today', label: 'D\'hier a aujourd\'hui' },
+  ];
+  isPeriodDropdownOpen: boolean;
 
   constructor(
     private auth: AuthService,
@@ -245,12 +277,16 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     private loadingService: LoadingService,
     private chatService: MiniChatService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private notify: NotifyService
   ) {
     this.filterForm = this.fb.group({
       timeRange: [this.selectedTimeRange],
       pharmacy: [''],
       status: ['']
+    });
+    this.loadingService.isLoading$.subscribe((loading) => {
+      this.isLoading = loading;
     });
   }
 
@@ -260,8 +296,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
       .subscribe(async loaded => {
         if (loaded) {
           this.userDetail = this.auth.getUserDetails();
-          await this.initializeDashboard();
-          this.setupRealtimeUpdates();
+          this.setDateIntervalFromPeriod(this.selectedPeriod);
         }
       });
 
@@ -275,20 +310,15 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     this.setupFormSubscriptions();
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-  ngAfterViewInit() {
-    if (this.monthlyStats.length > 0) {
-      this.initMonthlyStatsChart();
-    }
-  }
   private async initializeDashboard(): Promise<void> {
     this.isLoading = true;
     try {
       await this.connectToRealtime();
-      await this.loadAllDashboardData();
+      await Promise.all([
+        this.loadAllDashboardData(),
+        this.loadAvailablePharmacies()
+      ]);
+      this.filteredRecentOrders = [...this.recentOrders];
       this.setupCharts();
     } catch (error) {
       console.error('❌ Erreur initialisation dashboard:', error);
@@ -296,6 +326,89 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private setupCharts(): void {
+    setTimeout(() => {
+      this.initMonthlyStatsChart();
+      this.renderOrdersChart();
+      this.renderRevenueChart();
+      this.renderTicketsChart();
+      if (this.selectedView === 'analytics') {
+        this.loadAnalyticsData(this.activeAnalyticsTab);
+      }
+    }, 500);
+  }
+
+  async setDateIntervalFromPeriod(period: string): Promise<any> {
+    this.loadingService.setLoading(true);
+    this.isPeriodDropdownOpen = false;
+    if (!['month', 'week', 'year', 'today', 'yersterdatT0Today'].includes(period)) { period = 'today'; }
+    this.selectedPeriod = period;
+    switch (period) {
+      case 'today':
+        this.dateEnd = new Date(Date.now());
+        this.dateStart = new Date();
+        this.dateStart.setHours(0, 0, 0, 0);
+        break;
+      case 'yersterdatT0Today':
+        this.dateEnd = new Date(Date.now());
+        this.dateStart = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        this.dateStart.setHours(0, 0, 0, 0);
+        break;
+      case 'week':
+        this.dateEnd = new Date();
+        this.dateStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        this.dateStart.setHours(0, 0, 0, 0);
+        break;
+      case 'year':
+        this.dateEnd = new Date();
+        this.dateStart = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+        this.dateStart.setHours(0, 0, 0, 0);
+        break;
+      case 'month':
+        this.dateEnd = new Date();
+        this.dateStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        this.dateStart.setHours(0, 0, 0, 0);
+        break;
+      default:
+        break;
+    }
+    await this.initializeDashboard();
+    this.setupRealtimeUpdates();
+    this.loadingService.setLoading(false);
+  }
+  closeDropdown(dropdownElement: ElementRef | any) {
+    try {
+      // Utiliser l'API Bootstrap directement
+      const dropdownEl = dropdownElement?.nativeElement || dropdownElement;
+      if (dropdownEl) {
+        const dropdown = new (window as any).bootstrap.Dropdown(dropdownEl);
+        dropdown.hide();
+      }
+    } catch (error) {
+    }
+  }
+  toggleStatusDropdown() {
+    this.isPeriodDropdownOpen = !this.isPeriodDropdownOpen;
+  }
+  getPeriodLabel(period: string) {
+    return this.optionsPeriodDatas.find(option => option.value === period)?.label;
+  }
+  getPeriodValue(period: string) {
+    return this.optionsPeriodDatas.find(option => option.value === period)?.value;
+  }
+  // Fermer les dropdowns en cliquant ailleurs (optionnel)
+  @HostListener('document:click', ['$event'])
+  closeDropdownsOnOutsideClick(event: Event) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.custom-dropdown')) {
+      this.isPeriodDropdownOpen = false;
+    }
+  }
+
+  ngAfterViewInit() {
+    this.setupCharts();
   }
 
   private async connectToRealtime(): Promise<void> {
@@ -347,14 +460,15 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
     try {
       // Charger toutes les données en parallèle
+
       const requests = [
-        this.loadOrdersStats(headers, uid, timeRange),
-        this.loadTicketsStats(headers, uid, timeRange),
-        this.loadActivitiesStats(headers, uid, timeRange),
-        this.loadPharmaciesStats(headers, uid),
-        this.loadUsersStats(headers, uid),
-        this.loadRecentActivities(headers, uid),
-        this.loadChartData(headers, uid, timeRange)
+        this.loadOrdersStats(headers, uid, this.dateStart, this.dateEnd), //damien
+        this.loadTicketsStats(headers, uid, this.dateStart, this.dateEnd),
+        this.loadActivitiesStats(headers, uid, this.dateStart, this.dateEnd),
+        this.loadPharmaciesStats(headers, uid, this.dateStart, this.dateEnd),
+        this.loadUsersStats(headers, uid,  this.dateStart, this.dateEnd),
+        this.loadRecentActivities(headers, uid,  this.dateStart, this.dateEnd),
+        this.loadChartData(headers, uid, this.dateStart, this.dateEnd)
       ];
 
       await Promise.all(requests);
@@ -366,11 +480,12 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadOrdersStats(headers: HttpHeaders, uid: string, timeRange: any): Promise<void> {
+  private async loadOrdersStats(headers: HttpHeaders, uid: string, dateStart: Date, dateEnd: Date ): Promise<void> {
     try {
+
       const response: any = await this.apiService.post(
         'pharmacy-management/dashboard/orders-stats',
-        { uid, ...timeRange },
+        { uid, dateStart, dateEnd },
         headers
       ).toPromise();
 
@@ -383,14 +498,13 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
           todayOrders: response.data.todayOrders || 0,
           revenue: response.data.revenue || 0,
           averageOrderValue: response.data.averageOrderValue || 0,
-          growthRate: response.data.growthRate || 0
+          growthRate: response.data.growthRate || 0,
+          ordersNumbers: response.data.ordersNumbers || [],
         };
         // Nouvelles données pour le graphique
         this.monthlyStats = response.monthlyStats || [];
         this.countOrders = response.countOrders ?? 0;
-        setTimeout(() => {
-          this.initMonthlyStatsChart(); // Nouveau graphique
-        }, 500);
+        this.setupCharts();
 
       }
     } catch (error) {
@@ -398,11 +512,11 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadTicketsStats(headers: HttpHeaders, uid: string, timeRange: any): Promise<void> {
+  private async loadTicketsStats(headers: HttpHeaders, uid: string, dateStart: Date, dateEnd: Date ): Promise<void> {
     try {
       const response: any = await this.apiService.post(
         'pharmacy-management/dashboard/tickets-stats',
-        { uid, ...timeRange },
+        { uid, dateStart, dateEnd },
         headers
       ).toPromise();
 
@@ -421,11 +535,11 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadActivitiesStats(headers: HttpHeaders, uid: string, timeRange: any): Promise<void> {
+  private async loadActivitiesStats(headers: HttpHeaders, uid: string, dateStart: Date, dateEnd: Date ): Promise<void> {
     try {
       const response: any = await this.apiService.post(
         'tools/activitiesStats',
-        { uid, ...timeRange },
+        { uid, dateStart, dateEnd },
         headers
       ).toPromise();
 
@@ -447,11 +561,11 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadPharmaciesStats(headers: HttpHeaders, uid: string): Promise<void> {
+  private async loadPharmaciesStats(headers: HttpHeaders, uid: string, dateStart: Date, dateEnd: Date ): Promise<void> {
     try {
       const response: any = await this.apiService.post(
         'pharmacy-managment/pharmacies/stats',
-        { uid },
+        { uid, dateStart, dateEnd },
         headers
       ).toPromise();
 
@@ -468,11 +582,11 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadUsersStats(headers: HttpHeaders, uid: string): Promise<void> {
+  private async loadUsersStats(headers: HttpHeaders, uid: string, dateStart: Date, dateEnd: Date ): Promise<void> {
     try {
       const response: any = await this.apiService.post(
         'pharmacy-management/users/stats',
-        { uid },
+        { uid, dateStart, dateEnd },
         headers
       ).toPromise();
 
@@ -489,17 +603,14 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadRecentActivities(headers: HttpHeaders, uid: string): Promise<void> {
+  private async loadRecentActivities(headers: HttpHeaders, uid: string, dateStart: Date, dateEnd: Date ): Promise<void> {
     try {
       const response: any = await this.apiService.post(
         'tools/activitiesAll',
         {
           uid,
           limit: 15,
-          dateRange: {
-            startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            endDate: new Date().toISOString()
-          }
+          dateStart, dateEnd
         },
         headers
       ).toPromise();
@@ -514,11 +625,11 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadChartData(headers: HttpHeaders, uid: string, timeRange: any): Promise<void> {
+  private async loadChartData(headers: HttpHeaders, uid: string, dateStart: Date, dateEnd: Date ): Promise<void> {
     try {
       const response: any = await this.apiService.post(
         'pharmacy-management/dashboard/charts-data',
-        { uid, ...timeRange },
+        { uid, dateStart, dateEnd },
         headers
       ).toPromise();
 
@@ -545,56 +656,56 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     // Setup sera fait quand les observables sont disponibles
   }
 
-  private setupCharts(): void {
-    // Configuration des graphiques sera faite après le chargement de la vue
-    setTimeout(() => {
-      this.renderOrdersChart();
-      this.renderRevenueChart();
-      this.renderTicketsChart();
-    }, 100);
-  }
+  // private setupCharts(): void {
+  //   // Configuration des graphiques sera faite après le chargement de la vue
+  //   setTimeout(() => {
+  //     this.renderOrdersChart();
+  //     this.renderRevenueChart();
+  //     this.renderTicketsChart();
+  //   }, 100);
+  // }
 
-  private renderOrdersChart(): void {
-    if (!this.ordersChart?.nativeElement) return;
-
-    const ctx = this.ordersChart.nativeElement.getContext('2d');
-    if (!ctx) return;
-
-    // Implémentation du graphique des commandes
-    // Utilisation de Chart.js ou une autre librairie
-  }
-
-  private renderRevenueChart(): void {
-    if (!this.revenueChart?.nativeElement) return;
-
-    const ctx = this.revenueChart.nativeElement.getContext('2d');
-    if (!ctx) return;
-
-    // Implémentation du graphique des revenus
-  }
-
-  private renderTicketsChart(): void {
-    if (!this.ticketsChart?.nativeElement) return;
-
-    const ctx = this.ticketsChart.nativeElement.getContext('2d');
-    if (!ctx) return;
-
-    // Implémentation du graphique des tickets
-  }
+  // private renderOrdersChart(): void {
+  //   if (!this.ordersChart?.nativeElement) return;
+  //
+  //   const ctx = this.ordersChart.nativeElement.getContext('2d');
+  //   if (!ctx) return;
+  //
+  //   // Implémentation du graphique des commandes
+  //   // Utilisation de Chart.js ou une autre librairie
+  // }
+  //
+  // private renderRevenueChart(): void {
+  //   if (!this.revenueChart?.nativeElement) return;
+  //
+  //   const ctx = this.revenueChart.nativeElement.getContext('2d');
+  //   if (!ctx) return;
+  //
+  //   // Implémentation du graphique des revenus
+  // }
+  //
+  // private renderTicketsChart(): void {
+  //   if (!this.ticketsChart?.nativeElement) return;
+  //
+  //   const ctx = this.ticketsChart.nativeElement.getContext('2d');
+  //   if (!ctx) return;
+  //
+  //   // Implémentation du graphique des tickets
+  // }
 
   private handleNewOrder(order: OrderClass): void {
-    // Mettre à jour les stats en temps réel
-    this.stats.orders.total++;
-    this.stats.orders.todayOrders++;
-    this.stats.orders.revenue += order.totalAmount;
+    if (!this.stats.orders.ordersNumbers.includes(order.orderNumber)) {
+      this.stats.orders.total++;
+      this.stats.orders.todayOrders += order.orderDate.toISOString() === new Date().toISOString() ? 1 : 0;
+      this.stats.orders.revenue += order.totalAmount;
 
-    // Ajouter aux commandes récentes
-    this.recentOrders.unshift(order);
-    if (this.recentOrders.length > 5) {
-      this.recentOrders.pop();
+      this.recentOrders.unshift(order);
+      if (this.recentOrders.length > 5) {
+        this.recentOrders.pop();
+      }
+
+      this.lastUpdated = new Date();
     }
-
-    this.lastUpdated = new Date();
   }
 
   private handleNewActivity(activity: ActivityLoged): void {
@@ -651,9 +762,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
   changeView(view: string): void {
     this.selectedView = view;
-    setTimeout(() => {
-      this.initMonthlyStatsChart(); // Nouveau graphique
-    }, 500);
+    this.setupCharts();
   }
 
   async refreshDashboard(): Promise<void> {
@@ -669,11 +778,9 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
   }
 
   exportDashboard(): void {
-    // Implémentation de l'export des données du dashboard
     console.log('Export dashboard data');
   }
 
-  // Méthodes utilitaires
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -905,7 +1012,391 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     return 'Stable';
   }
 
-  setTabChartActive (tabname: 'monthlyStatsChart' | 'monthlyStatsDetails'): void {
-    this.tabCahrt = tabname;
+  private renderOrdersChart(): void {
+    if (!this.ordersChart?.nativeElement || !this.ordersChartData.labels?.length) return;
+
+    const ctx = this.ordersChart.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    if (this.ordersChartInstance) {
+      this.ordersChartInstance.destroy();
+    }
+
+    this.ordersChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: this.ordersChartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Évolution des Commandes'
+          },
+          legend: {
+            display: true,
+            position: 'top'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Nombre de commandes'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Période'
+            }
+          }
+        }
+      }
+    });
   }
+
+  private renderRevenueChart(): void {
+    if (!this.revenueChart?.nativeElement || !this.revenueChartData.labels?.length) return;
+
+    const ctx = this.revenueChart.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    if (this.revenueChartInstance) {
+      this.revenueChartInstance.destroy();
+    }
+
+    this.revenueChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: this.revenueChartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Évolution des Revenus'
+          },
+          legend: {
+            display: true,
+            position: 'top'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Revenus (€)'
+            },
+            ticks: {
+              callback: function(value) {
+                return new Intl.NumberFormat('fr-FR', {
+                  style: 'currency',
+                  currency: 'EUR'
+                }).format(value as number);
+              }
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Période'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  private renderTicketsChart(): void {
+    if (!this.ticketsChart?.nativeElement || !this.ticketsChartData.labels?.length) return;
+
+    const ctx = this.ticketsChart.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    if (this.ticketsChartInstance) {
+      this.ticketsChartInstance.destroy();
+    }
+
+    this.ticketsChartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: this.ticketsChartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Répartition des Tickets par Statut'
+          },
+          legend: {
+            display: true,
+            position: 'bottom'
+          }
+        }
+      }
+    });
+  }
+
+// Méthodes pour la gestion des commandes
+  applyOrdersFilter(): void {
+    this.filteredRecentOrders = this.recentOrders.filter(order => {
+      let matches = true;
+
+      if (this.ordersFilter.status && order.status !== this.ordersFilter.status) {
+        matches = false;
+      }
+
+      if (this.ordersFilter.pharmacy && order.pharmacy.id !== this.ordersFilter.pharmacy) {
+        matches = false;
+      }
+
+      if (this.ordersFilter.dateFrom) {
+        const orderDate = new Date(order.createdAt);
+        const filterDate = new Date(this.ordersFilter.dateFrom);
+        if (orderDate < filterDate) {
+          matches = false;
+        }
+      }
+
+      if (this.ordersFilter.dateTo) {
+        const orderDate = new Date(order.createdAt);
+        const filterDate = new Date(this.ordersFilter.dateTo);
+        filterDate.setHours(23, 59, 59, 999);
+        if (orderDate > filterDate) {
+          matches = false;
+        }
+      }
+
+      return matches;
+    });
+  }
+
+  resetOrdersFilter(): void {
+    this.ordersFilter = {
+      status: '',
+      pharmacy: '',
+      dateFrom: '',
+      dateTo: ''
+    };
+    this.filteredRecentOrders = [...this.recentOrders];
+  }
+
+  exportOrders(): void {
+    const data = this.filteredRecentOrders.map(order => ({
+      'ID Commande': order.orderNumber,
+      'Client': order.customer.getFullName() || 'N/A',
+      'Pharmacie': order.pharmacy.name || 'N/A',
+      'Montant': order.totalAmount,
+      'Statut': order.status,
+      'Date': new Date(order.createdAt).toLocaleDateString('fr-FR')
+    }));
+
+    this.downloadCSV(data, 'commandes_dashboard.csv');
+  }
+
+  private downloadCSV(data: any[], filename: string): void {
+    if (data.length === 0) return;
+
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row =>
+        headers.map(header => `"${row[header] || ''}"`).join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+// Actions sur les commandes et tickets
+  viewOrder(orderId: string): void {
+    this.router.navigate(['/pharmacy/orders/detail', orderId]);
+  }
+
+  editOrder(orderId: string): void {
+    this.router.navigate(['/pharmacy/orders/edit', orderId]);
+  }
+
+  viewTicket(ticketId: string): void {
+    this.router.navigate(['/pharmacy/support/detail', ticketId]);
+  }
+
+  editTicket(ticketId: string): void {
+    this.router.navigate(['/pharmacy/support/edit', ticketId]);
+  }
+
+  trackByTicketId(index: number, ticket: Ticket): string {
+    return ticket._id || index.toString();
+  }
+
+// Classes CSS pour les badges
+  getPriorityBadgeClass(priority: string): string {
+    const classes: { [key: string]: string } = {
+      'urgent': 'bg-danger',
+      'high': 'bg-warning',
+      'medium': 'bg-info',
+      'low': 'bg-success'
+    };
+    return classes[priority] || 'bg-secondary';
+  }
+
+// Gestion des analytiques
+  setActiveAnalyticsTab(tab: string): void {
+    this.activeAnalyticsTab = tab;
+    this.loadAnalyticsData(tab);
+  }
+
+  private async loadAnalyticsData(tab: string): Promise<void> {
+    const token = await this.auth.getRealToken();
+    const uid = await this.auth.getUid();
+
+    if (!token || !uid) return;
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    });
+
+    try {
+      const response: any = await this.apiService.post(
+        `pharmacy-management/dashboard/analytics/${tab}`,
+        { uid, timeRange: this.getTimeRangeFilter() },
+        headers
+      ).toPromise();
+
+      if (response && !response.error) {
+        this.analyticsData = response.data;
+        this.renderAnalyticsChart(response.chartData);
+      }
+    } catch (error) {
+      console.error('Erreur chargement analytiques:', error);
+    }
+  }
+
+  private renderAnalyticsChart(chartData: ChartData): void {
+    if (!this.analyticsChart?.nativeElement) return;
+
+    const ctx = this.analyticsChart.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    if (this.analyticsChartInstance) {
+      this.analyticsChartInstance.destroy();
+    }
+
+    let chartOptions: any = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: true,
+          text: this.getAnalyticsChartTitle()
+        },
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      }
+    };
+    let config: ChartConfiguration = null;
+    switch (this.activeAnalyticsTab) {
+      case 'performance':
+        chartOptions.scales = {
+          y: { beginAtZero: true }
+        };
+        config = {
+          type: 'line',
+          data: chartData,
+          options: chartOptions
+        }
+        break;
+      case 'customers':
+        chartOptions.scales = {
+          y: { beginAtZero: true }
+        };
+        config = {
+          type: 'bar',
+          data: chartData,
+          options: chartOptions
+        }
+        break;
+      case 'products':
+        chartOptions.plugins.legend.position = 'right';
+        config = {
+          type: 'doughnut',
+          data: chartData,
+          options: chartOptions
+        }
+        break;
+    }
+    this.analyticsChartInstance = new Chart(ctx, config);
+  }
+
+  private getAnalyticsChartTitle(): string {
+    const titles: { [key: string]: string } = {
+      'performance': 'Performance Générale',
+      'customers': 'Analyse Clients',
+      'products': 'Répartition Produits'
+    };
+    return titles[this.activeAnalyticsTab] || 'Analytiques';
+  }
+
+  private async loadAvailablePharmacies(): Promise<void> {
+    const token = await this.auth.getRealToken();
+    const uid = await this.auth.getUid();
+
+    if (!token || !uid) return;
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    });
+
+    try {
+      const response: any = await this.apiService.post(
+        'pharmacy-managment/pharmacies/list',
+        { uid, active: true },
+        headers
+      ).toPromise();
+
+      if (response && !response.error) {
+        this.availablePharmacies = response.data.map((p: any) => new PharmacyClass(p));
+      }
+    } catch (error) {
+      console.error('Erreur chargement pharmacies:', error);
+    }
+  }
+
+  ngOnDestroy(): void {
+    [
+      this.chart,
+      this.ordersChartInstance,
+      this.revenueChartInstance,
+      this.ticketsChartInstance,
+      this.analyticsChartInstance
+    ].forEach(chart => {
+      if (chart) {
+        chart.destroy();
+      }
+    });
+
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  protected readonly restrictions = PHARMACY_RESTRICTIONS;
 }

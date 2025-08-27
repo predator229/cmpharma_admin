@@ -57,6 +57,7 @@ export class NavRightComponent implements OnInit, OnDestroy {
     private loadingService: LoadingService,
     private chatService: MiniChatService,
     private changeDetectorRef: ChangeDetectorRef,
+    private notify: NotifyService,
   ) {
     this.loadingService.isLoading$.subscribe((loading) => {
       this.isLoading = loading;
@@ -114,6 +115,20 @@ export class NavRightComponent implements OnInit, OnDestroy {
           this.changeDetectorRef.detectChanges();
         });
 
+      this.chatService.getStatusSimulator()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(status => {
+          if (status != this.toggleOrderSimulator) {
+            this.toggleOrderSimulator = status;
+            if (status) {
+              this.notify.custom(`Stimulateur de commande demarer avec success!`, 'start_service');
+            }else{
+              this.notify.custom(`Stimulateur de commande arreter avec success!`, 'stop_service');
+            }
+          }
+
+        })
+
       // Écoute des nouvelles conversations avec filtrage par namespace
       this.chatService.getConversation()
         .pipe(takeUntil(this.destroy$))
@@ -155,13 +170,11 @@ export class NavRightComponent implements OnInit, OnDestroy {
 
           if (!existingOrder) {
             this.orders.unshift(order);
-
             this.updateUnreadCount(1);
-
             this.shouldScrollToBottom = true;
             this.changeDetectorRef.detectChanges();
+            this.notify.custom(`Nouvelle commande reçue 🎉 #${order.orderNumber ?? ''}`, 'receive');
           } else {
-            // Mettre à jour la commande existante
             const index = this.orders.findIndex(ord => ord._id === order._id);
             if (index > -1) {
               this.orders[index] = new OrderClass(order);
@@ -453,7 +466,6 @@ export class NavRightComponent implements OnInit, OnDestroy {
     return recentConversations + recentNotifications;
   }
   setChangeOrderStatus() {
-    this.toggleOrderSimulator = !this.toggleOrderSimulator;
-    this.chatService.changeOrderStatus(this.namespace, this.toggleOrderSimulator);
+    this.chatService.changeOrderStatus(this.namespace, !this.toggleOrderSimulator);
   }
 }

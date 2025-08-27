@@ -26,6 +26,7 @@ export class MiniChatService {
   private sockets: Map<string, SocketData> = new Map();
 
   // Subjects pour les événements
+  private isStartedSimulator = new Subject<boolean>();
   private messagesSubject = new Subject<MiniChatMessage>();
   private conversationsSubject = new Subject<Conversation>();
   private notificationsSubject = new Subject<ActivityLoged>();
@@ -152,7 +153,6 @@ export class MiniChatService {
     });
     socket.on('new_order', (data: {order: any}) => {
       const order = new OrderClass(data.order);
-      this.notify.custom(`Nouvelle commande reçue 🎉 #${order.orderNumber}`, 'receive');
       this.ordersSubject.next(order);
       this.updateUnreadCount(namespace, 1);
     });
@@ -190,6 +190,10 @@ export class MiniChatService {
       if (data.iD === socketData.iD) {
         this.setUnreadCount(namespace, 0);
       }
+    });
+    socket.on('simulator_status', (data: {isRunning: boolean, message?:string }) => {
+      console.log(`✅ Messages marqués comme lus dans ${namespace}:`, data);
+      this.isStartedSimulator.next(data.isRunning);
     });
 
     socket.on('marked_as_read', (data: { iD: string, readCount: number }) => {
@@ -322,11 +326,11 @@ export class MiniChatService {
   changeOrderStatus(namespace: string, start: boolean): void {
     const socketData = this.sockets.get(namespace);
     if (socketData?.isConnected) {
-      if (start) {
-        this.notify.custom(`Stimulateur de commande demarer avec success!`, 'start_service');
-      }else{
-        this.notify.custom(`Stimulateur de commande arreter avec success!`, 'stop_service');
-      }
+      // if (start) {
+      //   this.notify.custom(`Stimulateur de commande demarer avec success!`, 'start_service');
+      // }else{
+      //   this.notify.custom(`Stimulateur de commande arreter avec success!`, 'stop_service');
+      // }
       socketData.socket.emit('toggle_simulator', { start });
     }
   }
@@ -487,6 +491,10 @@ export class MiniChatService {
   }
   getOrders(): Observable<OrderClass> {
     return this.ordersSubject.asObservable();
+  }
+
+  getStatusSimulator(): Observable<boolean> {
+    return this.isStartedSimulator.asObservable();
   }
 
   getActivities(): Observable<ActivityLoged> {
