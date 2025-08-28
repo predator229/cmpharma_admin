@@ -404,7 +404,13 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
         break;
       case 3: // Pricing
         form = this.pricingForm;
-        formData = { ...form.value, type_: type, _id: this.productId };
+        const pricingFormValue = form.value;
+        formData = {
+          ...pricingFormValue,
+          type_: type,
+          _id: this.productId,
+          pharmacyPricing: pricingFormValue.pharmacyPricing.value || []
+        };
         break;
       case 4: // Medical
         form = this.medicalForm;
@@ -446,7 +452,7 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
     try {
       this.loadingService.setLoading(true);
       const token = await this.auth.getRealToken();
-      const uid = await this.auth.getUid();
+      const uid = this.auth.getUid();
 
       const headers = new HttpHeaders({
         'Authorization': `Bearer ${token}`,
@@ -455,11 +461,13 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
       });
 
       formData.uid = uid;
+      console.log(formData);
 
       this.apiService.post('pharmacy-management/products/update', formData, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
+            console.log(response);
             if (response && !response.error) {
               this.product = new Product(response.data);
               this.showSuccess('Section mise à jour avec succès');
@@ -470,7 +478,7 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
             this.loadingService.setLoading(false);
           },
           error: (error) => {
-            this.handleError('Erreur lors de la communication avec le serveur');
+            this.handleError('Erreur lors hhh de la communication avec le serveur');
             this.loadingService.setLoading(false);
           }
         });

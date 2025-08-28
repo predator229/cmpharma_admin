@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from "@angular/common";
 import { Subject, takeUntil, interval } from 'rxjs';
 import { HttpHeaders } from '@angular/common/http';
-import { OrderClass } from "../../../../models/Order.class";
+import {OrderClass, OrderItem} from "../../../../models/Order.class";
 import { SharedModule } from "../../../theme/shared/shared.module";
 import { AuthService } from "../../../../controllers/services/auth.service";
 import { ApiService } from "../../../../controllers/services/api.service";
@@ -13,6 +13,8 @@ import { PharmacyClass } from "../../../../models/Pharmacy.class";
 import { CommonFunctions } from "../../../../controllers/comonsfunctions";
 import {Conversation} from "../../../../models/Conversation.class";
 import {MiniChatService} from "../../../../controllers/services/minichat.service";
+import { formatCurrency } from '@angular/common';
+import { Inject, LOCALE_ID } from '@angular/core';
 
 interface CalendarDay {
   date: Date;
@@ -36,6 +38,7 @@ interface CalendarEvent {
   data: OrderClass | ActivityLoged;
   priority: 'low' | 'medium' | 'high';
   color: string;
+  isExpanded?: boolean;
 }
 
 interface CalendarStats {
@@ -102,6 +105,7 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
     private apiService: ApiService,
     private loadingService: LoadingService,
     private chatService: MiniChatService,
+    @Inject(LOCALE_ID) private locale: string
   ) {}
 
   ngOnInit(): void {
@@ -111,7 +115,9 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
         if (loaded) {
           this.userDetail = this.auth.getUserDetails();
           await this.initializeCalendar();
-          this.goToToday();
+          // setTimeout(() => {
+            this.goToToday();
+          // }, 5000)
         }
       });
 
@@ -121,6 +127,13 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.loadCalendarData();
       });
+  }
+
+  async ngAfterViewInit(): Promise<void> {
+    await this.initializeCalendar();
+    setTimeout(() => {
+    this.refreshCalendar();
+    }, 3000)
   }
 
   ngOnDestroy(): void {
@@ -407,6 +420,7 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
   }
 
   private getEventsForDate(date: Date): CalendarEvent[] {
+    this.currentEvents.forEach(event => {event.isExpanded = false;})
     return this.currentEvents.filter(event =>
       this.isSameDate(event.date, date) && this.shouldShowEvent(event)
     );
@@ -431,7 +445,7 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
   private calculateStats(): void {
     const totalOrders = this.orders.length;
     const completedOrders = this.orders.filter(o =>
-      ['delivered', 'ready_for_pickup'].includes(o.status)
+      ['delivered', 'ready_for_pickup', 'completed'].includes(o.status)
     ).length;
     const pendingOrders = this.orders.filter(o =>
       ['confirmed', 'preparing'].includes(o.status)
@@ -446,14 +460,16 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
 
     // Calculer le temps moyen de préparation des commandes
     const completedOrdersWithTimes = this.orders.filter(o =>
-      o.status === 'delivered' && o.confirmedAt && o.deliveredAt
+      ['delivered', 'ready_for_pickup', 'completed'].includes(o.status) && o.orderDate && o.deliveredAt
     );
+
+    console.log(completedOrdersWithTimes);
 
     let averageTime = 0;
     if (completedOrdersWithTimes.length > 0) {
       const totalTime = completedOrdersWithTimes.reduce((sum, order) => {
-        const start = new Date(order.confirmedAt!).getTime();
-        const end = new Date(order.deliveredAt!).getTime();
+        const start = order.orderDate!.getTime();
+        const end = order.deliveredAt!.getTime();
         return sum + (end - start);
       }, 0);
       averageTime = Math.floor((totalTime / completedOrdersWithTimes.length) / 60000); // en minutes
@@ -585,4 +601,56 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
   trackByEventId(index: number, item: CalendarEvent): string {
     return item.id;
   }
+  toggleCardExpansion(event: CalendarEvent): void {
+    const isCurrentlyExpanded = event.isExpanded;
+    this.selectedDayEvents.forEach((e) => (e.isExpanded = false));
+    if (!isCurrentlyExpanded) {
+      event.isExpanded = true;
+    }
+  }
+  getItemsEvent(event: CalendarEvent): OrderItem[] {
+      return event.type === 'order' ? ( (event.data as OrderClass).items ?? []) : [];
+  }
+  getActivityDescription(event: CalendarEvent, type?: number): string {
+    if (event.type === 'order') {
+      const orderData = event.data as OrderClass;
+
+      switch (type) {
+        case 1:
+          return orderData.items.length.toString();
+        case 2:
+          return orderData.orderNumber;
+        case 3:
+          // Utilisez le service @angular/common pour formater la devise
+          return formatCurrency(orderData.totalAmount, this.locale, '€', 'EUR');
+        case 4:
+          return orderData.payment.status;
+        case 5:
+          return orderData.getDeliveryMethodLabel();
+        case 6:
+          return orderData.pharmacy?.name ?? ''; // Utilisez le '?' pour éviter une erreur si la pharmacie n'existe pas
+        case 7:
+          return orderData.getTotalItems().toString();
+        default:
+          // Cas par défaut si 'type' n'est pas spécifié ou invalide
+          return orderData.customer?.getFullName() ?? '';
+      }
+    }
+
+    if (event.type === 'activity') {
+      const activityData = event.data as ActivityLoged;
+
+      switch (type) {
+        case 8:
+          return activityData.author ?? '';
+        case 9:
+          return activityData.type;
+        default:
+          return activityData.description ?? '';
+      }
+    }
+
+    return '';
+  }
+  protected readonly ActivityLoged = ActivityLoged;
 }

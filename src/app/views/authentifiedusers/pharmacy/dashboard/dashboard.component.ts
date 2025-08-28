@@ -4,6 +4,8 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Subject, takeUntil, interval, forkJoin } from 'rxjs';
 import { HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
+import jsPDF from 'jspdf';
+import autoTable from "jspdf-autotable";
 
 // Imports de services
 import { AuthService } from '../../../../controllers/services/auth.service';
@@ -28,6 +30,8 @@ import { Chart, ChartConfiguration, ChartData, registerables } from 'chart.js';
 import {NotifyService} from "../../../../controllers/services/notification.service";
 import {Select2} from "ng-select2-component";
 import {PHARMACY_RESTRICTIONS} from "../../../../models/Category.class";
+import {start} from "@popperjs/core";
+import {resolve} from "@angular/compiler-cli";
 
 Chart.register(...registerables);
 
@@ -41,7 +45,7 @@ interface DashboardStats {
     revenue: number;
     averageOrderValue: number;
     growthRate: number;
-    ordersNumbers: string[];
+    orders: OrderClass[];
   };
   tickets: {
     total: number;
@@ -115,7 +119,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
       revenue: 0,
       averageOrderValue: 0,
       growthRate: 0,
-      ordersNumbers: []
+      orders: []
     },
     tickets: {
       total: 0,
@@ -151,7 +155,6 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
   // Activités récentes
   recentActivities: ActivityLoged[] = [];
-  recentOrders: OrderClass[] = [];
   recentTickets: Ticket[] = [];
   usersInfo: UsersMap = {};
 
@@ -224,12 +227,12 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
   private refreshTimer$ = interval(300000); // Refresh toutes les 5 minutes
   private namespace = 'internal_messaging';
 
-  @ViewChild('monthlyStatsChart', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
   orders30days: OrderClass[] = [];
   revenue30days = [];
 
   private chart?: Chart;
-  monthlyStats: any[] = [];
+  periodStats: any[] = [];
   countOrders: number = 0;
 
   filteredRecentOrders: OrderClass[] = [];
@@ -270,6 +273,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     { value: 'yersterdatT0Today', label: 'D\'hier a aujourd\'hui' },
   ];
   isPeriodDropdownOpen: boolean;
+  periodType: string = 'yersterdatT0Today';
 
   constructor(
     private auth: AuthService,
@@ -318,7 +322,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
         this.loadAllDashboardData(),
         this.loadAvailablePharmacies()
       ]);
-      this.filteredRecentOrders = [...this.recentOrders];
+      this.filteredRecentOrders = [...this.stats.orders?.orders ?? []];
       this.setupCharts();
     } catch (error) {
       console.error('❌ Erreur initialisation dashboard:', error);
@@ -330,10 +334,12 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
   private setupCharts(): void {
     setTimeout(() => {
-      this.initMonthlyStatsChart();
-      this.renderOrdersChart();
-      this.renderRevenueChart();
-      this.renderTicketsChart();
+      if (this.selectedView === 'overview') {
+        this.initMainStatsChart();
+        this.renderOrdersChart();
+        this.renderRevenueChart();
+        this.renderTicketsChart();
+      }
       if (this.selectedView === 'analytics') {
         this.loadAnalyticsData(this.activeAnalyticsTab);
       }
@@ -392,7 +398,8 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
   toggleStatusDropdown() {
     this.isPeriodDropdownOpen = !this.isPeriodDropdownOpen;
   }
-  getPeriodLabel(period: string) {
+  getPeriodLabel(period?: string) {
+    period = period || this.selectedPeriod;
     return this.optionsPeriodDatas.find(option => option.value === period)?.label;
   }
   getPeriodValue(period: string) {
@@ -446,7 +453,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
   private async loadAllDashboardData(): Promise<void> {
     const token = await this.auth.getRealToken();
-    const uid = await this.auth.getUid();
+    const uid = this.auth.getUid();
 
     if (!token || !uid) return;
 
@@ -456,11 +463,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
       'Content-Type': 'application/json'
     });
 
-    const timeRange = this.getTimeRangeFilter();
-
     try {
-      // Charger toutes les données en parallèle
-
       const requests = [
         this.loadOrdersStats(headers, uid, this.dateStart, this.dateEnd), //damien
         this.loadTicketsStats(headers, uid, this.dateStart, this.dateEnd),
@@ -485,7 +488,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
       const response: any = await this.apiService.post(
         'pharmacy-management/dashboard/orders-stats',
-        { uid, dateStart, dateEnd },
+        { uid, dateStart, dateEnd,  period: this.selectedPeriod },
         headers
       ).toPromise();
 
@@ -499,13 +502,14 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
           revenue: response.data.revenue || 0,
           averageOrderValue: response.data.averageOrderValue || 0,
           growthRate: response.data.growthRate || 0,
-          ordersNumbers: response.data.ordersNumbers || [],
+          orders: response.allOrders ? response.allOrders.map(order => new OrderClass(order)) : [],
         };
+        console.log('j\'ai load les orders ',response.allOrders);
         // Nouvelles données pour le graphique
-        this.monthlyStats = response.monthlyStats || [];
+        this.periodStats = response.periodStats || [];
+        this.periodType = response.periodType || 'month';
         this.countOrders = response.countOrders ?? 0;
         this.setupCharts();
-
       }
     } catch (error) {
       console.error('Erreur chargement stats commandes:', error);
@@ -527,8 +531,9 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
           inProgress: response.data.inProgress || 0,
           resolved: response.data.resolved || 0,
           urgent: response.data.urgent || 0,
-          responseTime: response.data.averageResponseTime || 0
+          responseTime: response.data.responseTime || 0
         };
+        this.recentTickets = response.recentTickets.map(item=> new Ticket(item)) || [];
       }
     } catch (error) {
       console.error('Erreur chargement stats tickets:', error);
@@ -656,54 +661,13 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     // Setup sera fait quand les observables sont disponibles
   }
 
-  // private setupCharts(): void {
-  //   // Configuration des graphiques sera faite après le chargement de la vue
-  //   setTimeout(() => {
-  //     this.renderOrdersChart();
-  //     this.renderRevenueChart();
-  //     this.renderTicketsChart();
-  //   }, 100);
-  // }
-
-  // private renderOrdersChart(): void {
-  //   if (!this.ordersChart?.nativeElement) return;
-  //
-  //   const ctx = this.ordersChart.nativeElement.getContext('2d');
-  //   if (!ctx) return;
-  //
-  //   // Implémentation du graphique des commandes
-  //   // Utilisation de Chart.js ou une autre librairie
-  // }
-  //
-  // private renderRevenueChart(): void {
-  //   if (!this.revenueChart?.nativeElement) return;
-  //
-  //   const ctx = this.revenueChart.nativeElement.getContext('2d');
-  //   if (!ctx) return;
-  //
-  //   // Implémentation du graphique des revenus
-  // }
-  //
-  // private renderTicketsChart(): void {
-  //   if (!this.ticketsChart?.nativeElement) return;
-  //
-  //   const ctx = this.ticketsChart.nativeElement.getContext('2d');
-  //   if (!ctx) return;
-  //
-  //   // Implémentation du graphique des tickets
-  // }
-
   private handleNewOrder(order: OrderClass): void {
-    if (!this.stats.orders.ordersNumbers.includes(order.orderNumber)) {
+    if (!this.stats.orders.orders.map(ord => ord.orderNumber).includes(order.orderNumber)) {
       this.stats.orders.total++;
       this.stats.orders.todayOrders += order.orderDate.toISOString() === new Date().toISOString() ? 1 : 0;
       this.stats.orders.revenue += order.totalAmount;
 
-      this.recentOrders.unshift(order);
-      if (this.recentOrders.length > 5) {
-        this.recentOrders.pop();
-      }
-
+      this.stats.orders.orders.unshift(order);
       this.lastUpdated = new Date();
     }
   }
@@ -777,9 +741,6 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  exportDashboard(): void {
-    console.log('Export dashboard data');
-  }
 
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('fr-FR', {
@@ -814,12 +775,12 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
   getStatusBadgeClass(status: string): string {
     const classes: { [key: string]: string } = {
-      'completed': 'badge-success',
-      'pending': 'badge-warning',
-      'cancelled': 'badge-danger',
-      'open': 'badge-info',
-      'in_progress': 'badge-primary',
-      'resolved': 'badge-success'
+      'completed': 'badge-modern badge-success',
+      'pending': 'badge-modern badge-warning',
+      'cancelled': 'badge-modern badge-danger',
+      'open': 'badge-modern badge-info',
+      'in_progress': 'badge-modern badge-primary',
+      'resolved': 'badge-modern badge-success'
     };
     return classes[status] || 'badge-secondary';
   }
@@ -846,8 +807,8 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     return order._id || index.toString();
   }
 
-  initMonthlyStatsChart() {
-    if (!this.monthlyStats || this.monthlyStats.length === 0) {
+  initMainStatsChart() {
+    if (!this.periodStats || this.periodStats.length === 0) {
       return;
     }
 
@@ -859,17 +820,24 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
     if (!ctx) return;
 
-    const labels = this.monthlyStats.map(stat => stat.monthShort);
+    const labels = this.periodStats.map(stat => stat.intervalShort);
+
+    // Adapter le titre selon la période
+    const titleMap = {
+      'hour': `Évolution par heure - ${this.getPeriodLabel()}`,
+      'day': `Évolution par jour - ${this.getPeriodLabel()}`,
+      'month': 'Évolution sur 12 mois - Commandes, Revenus et Nouveaux Clients'
+    };
 
     const config: ChartConfiguration = {
-      type: 'bar', // Type principal
+      type: 'bar',
       data: {
         labels: labels,
         datasets: [
           {
             type: 'line',
             label: 'Commandes',
-            data: this.monthlyStats.map(stat => stat.orders),
+            data: this.periodStats.map(stat => stat.orders),
             borderColor: '#4f46e5',
             backgroundColor: 'rgba(79, 70, 229, 0.1)',
             tension: 0.4,
@@ -878,7 +846,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
           {
             type: 'bar',
             label: 'Revenus (€)',
-            data: this.monthlyStats.map(stat => stat.revenue),
+            data: this.periodStats.map(stat => stat.revenue),
             backgroundColor: 'rgba(34, 197, 94, 0.8)',
             borderColor: '#22c55e',
             borderWidth: 1,
@@ -887,7 +855,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
           {
             type: 'line',
             label: 'Nouveaux clients',
-            data: this.monthlyStats.map(stat => stat.newCustomers),
+            data: this.periodStats.map(stat => stat.newCustomers),
             borderColor: '#f59e0b',
             backgroundColor: 'rgba(245, 158, 11, 0.1)',
             tension: 0.4,
@@ -905,7 +873,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
         plugins: {
           title: {
             display: true,
-            text: 'Évolution sur 12 mois - Commandes, Revenus et Nouveaux Clients'
+            text: titleMap[this.periodType] || titleMap['month']
           },
           legend: {
             display: true,
@@ -917,7 +885,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
             display: true,
             title: {
               display: true,
-              text: 'Mois'
+              text: this.getXAxisLabel()
             }
           },
           y: {
@@ -950,8 +918,9 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
     this.chart = new Chart(ctx, config);
   }
+
   getMonthlyStatsSummary() {
-    if (!this.monthlyStats || this.monthlyStats.length === 0) {
+    if (!this.periodStats || this.periodStats.length === 0) {
       return {
         totalOrders: 0,
         totalRevenue: 0,
@@ -961,9 +930,9 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
       };
     }
 
-    const totalOrders = this.monthlyStats.reduce((sum, stat) => sum + stat, 0);
-    const totalRevenue = this.monthlyStats.reduce((sum, stat) => sum + stat.revenue, 0);
-    const totalNewCustomers = this.monthlyStats.reduce((sum, stat) => sum + stat.newCustomers, 0);
+    const totalOrders = this.periodStats.reduce((sum, stat) => sum + stat, 0);
+    const totalRevenue = this.periodStats.reduce((sum, stat) => sum + stat.revenue, 0);
+    const totalNewCustomers = this.periodStats.reduce((sum, stat) => sum + stat.newCustomers, 0);
 
     return {
       totalOrders,
@@ -1056,7 +1025,6 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
       }
     });
   }
-
   private renderRevenueChart(): void {
     if (!this.revenueChart?.nativeElement || !this.revenueChartData.labels?.length) return;
 
@@ -1109,7 +1077,6 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
       }
     });
   }
-
   private renderTicketsChart(): void {
     if (!this.ticketsChart?.nativeElement || !this.ticketsChartData.labels?.length) return;
 
@@ -1142,7 +1109,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
 // Méthodes pour la gestion des commandes
   applyOrdersFilter(): void {
-    this.filteredRecentOrders = this.recentOrders.filter(order => {
+    this.filteredRecentOrders = this.stats.orders.orders.filter(order => {
       let matches = true;
 
       if (this.ordersFilter.status && order.status !== this.ordersFilter.status) {
@@ -1181,7 +1148,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
       dateFrom: '',
       dateTo: ''
     };
-    this.filteredRecentOrders = [...this.recentOrders];
+    this.filteredRecentOrders = [...this.stats.orders?.orders ?? []];
   }
 
   exportOrders(): void {
@@ -1223,7 +1190,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
 // Actions sur les commandes et tickets
   viewOrder(orderId: string): void {
-    this.router.navigate(['/pharmacy/orders/detail', orderId]);
+    this.router.navigate(['/pharmacy/orders', orderId]);
   }
 
   editOrder(orderId: string): void {
@@ -1231,7 +1198,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
   }
 
   viewTicket(ticketId: string): void {
-    this.router.navigate(['/pharmacy/support/detail', ticketId]);
+    this.router.navigate(['/pharmacy/support/', ticketId]);
   }
 
   editTicket(ticketId: string): void {
@@ -1261,7 +1228,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
   private async loadAnalyticsData(tab: string): Promise<void> {
     const token = await this.auth.getRealToken();
-    const uid = await this.auth.getUid();
+    const uid = this.auth.getUid();
 
     if (!token || !uid) return;
 
@@ -1274,11 +1241,11 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     try {
       const response: any = await this.apiService.post(
         `pharmacy-management/dashboard/analytics/${tab}`,
-        { uid, timeRange: this.getTimeRangeFilter() },
-        headers
+        { uid, dateStart: this.dateStart, dateEnd:this.dateEnd,  period: this.selectedPeriod },headers
       ).toPromise();
 
       if (response && !response.error) {
+        console.log('Analytics data:', response);
         this.analyticsData = response.data;
         this.renderAnalyticsChart(response.chartData);
       }
@@ -1287,7 +1254,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private renderAnalyticsChart(chartData: ChartData): void {
+  private async renderAnalyticsChart(chartData: ChartData) {
     if (!this.analyticsChart?.nativeElement) return;
 
     const ctx = this.analyticsChart.nativeElement.getContext('2d');
@@ -1300,6 +1267,9 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     let chartOptions: any = {
       responsive: true,
       maintainAspectRatio: false,
+      // animation: {
+      //   onComplete: () => resolve('')  // ✅ on attend la fin du rendu
+      // },
       plugins: {
         title: {
           display: true,
@@ -1381,6 +1351,40 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  getXAxisLabel(): string {
+    const labelMap = {
+      'hour': 'Heures',
+      'day': 'Jours',
+      'month': 'Mois'
+    };
+    return labelMap[this.periodType] || 'Période';
+  }
+
+  getPeriodStatsSummary() {
+    if (!this.periodStats || this.periodStats.length === 0) {
+      return {
+        totalOrders: 0,
+        totalRevenue: 0,
+        totalNewCustomers: 0,
+        averageOrdersPerPeriod: 0,
+        averageRevenuePerPeriod: 0
+      };
+    }
+
+    const totalOrders = this.periodStats.reduce((sum, stat) => sum + stat.orders, 0);
+    const totalRevenue = this.periodStats.reduce((sum, stat) => sum + stat.revenue, 0);
+    const totalNewCustomers = this.periodStats.reduce((sum, stat) => sum + stat.newCustomers, 0);
+    const intervals = this.periodStats.length;
+
+    return {
+      totalOrders,
+      totalRevenue,
+      totalNewCustomers,
+      averageOrdersPerPeriod: intervals > 0 ? Math.round(totalOrders / intervals) : 0,
+      averageRevenuePerPeriod: intervals > 0 ? Math.round(totalRevenue / intervals) : 0
+    };
+  }
+
   ngOnDestroy(): void {
     [
       this.chart,
@@ -1397,6 +1401,177 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
+  async exportDashboard(): Promise<void> {
+    try {
+      this.loadingService.setLoading(true);
+      const doc = new jsPDF("p", "mm", "a4");
+      const margin = 14;
+      const pageWidth = doc.internal.pageSize.getWidth();
 
+      // === HEADER ===
+      doc.setFontSize(18);
+      doc.text("Rapport du Tableau de Bord", pageWidth / 2, margin, { align: "center" });
+      doc.setFontSize(11);
+      doc.text(`Période : ${this.getPeriodLabel()}`, margin, 30);
+      doc.text(`Date d’export : ${new Date().toLocaleString("fr-FR")}`, margin, 37);
+
+      // === SECTION 1 : Statistiques principales ===
+      doc.setFontSize(14);
+      doc.text("Statistiques Globales", margin, 50);
+
+      autoTable(doc, {
+        startY: 55,
+        head: [["Indicateur", "Valeur"]],
+        body: [
+          ["Commandes Totales", this.formatNumber(this.stats.orders.total)],
+          ["Revenus Totaux", this.formatCurrency(this.stats.orders.revenue)],
+          ["Tickets Totaux", this.formatNumber(this.stats.tickets.total)],
+          ["Activités Totales", this.formatNumber(this.stats.activities.total)],
+          ["Pharmacies Totales", this.formatNumber(this.stats.pharmacies.total)],
+          ["Utilisateurs Totaux", this.formatNumber(this.stats.users.total)]
+        ],
+      });
+
+      // === SECTION 2 : Détail par période ===
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text("Détails par " + this.getXAxisLabel(), margin, 20);
+
+      const periodRows = this.periodStats.map(stat => [
+        stat.interval,
+        stat.orders,
+        this.formatCurrency(stat.revenue),
+        this.formatCurrency(stat.profit),
+        stat.newCustomers,
+        stat.orders > 0 ? this.formatCurrency(stat.revenue / stat.orders) : "0 €"
+      ]);
+
+      autoTable(doc, {
+        startY: 25,
+        head: [["Intervalle", "Commandes", "Revenus", "Bénéfices", "Nouveaux Clients", "Rev/Commande"]],
+        body: periodRows,
+      });
+
+      // === SECTION 3 : Commandes récentes ===
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text("Commandes Récentes", margin, 20);
+
+      const orderRows = this.filteredRecentOrders.map(order => [
+        order.orderNumber,
+        order.customer?.getFullName() || "N/A",
+        order.pharmacy?.name || "N/A",
+        this.formatCurrency(order.totalAmount),
+        order.status,
+        new Date(order.createdAt).toLocaleDateString("fr-FR")
+      ]);
+
+      autoTable(doc, {
+        startY: 25,
+        head: [["ID", "Client", "Pharmacie", "Montant", "Statut", "Date"]],
+        body: orderRows,
+      });
+
+      // === SECTION 4 : Tickets récents ===
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text("Tickets Récents", margin, 20);
+
+      const ticketRows = this.recentTickets.map(ticket => [
+        String(ticket.ticketNumber ?? ""),
+        String(ticket.title ?? ""),
+        String(ticket.createdBy?.name ?? "N/A"),
+        String(ticket.priority ?? ""),
+        String(ticket.status ?? ""),
+        String(ticket.assignedTo ?? "Non assigné"),
+        new Date(ticket.updatedAt).toLocaleString("fr-FR")
+      ]);
+
+      autoTable(doc, {
+        startY: 25,
+        head: [["ID", "Sujet", "Client", "Priorité", "Statut", "Assigné à", "Dernière MAJ"]],
+        body: ticketRows,
+      });
+
+      // === SECTION 5 : Activités récentes ===
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text("Activités Récentes", margin, 20);
+
+      const activityRows = this.recentActivities.map(act => [
+        act.type,
+        act.description || "",
+        act.author || "N/A",
+        new Date(act.createdAt).toLocaleString("fr-FR")
+      ]);
+
+      autoTable(doc, {
+        startY: 25,
+        head: [["Type", "Description", "Utilisateur", "Date"]],
+        body: activityRows,
+      });
+
+      // === FOOTER ===
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(9);
+        doc.text(`Page ${i} / ${pageCount}`, pageWidth - margin, 290, { align: "right" });
+      }
+      // === SECTION 6 : Graphiques ===
+      const addChartToPDF = (canvasRef: ElementRef<HTMLCanvasElement>, title: string) => {
+        const canvas = canvasRef?.nativeElement;
+        if (canvas) {
+          const imgData = canvas.toDataURL("image/png", 1.0);
+          doc.addPage();
+          doc.setFontSize(14);
+          doc.text(title, margin, 20);
+          doc.addImage(imgData, "PNG", margin, 30, pageWidth - 2 * margin, 120);
+        }
+      };
+
+      addChartToPDF(this.chartCanvas, "Performance Globale");
+      addChartToPDF(this.ordersChart, "Évolution des Commandes");
+      addChartToPDF(this.revenueChart, "Évolution des Revenus");
+
+      const tabs = ["performance", "customers", "products"];
+
+      const token = await this.auth.getRealToken();
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      for (const tab of tabs) {
+        this.selectedView = "analytics";
+        this.activeAnalyticsTab = tab;
+
+        const response: any = await this.apiService.post(
+          `pharmacy-management/dashboard/analytics/${tab}`,
+          { uid: this.auth.getUid(), dateStart: this.dateStart, dateEnd: this.dateEnd, period: this.selectedPeriod },
+          headers
+        ).toPromise();
+
+        if (response && !response.error) {
+          this.analyticsData = response.data;
+          await this.renderAnalyticsChart(response.chartData);
+          setTimeout(async () => {
+            await this.renderAnalyticsChart(response.chartData);
+          }, 15000)
+          addChartToPDF(this.analyticsChart, `Analyse - ${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+        }
+      }
+
+      this.selectedView = "overview";
+      this.setupCharts();
+
+      // Sauvegarde
+      doc.save(`rapport-dashboard-${new Date().toISOString().slice(0,10)}.pdf`);
+      this.loadingService.setLoading(false);
+    } catch (error) {
+      console.error("Erreur lors de l’export du dashboard :", error);
+    }
+  }
   protected readonly restrictions = PHARMACY_RESTRICTIONS;
 }

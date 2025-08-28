@@ -63,16 +63,16 @@
                   (click)="changeViewMode('month')">
             Mois
           </button>
-          <button class="view-btn"
-                  [class.active]="viewMode === 'week'"
-                  (click)="changeViewMode('week')">
-            Semaine
-          </button>
-          <button class="view-btn"
-                  [class.active]="viewMode === 'day'"
-                  (click)="changeViewMode('day')">
-            Jour
-          </button>
+<!--          <button class="view-btn"-->
+<!--                  [class.active]="viewMode === 'week'"-->
+<!--                  (click)="changeViewMode('week')">-->
+<!--            Semaine-->
+<!--          </button>-->
+<!--          <button class="view-btn"-->
+<!--                  [class.active]="viewMode === 'day'"-->
+<!--                  (click)="changeViewMode('day')">-->
+<!--            Jour-->
+<!--          </button>-->
         </div>
         <button class="control-btn" (click)="refreshCalendar()">
           <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
@@ -85,34 +85,34 @@
   </div>
 
   <!-- Filtres -->
-  <div class="calendar-filters">
-    <div class="filter-group">
-      <label>Type:</label>
-      <select class="filter-select" (change)="onFilterChange('type', $any($event.target).value)">
-        <option value="all">Tous</option>
-        <option value="orders">Commandes</option>
-        <option value="activities">Activités</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <label>Statut:</label>
-      <select class="filter-select" (change)="onFilterChange('status', $any($event.target).value)">
-        <option value="all">Tous</option>
-        <option value="pending">En attente</option>
-        <option value="completed">Terminé</option>
-        <option value="cancelled">Annulé</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <label>Priorité:</label>
-      <select class="filter-select" (change)="onFilterChange('priority', $any($event.target).value)">
-        <option value="all">Toutes</option>
-        <option value="high">Haute</option>
-        <option value="medium">Moyenne</option>
-        <option value="low">Basse</option>
-      </select>
-    </div>
-  </div>
+<!--  <div class="calendar-filters">-->
+<!--    <div class="filter-group">-->
+<!--      <label>Type:</label>-->
+<!--      <select class="filter-select" (change)="onFilterChange('type', $any($event.target).value)">-->
+<!--        <option value="all">Tous</option>-->
+<!--        <option value="orders">Commandes</option>-->
+<!--        <option value="activities">Activités</option>-->
+<!--      </select>-->
+<!--    </div>-->
+<!--    <div class="filter-group">-->
+<!--      <label>Statut:</label>-->
+<!--      <select class="filter-select" (change)="onFilterChange('status', $any($event.target).value)">-->
+<!--        <option value="all">Tous</option>-->
+<!--        <option value="pending">En attente</option>-->
+<!--        <option value="completed">Terminé</option>-->
+<!--        <option value="cancelled">Annulé</option>-->
+<!--      </select>-->
+<!--    </div>-->
+<!--    <div class="filter-group">-->
+<!--      <label>Priorité:</label>-->
+<!--      <select class="filter-select" (change)="onFilterChange('priority', $any($event.target).value)">-->
+<!--        <option value="all">Toutes</option>-->
+<!--        <option value="high">Haute</option>-->
+<!--        <option value="medium">Moyenne</option>-->
+<!--        <option value="low">Basse</option>-->
+<!--      </select>-->
+<!--    </div>-->
+<!--  </div>-->
 
   <!-- Calendrier principal -->
   <div class="calendar-main" *ngIf="!isLoading">
@@ -157,56 +157,138 @@
   </div>
 
   <!-- Détails du jour sélectionné -->
-  <div class="calendar-sidebar" *ngIf="selectedDate && selectedDayEvents.length > 0">
-    <div class="sidebar-header">
-      <h3>{{ selectedDate | date:'EEEE dd MMMM yyyy':'fr-FR' }}</h3>
-      <span class="events-count">{{ selectedDayEvents.length }} événement(s)</span>
-    </div>
+<!--  <div class="calendar-main">-->
+    <div class="calendar-sidebar" *ngIf="selectedDate && selectedDayEvents.length > 0">
+      <div class="sidebar-header">
+        <h3>{{ selectedDate | date:'EEEE dd MMMM yyyy':'fr-FR' }}</h3>
+        <span class="events-count">{{ selectedDayEvents.length }} événement(s)</span>
+      </div>
 
-    <div class="sidebar-content">
-      <div class="event-item"
-           *ngFor="let event of selectedDayEvents; trackBy: trackByEventId"
-           [class]="'event-' + event.type"
-           (click)="onEventClick(event)">
-
-        <div class="event-time">{{ event.time }}</div>
-        <div class="event-content">
-          <div class="event-title">{{ event.title }}</div>
-          <div class="event-status" [style.background-color]="event.color">
-            {{ event.status }}
+      <div class="sidebar-content">
+        <div
+          class="event-card"
+          *ngFor="let event of selectedDayEvents; trackBy: trackByEventId"
+          [class]="'event-' + event.type"
+          [class.expanded]="event.isExpanded"
+          (click)="toggleCardExpansion(event)"
+        >
+          <div class="card-header">
+      <span class="event-icon">
+        <i
+          [ngClass]="{
+            'fas fa-shopping-bag': event.type === 'order',
+            'fas fa-tasks': event.type === 'activity'
+          }"
+        ></i>
+      </span>
+            <div class="event-main-info">
+              <div class="event-title">{{ event.title }}</div>
+              <div class="event-time">{{ event.time }}</div>
+            </div>
+            <div class="event-priority" [class]="'priority-' + event.priority">
+              <i class="fas fa-circle"></i>
+            </div>
           </div>
-
-          <!-- Détails spécifiques aux commandes -->
-          <div class="event-details" *ngIf="event.type === 'order'">
-            <div class="order-details">
-              <span class="customer-name">
-                {{ 'Client anonyme' }}
-<!--                event.type == 'order' ?.customer?.getFullName() || -->
-              </span>
+          <div class="card-body">
+            <div class="event-details" *ngIf="event.type === 'order'">
+        <span class="customer-name">
+          <i class="fas fa-user"></i> {{ getActivityDescription(event) }}
+        </span>
               <span class="order-items">
-                hehe article(s)
-<!--                {{ (event.data as any).getTotalItems() }}-->
-              </span>
+          <i class="fas fa-box"></i>
+                {{ getActivityDescription(event, 1) }} articles
+        </span>
+            </div>
+            <div class="event-details" *ngIf="event.type === 'activity'">
+        <span class="activity-description">
+          <i class="fas fa-info-circle"></i> {{ getActivityDescription(event) }}
+        </span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="event-status" [style.background-color]="event.color">
+              {{ event.status }}
             </div>
           </div>
 
-          <!-- Détails spécifiques aux activités -->
-          <div class="event-details" *ngIf="event.type === 'activity'">
-            <div class="activity-details">
-              <span class="activity-description">
-<!--                {{ (event.data as any).description }}-->
-              </span>
+          <div class="expanded-content" *ngIf="event.isExpanded">
+            <div *ngIf="event.type === 'order' && event.data">
+              <hr />
+              <div class="details-section">
+                <h3><i class="fas fa-info-circle"></i> Détails de la commande</h3>
+                <ul>
+                  <li>
+                    <strong
+                    >Commande n° :
+                      <span class="info-value">{{ getActivityDescription(event, 2) }}</span></strong
+                    >
+                  </li>
+                  <li>
+                    <strong>Total : </strong
+                    ><span class="info-value"
+                  >{{ getActivityDescription(event, 3) }}</span
+                  >
+                  </li>
+                  <li>
+                    <strong>Statut de paiement : </strong
+                    ><span class="info-value">{{ getActivityDescription(event, 4) }}</span>
+                  </li>
+                  <li>
+                    <strong>Méthode de livraison : </strong
+                    ><span class="info-value">{{
+                      getActivityDescription(event, 5)
+                    }}</span>
+                  </li>
+                  <li>
+                    <strong>Pharmacien : </strong
+                    ><span class="info-value">getActivityDescription(event, 6)</span>
+                  </li>
+                </ul>
+              </div>
+              <div class="details-section">
+                <h3><i class="fas fa-box"></i> Articles ({{
+                    getActivityDescription(event, 7)
+                  }})</h3>
+                <ul class="items-list">
+                  <li *ngFor="let item of getItemsEvent(event)">
+              <span class="item-name"
+              >{{ item.product.name }} (x{{ item.quantity }})</span
+              >
+                    <span class="item-price"
+                    >{{ item.totalPrice | currency : 'EUR' : 'symbol' }}</span
+                    >
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div *ngIf="event.type === 'activity' && event.data">
+              <hr />
+              <div class="details-section">
+                <h3><i class="fas fa-info-circle"></i> Détails de l'activité</h3>
+                <ul>
+                  <li>
+                    <strong>Auteur : </strong
+                    ><span class="info-value">{{ getActivityDescription(event, 8) }}</span>
+                  </li>
+                  <li>
+                    <strong>Type d'activité : </strong
+                    ><span class="info-value">{{ getActivityDescription(event, 9) }}</span>
+                  </li>
+                  <li>
+                    <strong>Créé le : </strong
+                    ><span class="info-value">{{
+                      event.data.createdAt | date : 'short'
+                    }}</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div class="event-priority" [class]="'priority-' + event.priority">
-          <i class="fas fa-circle"></i>
         </div>
       </div>
     </div>
-  </div>
 
+<!--  </div>-->
   <!-- État vide -->
   <div class="empty-state" *ngIf="!isLoading && currentEvents.length === 0">
     <div class="empty-icon">

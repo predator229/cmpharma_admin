@@ -398,7 +398,14 @@
     <div class="tab-pane" [class.active]="activeTab === 'pricing'">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">Informations de prix</h5>
+          <div *ngIf="isEditing">
+            <h4 class="form-title" >
+              <i class="fas fa-edit me-2"></i>
+              Modification des prix
+            </h4>
+            <p class="form-description">Définissez les prix par défaut et spécifiques par pharmacie</p>
+          </div>
+          <h5 class="mb-0" *ngIf="!isEditing">Informations de prix</h5>
           <button class="btn btn-sm btn-success" *ngIf="isEditing && pricingForm.valid"
                   (click)="updateSection(3)">
             <i class="fas fa-save"></i> Sauvegarder
@@ -406,14 +413,6 @@
         </div>
         <div class="card-body">
           <form [formGroup]="pricingForm" *ngIf="isEditing; else pricingView" class="pricing-form">
-            <div class="form-header">
-              <h4 class="form-title">
-                <i class="fas fa-edit me-2"></i>
-                Modification des prix
-              </h4>
-              <p class="form-description">Définissez les prix par défaut et spécifiques par pharmacie</p>
-            </div>
-
             <div class="form-content">
               <!-- Section prix par défaut -->
               <div class="pricing-section default-pricing-form">

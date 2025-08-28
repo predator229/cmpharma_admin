@@ -1159,3 +1159,36 @@ $font-large: 1.25rem;  // ~20px
   background-color: #e8f5e8;
   color: #2e7d32;
 }
+.badge-modern {
+  font-size: 0.85em;
+  padding: 0.5em 0.8em;
+  border-radius: 20px;
+  margin-right: 8px;
+  margin-bottom: 4px;
+  font-weight: 500;
+
+  i {
+    margin-right: 6px;
+    font-size: 0.8em;
+  }
+
+  &.badge-success {
+    background-color: #28a745;
+    color: white;
+  }
+
+  &.badge-danger {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  &.badge-info {
+    background-color: #17a2b8;
+    color: white;
+  }
+
+  &.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+  }
+}
