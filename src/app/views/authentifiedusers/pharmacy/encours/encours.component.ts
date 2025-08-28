@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import {Component, OnInit, OnDestroy, HostListener, ViewChild, ElementRef} from '@angular/core';
 import { CommonModule } from "@angular/common";
 import { Subject, takeUntil, interval, startWith } from 'rxjs';
 import { HttpHeaders } from '@angular/common/http';
@@ -15,6 +15,9 @@ import {CommonFunctions} from "../../../../controllers/comonsfunctions";
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
 import {NotifyService} from "../../../../controllers/services/notification.service";
+import Order = jasmine.Order;
+import Swal from "sweetalert2";
+import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 
 registerLocaleData(localeFr, 'fr');
 
@@ -37,6 +40,13 @@ interface QueueStats {
   overdueCount: number;
 }
 
+// Interface pour la gestion des vérifications
+interface ProductVerification {
+  productId: string;
+  prescriptionChecked: boolean;
+  stockChecked: boolean;
+  requiresPrescription: boolean;
+}
 @Component({
   selector: 'app-pharmacy-orders-en-cours',
   standalone: true,
@@ -49,6 +59,12 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
   preparingOrders: OrderCard[] = [];
   pendingOrders: OrderCard[] = [];
   readyOrders: OrderCard[] = [];
+  pendindCards: OrderCard[] = [];
+
+  selectedOrder: OrderClass | null = null;
+  isOrderModalOpen = false;
+  productVerifications: ProductVerification[] = [];
+
 
   queueStats: QueueStats = {
     total: 0,
@@ -70,14 +86,24 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private clockTimer$ = interval(1000);
   pharmaciesList: PharmacyClass[];
+  permissions = {
+    checkoutOrder: false,
+    cancelOrder: false,
+    asignOrder: false,
+  };
+  private modalService: NgbModal;
+  @ViewChild('orderDetailsModal') orderDetailsModal: ElementRef | undefined;
 
   constructor(
+    modalService: NgbModal,
     private auth: AuthService,
     private apiService: ApiService,
     private loadingService: LoadingService,
     private chatService: MiniChatService,
     // private notify: NotifyService
-  ) {}
+  ) {
+    this.modalService = modalService;
+  }
 
   ngOnInit(): void {
     this.auth.userDetailsLoaded$
@@ -85,6 +111,9 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
       .subscribe(async loaded => {
         if (loaded) {
           this.userDetail = this.auth.getUserDetails();
+          this.permissions.checkoutOrder = this.userDetail.hasPermission('commandes.checkout');
+          this.permissions.cancelOrder = this.userDetail.hasPermission('commandes.cancel');
+          this.permissions.asignOrder = this.userDetail.hasPermission('commandes.assign');
           await this.initializeComponent();
         }
       });
@@ -152,7 +181,7 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
 
       const payload = {
         uid,
-        status: ['confirmed', 'preparing', 'ready_for_pickup']
+        status: ['confirmed', 'preparing', 'ready_for_pickup', 'pending']
       };
 
       this.apiService.post('pharmacy-management/orders/list', payload, headers)
@@ -208,7 +237,7 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
     ).sort((a, b) => {
       // Priorité: en retard > urgent > ancien
       if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
-      // if (a.order.priority !== b.order.priority) return a.order.priority === 'urgent' ? -1 : 1;
+      if (a.order.deliveryInfo.method !== b.order.deliveryInfo.method) return a.order.deliveryInfo.method === 'express' ? -1 : 1;
       return new Date(a.order.confirmedAt || 0).getTime() - new Date(b.order.confirmedAt || 0).getTime();
     });
 
@@ -225,6 +254,13 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
       const bReady = new Date(b.order.shippedAt || 0);
       return aReady.getTime() - bReady.getTime();
     });
+    this.pendindCards = this.orderCards.filter(card =>
+      card.order.status === 'pending'
+    ).sort((a, b) => {
+      if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
+      if (a.order.deliveryInfo.method !== b.order.deliveryInfo.method) return a.order.deliveryInfo.method === 'express' ? -1 : 1;
+      return new Date(a.order.confirmedAt || 0).getTime() - new Date(b.order.confirmedAt || 0).getTime();
+    });
   }
 
   private updateStats(): void {
@@ -238,7 +274,7 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
     };
   }
 
-  private calculateEstimatedTime(order: OrderClass): number {
+   calculateEstimatedTime(order: OrderClass): number {
     // Base: 5 minutes + 2 minutes par article
     let baseTime = 5;
     let itemTime = order.getTotalItems() * 2;
@@ -341,7 +377,7 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
     try {
       await this.updateOrderStatus(order, 'ready_for_pickup', 'Commande prête pour retrait');
       if (this.soundEnabled) {
-        this.playOrderReadySound();
+        // this.playOrderReadySound();
       }
     } catch (error) {
       console.error('Erreur lors du marquage:', error);
@@ -379,22 +415,34 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
       uid
     };
 
-    this.apiService.post('pharmacy-management/orders/update-status', payload, headers)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('Statut mis à jour:', response);
-        },
-        error: (error) => {
-          console.error('Erreur mise à jour statut:', error);
-        }
-      });
-  }
-
-  // Utilitaires
-  viewOrderDetails(order: OrderClass): void {
-    // Implémenter l'ouverture d'un modal de détails
-    console.log('Voir détails:', order);
+    try {
+      this.apiService.post('pharmacy-management/orders/update-status', payload, headers)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response: any) => {
+            if (response && response.data && !response.error) {
+              const newOrder = new OrderClass(response.data);
+              this.orderCards.forEach(card => {
+                if (card.order._id === newOrder._id) {
+                  card.order = newOrder;
+                  card.startedAt = newOrder.confirmedAt;
+                }
+              })
+              this.closeModal();
+              this.categorizeOrders();
+              this.updateOrderTimes();
+            } else {
+              this.handleError(response.message ?? 'Erreur lors de la changement de status');
+            }
+          },
+          error: (error) => {
+            this.handleError("Erreur lors de la changement de status de la commande");
+          }
+        });
+    }
+    catch (error) {
+      this.handleError("Une erreur est survenue lors du changement de status de la commande");
+    }
   }
 
   notifyCustomer(order: OrderClass): void {
@@ -463,7 +511,260 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
     // Implémenter la lecture du son
   }
 
-  private playOrderReadySound(): void {
-    // Implémenter la lecture du son
+  async confirmOrderProcess(order: OrderClass) {
+    if (order.status != 'pending' || !this.permissions.checkoutOrder) return;
+
+
+      // Récupérer les produits nécessitant une prescription
+      const productsNeedPrescript = order.items
+        .filter(item => item.prescriptionRequired)
+        .map(item => item.product.name);
+
+      // Message de confirmation avec gestion des prescriptions
+      let confirmMessage = 'Voulez-vous vraiment confirmer cette commande ?';
+      if (productsNeedPrescript.length > 0) {
+        confirmMessage += `\n\nCertains produits nécessitent une prescription :\n• ${productsNeedPrescript.join('\n• ')}\n\nAvez-vous vérifié les prescriptions ?`;
+      }
+
+    if (confirm(confirmMessage)) {
+      const token = await this.auth.getRealToken();
+      const uid = this.auth.getUid();
+
+      if (!token) return;
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      const payload = {
+        orderId: order._id,
+        uid
+      };
+
+      try {
+        this.apiService.post('pharmacy-management/orders/confirm', payload, headers)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (response: any) => {
+              if (response && response.data && !response.error) {
+                const newOrder = new OrderClass(response.data);
+                this.orderCards.forEach(card => {
+                  if (card.order._id === newOrder._id) {
+                    card.order = newOrder;
+                    card.startedAt = newOrder.confirmedAt;
+                  }
+                })
+                this.closeModal();
+                this.categorizeOrders();
+                this.updateOrderTimes();
+              } else {
+                this.handleError(response.message ?? 'Erreur lors de la confirmation');
+              }
+            },
+            error: (error) => {
+              this.handleError("Erreur lors de la confirmation de la commande");
+            }
+          });
+      } catch (error) {
+        this.handleError('Une erreur est survenue lors de la confirmation de la commande');
+      }
+    }
   }
+  async cancelOrderForReason(order: OrderClass) {
+    if (order.status != 'pending' || !this.permissions.cancelOrder) return;
+
+    if (confirm('Voulez-vous vraiment annuler cette commande ?')) {
+      const reason = prompt('Raison de l\'annulation (optionnel):');
+
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      if (!token) return;
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      const payload = {
+        orderId: order._id,
+        reason: reason || '', // Valeur par défaut si l'utilisateur n'entre rien
+        uid
+      };
+
+      try {
+        this.apiService.post('pharmacy-management/orders/cancel', payload, headers)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (response: any) => {
+              if (response && response.data && !response.error) {
+                const cancelledOrderId = response.data; // Le backend retourne l'ID de la commande annulée
+
+                // Retirer de toutes les listes d'affichage
+                this.closeModal();
+                this.orderCards = this.orderCards.filter(card => card.order._id !== cancelledOrderId);
+                this.pendindCards = this.pendindCards.filter(card => card.order._id !== cancelledOrderId);
+                this.preparingOrders = this.preparingOrders.filter(card => card.order._id !== cancelledOrderId);
+
+                this.handleSucces('Commande annulée avec succès');
+              } else {
+                this.handleError('Erreur lors de l\'annulation');
+              }
+            },
+            error: (error) => {
+              this.handleError('Une erreur est survenue lors de l\'annulation');
+            }
+          });
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    }
+  }
+  private handleError(message: string): void {
+    Swal.fire({
+      icon: 'error',
+      title: 'Erreur',
+      text: message
+    });
+  }
+  private handleSucces(message: string): void {
+    Swal.fire({
+      icon: 'success',
+      title: 'Felicitations',
+      text: message
+    });
+  }
+
+  viewOrderDetails(order: OrderClass): void {
+    if (!order){ return; }
+    this.modalService.dismissAll('ok');
+
+    this.selectedOrder = order;
+    this.isOrderModalOpen = true;
+
+    // Initialiser les vérifications pour les produits
+    if (order.status === 'pending') {
+      this.productVerifications = order.items.map(item => ({
+        productId: item.product._id,
+        prescriptionChecked: !item.prescriptionRequired,
+        stockChecked: false,
+        requiresPrescription: item.prescriptionRequired
+      }));
+    }
+    setTimeout(() => {
+      this.modalService.open(this.orderDetailsModal, {
+        size: 'xl',
+        backdrop: 'static',
+        centered: true
+      });
+    }, 0);
+  }
+  loseOrderModal(): void {
+    this.selectedOrder = null;
+    this.isOrderModalOpen = false;
+    this.productVerifications = [];
+  }
+
+  togglePrescriptionCheck(productId: string): void {
+    const verification = this.productVerifications.find(v => v.productId === productId);
+    if (verification) {
+      verification.prescriptionChecked = !verification.prescriptionChecked;
+    }
+  }
+
+  toggleStockCheck(productId: string): void {
+    const verification = this.productVerifications.find(v => v.productId === productId);
+    if (verification) {
+      verification.stockChecked = !verification.stockChecked;
+    }
+  }
+
+  areAllVerificationsComplete(): boolean {
+    return this.productVerifications.every(v => v.prescriptionChecked && v.stockChecked);
+  }
+  async startPreparationFromModal(): Promise<void> {
+    if (!this.selectedOrder) return;
+
+    await this.startPreparation(this.selectedOrder);
+    this.closeOrderModal();
+  }
+
+  async markAsReadyFromModal(): Promise<void> {
+    if (!this.selectedOrder) return;
+
+    await this.markAsReady(this.selectedOrder);
+    this.closeOrderModal();
+  }
+
+  async completeOrderFromModal(): Promise<void> {
+    if (!this.selectedOrder) return;
+
+    await this.completeOrder(this.selectedOrder);
+    this.closeOrderModal();
+  }
+  closeOrderModal(): void {
+    this.selectedOrder = null;
+    this.isOrderModalOpen = false;
+    this.productVerifications = [];
+    this.closeModal();
+  }
+  closeModal(): void {
+    this.modalService.dismissAll('ok');
+  }
+  async notifyCustomerFromModal(): Promise<void> {
+    if (!this.selectedOrder) return;
+
+    this.notifyCustomer(this.selectedOrder);
+  }
+
+  // Méthodes utilitaires pour le modal
+  getModalActions(): string[] {
+    if (!this.selectedOrder) return [];
+
+    switch (this.selectedOrder.status) {
+      case 'pending':
+        return ['confirm', 'cancel'];
+      case 'confirmed':
+        return ['start'];
+      case 'preparing':
+        return ['ready', 'details'];
+      case 'ready_for_pickup':
+        return ['notify', 'complete'];
+      default:
+        return ['details'];
+    }
+  }
+
+  formatPrice(amount: number): string {
+    return `${amount.toFixed(2)} €`;
+  }
+
+  getDeliveryIcon(method: string): string {
+    switch (method) {
+      case 'home_delivery': return 'fa-home';
+      case 'pickup': return 'fa-store';
+      case 'express': return 'fa-bolt';
+      case 'scheduled': return 'fa-calendar';
+      default: return 'fa-box';
+    }
+  }
+
+  getStatusColor(status: string): string {
+    switch (status) {
+      case 'pending': return 'orange';
+      case 'confirmed': return 'blue';
+      case 'preparing': return 'purple';
+      case 'ready_for_pickup': return 'green';
+      default: return 'gray';
+    }
+  }
+
+  // Méthode utilitaire pour récupérer les vérifications d'un produit
+  getVerification(productId: string): ProductVerification | undefined {
+    return this.productVerifications.find(v => v.productId === productId);
+  }
+
 }

@@ -74,7 +74,7 @@
              >
 <!--          [class.urgent]="orderCard.order.priority === 'urgent'"-->
 
-          <div class="card-header">
+          <div class="card-header" (click)="viewOrderDetails(orderCard.order)">
             <div class="order-number">#{{ orderCard.order.orderNumber }}</div>
             <div class="order-time">
                   <span class="preparation-time" [class.overdue]="orderCard.isOverdue">
@@ -138,7 +138,7 @@
              *ngFor="let orderCard of pendingOrders; trackBy: trackByOrderId; let i = index"
              [class.next]="i === 0">
 
-          <div class="card-header">
+          <div class="card-header" (click)="viewOrderDetails(orderCard.order)">
             <div class="order-number">#{{ orderCard.order.orderNumber }}</div>
             <div class="queue-position" *ngIf="i === 0">
               <span class="next-badge">Suivant</span>
@@ -187,7 +187,7 @@
              *ngFor="let orderCard of readyOrders; trackBy: trackByOrderId"
              [class.pickup-overdue]="isPickupOverdue(orderCard.order)">
 
-          <div class="card-header">
+          <div class="card-header" (click)="viewOrderDetails(orderCard.order)">
             <div class="order-number">#{{ orderCard.order.orderNumber }}</div>
             <div class="ready-time">
               <i class="fas fa-check"></i>
@@ -224,6 +224,54 @@
         </div>
       </div>
     </div>
+    <div class="orders-section ready" *ngIf="pendindCards.length > 0">
+      <h2 class="section-title">
+        <i class="fas fa-check-circle"></i>
+        En attente de confirmation (Ordonnances et/ou stocks) ({{ pendindCards.length }})
+      </h2>
+      <div class="cards-container">
+        <div class="order-card ready"
+             *ngFor="let perndingCard of pendindCards; trackBy: trackByOrderId"
+             [class.pickup-overdue]="isPickupOverdue(perndingCard.order)">
+
+          <div class="card-header" (click)="viewOrderDetails(perndingCard.order)">
+            <div class="order-number">#{{ perndingCard.order.orderNumber }}</div>
+            <div class="ready-time">
+              <i class="fas fa-check"></i>
+              Commande à {{ perndingCard.order.orderDate | date:'HH:mm' }}
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="customer-info">
+              <h3>{{ perndingCard.order.customer?.getFullName() || 'Client anonyme' }}</h3>
+              <p class="contact-info" *ngIf="perndingCard.order.customer?.defaultPhone">
+                <i class="fas fa-phone"></i>
+                {{ perndingCard.order.customer.defaultPhone.digits }}
+              </p>
+            </div>
+
+            <div class="delivery-method">
+              <i class="fas" [class.fa-home]="perndingCard.order.deliveryInfo.method === 'home_delivery'"
+                 [class.fa-store]="perndingCard.order.deliveryInfo.method === 'pickup'"></i>
+              {{ perndingCard.order.getDeliveryMethodLabel() }}
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button class="action-btn cancel" *ngIf="this.permissions.cancelOrder" (click)="cancelOrderForReason(perndingCard.order)">
+              <i class="fas fa-trash"></i>
+              Annuler
+            </button>
+            <button class="action-btn complete" *ngIf="this.permissions.checkoutOrder" (click)="confirmOrderProcess(perndingCard.order)">
+              <i class="fas fa-check"></i>
+              Confirmer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- État vide -->
@@ -241,11 +289,232 @@
     <p>Chargement des commandes...</p>
   </div>
 </div>
+<!-- Modal de détails de commande -->
+<ng-template #orderDetailsModal>
+  <div class="modal-header">
+    <h4 class="modal-title">Détails de la commande {{ selectedOrder?.orderNumber }}</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body" *ngIf="selectedOrder">
+    <div class="order-modal-overlay" *ngIf="isOrderModalOpen" (click)="closeOrderModal()">
+  <div class="order-modal" (click)="$event.stopPropagation()" *ngIf="selectedOrder">
 
-<!-- Sons pour notifications -->
-<audio #newOrderSound preload="auto">
-  <source src="assets/sounds/new-order.mp3" type="audio/mpeg">
-</audio>
-<audio #orderReadySound preload="auto">
-  <source src="assets/sounds/order-ready.mp3" type="audio/mpeg">
-</audio>
+    <!-- Header du modal -->
+    <div class="modal-header" [style.border-left-color]="getStatusColor(selectedOrder.status)">
+      <div class="modal-title-section">
+        <div class="order-number-large">#{{ selectedOrder.orderNumber }}</div>
+        <div class="order-status-badge" [class]="selectedOrder.status">
+          {{ selectedOrder.getStatusLabel() }}
+        </div>
+      </div>
+
+      <div class="modal-time-info">
+        <div class="order-date">
+          <i class="fas fa-calendar"></i>
+          {{ selectedOrder.orderDate | date:'EEEE d MMMM yyyy à HH:mm':'fr' | titlecase }}
+        </div>
+        <div class="preparation-time" *ngIf="selectedOrder.status === 'preparing'">
+          <i class="fas fa-clock"></i>
+          {{ formatDuration(calculateEstimatedTime(selectedOrder)) }}
+        </div>
+      </div>
+
+      <button class="close-modal-btn" (click)="closeOrderModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Corps du modal -->
+    <div class="modal-body">
+
+      <!-- Informations client -->
+      <div class="modal-section customer-section">
+        <h3><i class="fas fa-user"></i> Informations Client</h3>
+        <div class="customer-details">
+          <div class="customer-name">{{ selectedOrder.customer?.getFullName() || 'Client anonyme' }}</div>
+          <div class="customer-contact" *ngIf="selectedOrder.customer?.email">
+            <i class="fas fa-envelope"></i>
+            {{ selectedOrder.customer.email }}
+          </div>
+          <div class="customer-contact" *ngIf="selectedOrder.customer?.defaultPhone">
+            <i class="fas fa-phone"></i>
+            {{ selectedOrder.customer.defaultPhone.digits }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Informations de livraison -->
+      <div class="modal-section delivery-section">
+        <h3>
+          <i class="fas {{ getDeliveryIcon(selectedOrder.deliveryInfo.method) }}"></i>
+          {{ selectedOrder.getDeliveryMethodLabel() }}
+        </h3>
+        <div class="delivery-details" *ngIf="selectedOrder.deliveryInfo.address">
+          <div class="delivery-address">
+            <div>{{ selectedOrder.deliveryInfo.address.firstName }} {{ selectedOrder.deliveryInfo.address.lastName }}</div>
+            <div>{{ selectedOrder.deliveryInfo.address.street }}</div>
+            <div>{{ selectedOrder.deliveryInfo.address.postalCode }} {{ selectedOrder.deliveryInfo.address.city }}</div>
+          </div>
+          <div class="delivery-instructions" *ngIf="selectedOrder.deliveryInfo.address.instructions">
+            <i class="fas fa-sticky-note"></i>
+            {{ selectedOrder.deliveryInfo.address.instructions }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Liste des produits avec vérifications -->
+      <div class="modal-section products-section">
+        <h3><i class="fas fa-pills"></i> Produits commandés ({{ selectedOrder.items.length }})</h3>
+
+        <div class="products-list">
+          <div class="product-item"
+               *ngFor="let item of selectedOrder.items;"
+               [class.prescription-required]="item.prescriptionRequired">
+
+            <div class="product-info">
+              <div class="product-name">{{ item.product.name }}</div>
+              <div class="product-details">
+                <span class="quantity">Qté: {{ item.quantity }}</span>
+                <span class="unit-price">{{ formatPrice(item.unitPrice) }}</span>
+                <span class="total-price">{{ formatPrice(item.totalPrice) }}</span>
+              </div>
+              <div class="product-warnings">
+                <span class="prescription-badge" *ngIf="item.prescriptionRequired">
+                  <i class="fas fa-prescription"></i>
+                  Ordonnance requise
+                </span>
+              </div>
+            </div>
+
+            <!-- Checkboxes de vérification pour les commandes en attente -->
+            <div class="verification-checks" *ngIf="selectedOrder.status === 'pending'">
+
+              <!-- Vérification prescription -->
+              <div class="check-item" *ngIf="item.prescriptionRequired">
+                <label class="check-label">
+                  <input type="checkbox"
+                         [checked]="getVerification(item.product._id)?.prescriptionChecked || false"
+                         (change)="togglePrescriptionCheck(item.product._id)">
+                  <span class="checkmark prescription-check"></span>
+                  <span class="check-text">
+                    <i class="fas fa-prescription"></i>
+                    Ordonnance vérifiée
+                  </span>
+                </label>
+              </div>
+
+              <!-- Vérification stock -->
+              <div class="check-item">
+                <label class="check-label">
+                  <input type="checkbox"
+                         [checked]="getVerification(item.product._id)?.stockChecked || false"
+                         (change)="toggleStockCheck(item.product._id)">
+                  <span class="checkmark stock-check"></span>
+                  <span class="check-text">
+                    <i class="fas fa-boxes"></i>
+                    Stock disponible
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Récapitulatif financier -->
+      <div class="modal-section financial-section">
+        <h3><i class="fas fa-receipt"></i> Récapitulatif</h3>
+        <div class="financial-details">
+          <div class="financial-line">
+            <span>Sous-total</span>
+            <span>{{ formatPrice(selectedOrder.subtotal) }}</span>
+          </div>
+          <div class="financial-line" *ngIf="selectedOrder.shippingCost > 0">
+            <span>Frais de livraison</span>
+            <span>{{ formatPrice(selectedOrder.shippingCost) }}</span>
+          </div>
+          <div class="financial-line" *ngIf="selectedOrder.taxAmount > 0">
+            <span>Taxes</span>
+            <span>{{ formatPrice(selectedOrder.taxAmount) }}</span>
+          </div>
+          <div class="financial-line" *ngIf="selectedOrder.discountAmount > 0">
+            <span>Remise</span>
+            <span class="discount">-{{ formatPrice(selectedOrder.discountAmount) }}</span>
+          </div>
+          <div class="financial-line total-line">
+            <span>Total</span>
+            <span>{{ formatPrice(selectedOrder.totalAmount) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="modal-section notes-section" *ngIf="selectedOrder.clientNotes || selectedOrder.pharmacyNotes">
+        <h3><i class="fas fa-sticky-note"></i> Notes</h3>
+        <div class="notes-content">
+          <div class="note-item" *ngIf="selectedOrder.clientNotes">
+            <strong>Note du client:</strong>
+            <p>{{ selectedOrder.clientNotes }}</p>
+          </div>
+          <div class="note-item" *ngIf="selectedOrder.pharmacyNotes">
+            <strong>Note de la pharmacie:</strong>
+            <p>{{ selectedOrder.pharmacyNotes }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer avec actions -->
+    <div class="modal-footer">
+      <div class="action-buttons">
+
+        <!-- Actions pour commandes en attente -->
+        <ng-container *ngIf="selectedOrder.status === 'pending'">
+          <button class="action-btn cancel"
+                  *ngIf="permissions.cancelOrder"
+                  (click)="cancelOrderForReason(selectedOrder)">
+            <i class="fas fa-times"></i>
+            Annuler
+          </button>
+          <button class="action-btn confirm primary"
+                  *ngIf="permissions.checkoutOrder"
+                  (click)="confirmOrderProcess(selectedOrder)"
+                  [class.all-verified]="areAllVerificationsComplete()">
+            <i class="fas fa-check"></i>
+            {{ areAllVerificationsComplete() ? 'Confirmer' : 'Confirmer avec vérification' }}
+          </button>
+        </ng-container>
+
+        <!-- Actions pour commandes confirmées -->
+        <ng-container *ngIf="selectedOrder.status === 'confirmed' && permissions.asignOrder">
+          <button class="action-btn start primary" (click)="startPreparationFromModal()">
+            <i class="fas fa-play"></i>
+            Commencer la préparation
+          </button>
+        </ng-container>
+
+        <!-- Actions pour commandes en préparation -->
+        <ng-container *ngIf="selectedOrder.status === 'preparing' && permissions.asignOrder">
+          <button class="action-btn ready primary" (click)="markAsReadyFromModal()">
+            <i class="fas fa-check"></i>
+            Marquer comme prêt
+          </button>
+        </ng-container>
+
+        <!-- Actions pour commandes prêtes -->
+        <ng-container *ngIf="selectedOrder.status === 'ready_for_pickup' && permissions.asignOrder">
+          <button class="action-btn notify" (click)="notifyCustomerFromModal()">
+            <i class="fas fa-bell"></i>
+            Notifier le client
+          </button>
+          <button class="action-btn complete primary" (click)="completeOrderFromModal()">
+            <i class="fas fa-hand-holding"></i>
+            Remettre au client
+          </button>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</ng-template>

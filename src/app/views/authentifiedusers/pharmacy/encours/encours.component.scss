@@ -542,6 +542,16 @@
         }
       }
 
+      &.cancel {
+        background: #d52e2e;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background: #dd2b4c;
+          transform: translateY(-1px);
+        }
+      }
+
       &.complete {
         background: #4CAF50;
         color: white;
@@ -688,4 +698,636 @@
 
 .order-card {
   animation: fadeIn 0.4s ease-out;
+}
+// Modal de commande
+.order-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.order-modal {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  width: 90vw;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// Header du modal
+.modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 24px;
+  border-left: 6px solid;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+
+  .modal-title-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .order-number-large {
+      font-size: 32px;
+      font-weight: 800;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .order-status-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      &.pending { background: rgba(255, 193, 7, 0.9); color: #856404; }
+      &.confirmed { background: rgba(0, 123, 255, 0.9); color: white; }
+      &.preparing { background: rgba(108, 117, 125, 0.9); color: white; }
+      &.ready_for_pickup { background: rgba(40, 167, 69, 0.9); color: white; }
+    }
+  }
+
+  .modal-time-info {
+    text-align: center;
+    opacity: 0.9;
+
+    .order-date {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .preparation-time {
+      font-size: 18px;
+      font-weight: 600;
+      color: #ffd700;
+    }
+  }
+
+  .close-modal-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: rotate(90deg);
+    }
+  }
+}
+
+// Corps du modal
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+
+  .modal-section {
+    border-bottom: 1px solid #eee;
+    padding: 24px;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    h3 {
+      margin: 0 0 16px 0;
+      color: #2c3e50;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      i {
+        color: #667eea;
+      }
+    }
+  }
+}
+
+// Section client
+.customer-section {
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+
+  .customer-details {
+    .customer-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+
+    .customer-contact {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      color: #6c757d;
+
+      i {
+        width: 16px;
+        color: #667eea;
+      }
+    }
+  }
+}
+
+// Section livraison
+.delivery-section {
+  .delivery-details {
+    .delivery-address {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+      margin-bottom: 12px;
+
+      div {
+        margin-bottom: 4px;
+
+        &:last-child {
+          margin-bottom: 0;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .delivery-instructions {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 12px;
+      background: #fff3cd;
+      border-radius: 6px;
+      color: #856404;
+      font-style: italic;
+    }
+  }
+}
+
+// Section produits
+.products-section {
+  .products-list {
+    .product-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 2px solid #f1f3f4;
+      border-radius: 12px;
+      transition: all 0.2s;
+
+      &.prescription-required {
+        border-left-color: #ff6b6b;
+        background: linear-gradient(90deg, rgba(255, 107, 107, 0.05) 0%, transparent 100%);
+      }
+
+      &:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+      }
+
+      .product-info {
+        flex: 1;
+
+        .product-name {
+          font-size: 16px;
+          font-weight: 600;
+          color: #2c3e50;
+          margin-bottom: 8px;
+        }
+
+        .product-details {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 8px;
+
+          .quantity {
+            color: #6c757d;
+            font-weight: 500;
+          }
+
+          .unit-price {
+            color: #6c757d;
+          }
+
+          .total-price {
+            font-weight: 600;
+            color: #28a745;
+          }
+        }
+
+        .product-warnings {
+          .prescription-badge {
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+          }
+        }
+      }
+
+      .verification-checks {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-left: 16px;
+
+        .check-item {
+          .check-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+
+            &:hover {
+              background: #f8f9fa;
+            }
+
+            input[type="checkbox"] {
+              display: none;
+            }
+
+            .checkmark {
+              width: 20px;
+              height: 20px;
+              border: 2px solid #ddd;
+              border-radius: 4px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.2s;
+
+              &.prescription-check {
+                border-color: #ff6b6b;
+              }
+
+              &.stock-check {
+                border-color: #28a745;
+              }
+
+              &::after {
+                content: '✓';
+                color: white;
+                font-weight: bold;
+                opacity: 0;
+                transform: scale(0);
+                transition: all 0.2s;
+              }
+            }
+
+            input:checked + .checkmark {
+              &.prescription-check {
+                background: #ff6b6b;
+                border-color: #ff6b6b;
+              }
+
+              &.stock-check {
+                background: #28a745;
+                border-color: #28a745;
+              }
+
+              &::after {
+                opacity: 1;
+                transform: scale(1);
+              }
+            }
+
+            .check-text {
+              font-size: 14px;
+              font-weight: 500;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+
+              i {
+                width: 14px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Section financière
+.financial-section {
+  background: #f8f9ff;
+
+  .financial-details {
+    .financial-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &.total-line {
+        font-size: 18px;
+        font-weight: 700;
+        color: #2c3e50;
+        padding-top: 16px;
+        margin-top: 8px;
+        border-top: 2px solid #667eea;
+      }
+
+      .discount {
+        color: #28a745;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// Section notes
+.notes-section {
+  .notes-content {
+    .note-item {
+      margin-bottom: 16px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      strong {
+        color: #2c3e50;
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      p {
+        margin: 0;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border-left: 4px solid #667eea;
+        color: #6c757d;
+        line-height: 1.5;
+      }
+    }
+  }
+}
+
+// Footer du modal
+.modal-footer {
+  background: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  padding: 20px 24px;
+
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+
+    .action-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      min-width: 140px;
+      justify-content: center;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      i {
+        font-size: 14px;
+      }
+
+      // Styles par type d'action
+      &.cancel {
+        background: #dc3545;
+        color: white;
+
+        &:hover {
+          background: #c82333;
+        }
+      }
+
+      &.confirm {
+        background: #28a745;
+        color: white;
+
+        &:hover {
+          background: #218838;
+        }
+
+        &.all-verified {
+          background: linear-gradient(45deg, #28a745, #20c997);
+          box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
+
+          &:hover {
+            background: linear-gradient(45deg, #218838, #1aa085);
+          }
+        }
+      }
+
+      &.start {
+        background: #007bff;
+        color: white;
+
+        &:hover {
+          background: #0069d9;
+        }
+      }
+
+      &.ready {
+        background: #28a745;
+        color: white;
+
+        &:hover {
+          background: #218838;
+        }
+      }
+
+      &.notify {
+        background: #ffc107;
+        color: #212529;
+
+        &:hover {
+          background: #e0a800;
+        }
+      }
+
+      &.complete {
+        background: #6f42c1;
+        color: white;
+
+        &:hover {
+          background: #5a32a3;
+        }
+      }
+
+      &.primary {
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+          transition: left 0.5s;
+        }
+
+        &:hover::before {
+          left: 100%;
+        }
+      }
+    }
+  }
+}
+
+// Animations et responsive
+@media (max-width: 768px) {
+  .order-modal {
+    width: 95vw;
+    margin: 20px;
+    max-height: calc(100vh - 40px);
+
+    .modal-header {
+      padding: 16px;
+      flex-direction: column;
+      gap: 12px;
+      text-align: center;
+
+      .modal-title-section {
+        flex-direction: column;
+        gap: 8px;
+
+        .order-number-large {
+          font-size: 24px;
+        }
+      }
+    }
+
+    .modal-body .modal-section {
+      padding: 16px;
+
+      h3 {
+        font-size: 16px;
+      }
+    }
+
+    .products-section .products-list .product-item {
+      flex-direction: column;
+      gap: 12px;
+
+      .verification-checks {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+
+    .modal-footer .action-buttons {
+      flex-direction: column;
+
+      .action-btn {
+        min-width: unset;
+        width: 100%;
+      }
+    }
+  }
+}
+
+// Animation pour les checkboxes
+@keyframes checkboxPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.verification-checks .check-label input:checked + .checkmark {
+  animation: checkboxPulse 0.3s ease-out;
+}
+
+// État de chargement pour les boutons
+.action-btn {
+  &.loading {
+    position: relative;
+    color: transparent;
+
+    &::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      top: 50%;
+      left: 50%;
+      margin-left: -8px;
+      margin-top: -8px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
