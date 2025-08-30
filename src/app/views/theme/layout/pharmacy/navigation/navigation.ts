@@ -48,14 +48,6 @@ export const NavigationItems: NavigationItem[] = [
         permissions: ['dashboard.view']
       },
       {
-        id: 'pharmacy-calendar',
-        title: 'Calendrier',
-        type: 'item',
-        url: '/pharmacy/calendar',
-        icon: 'fa fa-calendar',
-        permissions: ['calendrier.view']
-      },
-      {
         id: 'pharmacy-admin-analytics',
         title: 'Stats',
         type: 'item',
@@ -67,9 +59,17 @@ export const NavigationItems: NavigationItem[] = [
         id: 'pharmacy-reviews',
         title: 'Avis clients',
         type: 'item',
-        url: '/pharmacy/reviews',
+        url: '/pharmacy/reviews-products',
         icon: 'fa fa-star',
         permissions: ['avis.view']
+      },
+      {
+        id: 'pharmacy-calendar',
+        title: 'Calendrier',
+        type: 'item',
+        url: '/pharmacy/calendar',
+        icon: 'fa fa-calendar',
+        permissions: ['calendrier.view']
       }
     ]
   },

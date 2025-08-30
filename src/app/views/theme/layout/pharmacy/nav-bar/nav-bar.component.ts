@@ -9,6 +9,8 @@ import { NavLeftComponent } from './nav-left/nav-left.component';
 import { NavLogoComponent } from './nav-logo/nav-logo.component';
 import { NavRightComponent } from './nav-right/nav-right.component';
 import {UserDetails} from "../../../../../models/UserDatails";
+import {AuthService} from "../../../../../controllers/services/auth.service";
+import {Subject, takeUntil} from "rxjs";
 
 @Component({
   selector: 'app-nav-bar',
@@ -28,17 +30,30 @@ export class NavBarComponent {
   @Input() userDetails!: UserDetails;
 
   // Constructor
-  constructor() {
+  constructor(
+    private auth: AuthService,
+  ) {
     this.windowWidth = window.innerWidth;
-    this.navCollapsed = this.windowWidth >= 1025 ? setupsConfig.isCollapse_menu : false;
     this.navCollapsedMob = false;
   }
 
+  private destroy$ = new Subject<void>();
+  ngOnInit(): void {
+    if (!this.userDetails) {
+      this.auth.userDetailsLoaded$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(async loaded => {
+          this.userDetails = this.auth.getUserDetails();
+        });
+    }
+    this.navCollapsed = this.userDetails.setups.isCollapse_menu ?? (this.windowWidth >= 1025 ? setupsConfig.isCollapse_menu : false);
+  }
   // public method
   navCollapse() {
     if (this.windowWidth >= 1025) {
       this.navCollapsed = !this.navCollapsed;
       this.NavCollapse.emit();
+      this.setOpenedOrNot();
     }
   }
 
@@ -46,5 +61,13 @@ export class NavBarComponent {
     if (this.windowWidth < 1025) {
       this.NavCollapsedMob.emit();
     }
+  }
+  setOpenedOrNot() {
+    this.auth.editOpenedDefaultSettingsUser(this.navCollapsed)
+      .then(() => {
+        this.userDetails = this.auth.getUserDetails();
+      })
+      .catch(() => {
+      });
   }
 }

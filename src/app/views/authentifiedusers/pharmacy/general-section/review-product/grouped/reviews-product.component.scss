@@ -1,0 +1,446 @@
+/* =====================================
+   Variables SCSS
+   Définition des couleurs, typographies, ombres, etc.
+   ===================================== */
+$primary-color: #d91a72;
+$primary-hover: #b91560;
+$secondary-color: #8C99AA; // Gris doux
+$accent-color-1: #6DD5ED; // Un bleu ciel clair pour les accents
+$accent-color-2: #E84A5F; // Un rouge corail pour le danger/l'alerte
+$success-color: #2ECC71; // Vert frais pour le succès
+$warning-color: #F39C12; // Jaune orangé pour l'avertissement
+$info-color: #3498DB;   // Bleu moyen pour l'information
+$light-background: #F8F9FB; // Fond très clair
+$card-background: #FFFFFF; // Fond des cartes
+$border-color: #E2E6EC; // Couleur des bordures
+$dark-text: #2C3E50; // Texte foncé pour les titres
+$medium-text: #5E6A7A; // Texte moyen
+$small-text: #9CA7B7; // Texte discret
+$white-bg: #ffffff;
+
+$border-radius: 0.75rem; // Rayon de bordure légèrement plus grand
+
+$box-shadow-light: 0 4px 12px rgba(0, 0, 0, 0.08); // Ombre légère
+$box-shadow-medium: 0 8px 20px rgba(0, 0, 0, 0.12); // Ombre moyenne pour le survol
+$box-shadow-strong: 0 12px 30px rgba(0, 0, 0, 0.18); // Ombre plus forte
+$box-shadow-sm : 0 2px 4px rgba(0, 0, 0, 0.08);
+
+
+$border-radius: 8px;
+$box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+$transition: all 0.3s ease;
+
+.header {
+  background: $white-bg;
+  border-bottom: 1px solid $border-color;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+// Page header
+.page-header {
+  background: $white-bg;
+  border-bottom: 1px solid $border-color;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  .breadcrumb {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 1rem;
+
+    .breadcrumb-item {
+      a {
+        color: $primary-color;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+
+      &.active {
+        color: $secondary-color;
+      }
+    }
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 0;
+    color: #2c3e50;
+
+    .badge {
+      font-size: 0.75rem;
+      vertical-align: middle;
+    }
+  }
+}
+
+.product-image-large {
+  max-width: 200px;
+  height: auto;
+  border-radius: 8px;
+}
+
+.stat-card {
+  height: 100%;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.stat-card-small {
+  height: 100%;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.rating-display .rating-number {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #ffa500;
+}
+
+.recommendation-display .recommendation-percentage {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.rating-distribution .rating-bar-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.star-label {
+  width: 60px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.rating-progress {
+  height: 20px;
+  flex: 1;
+  margin: 0 10px;
+}
+
+.count-label {
+  width: 40px;
+  text-align: right;
+  font-weight: 500;
+}
+
+.percentage-label {
+  width: 60px;
+  text-align: right;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.aspect-card {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  height: 100%;
+}
+
+.aspect-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.aspect-rating .rating-value {
+  font-weight: 600;
+  color: #666;
+  margin-left: 0.5rem;
+}
+
+.review-card {
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.review-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.reviewer-name {
+  color: #333;
+  font-weight: 600;
+}
+
+.review-title {
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.review-comment {
+  color: #555;
+  line-height: 1.6;
+}
+
+.aspect-item-small {
+  text-align: center;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.aspect-item-small .aspect-label {
+  font-size: 0.8rem;
+  color: #666;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.pharmacy-response {
+  background: #f0f7ff;
+  border-left: 4px solid #007bff;
+  padding: 1rem;
+  border-radius: 0 8px 8px 0;
+}
+
+.response-header {
+  font-weight: 600;
+  color: #007bff;
+  margin-bottom: 0.5rem;
+}
+
+.response-message {
+  margin: 0;
+  color: #333;
+}
+
+.temporal-info .info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.temporal-info .info-item:last-child {
+  border-bottom: none;
+}
+
+.temporal-info .label {
+  font-weight: 600;
+  color: #666;
+  flex: 1;
+}
+
+.temporal-info .value {
+  color: #333;
+}
+
+.status-breakdown .status-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.status-breakdown .status-item:last-child {
+  border-bottom: none;
+}
+
+.status-breakdown .status-label {
+  flex: 1;
+  margin-left: 0.75rem;
+  font-weight: 500;
+}
+
+.status-breakdown .status-percentage {
+  font-weight: 600;
+  color: #666;
+}
+
+.metric-item {
+  text-align: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  height: 100%;
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.custom-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  min-width: 160px;
+  padding: 0.5rem 0;
+  margin: 0.125rem 0 0;
+  background-color: #fff;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 0.375rem;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.175);
+  display: none;
+}
+
+.custom-dropdown.open .custom-dropdown-menu {
+  display: block;
+}
+
+.search-box {
+  position: relative;
+}
+
+.search-box i {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+}
+
+.rating-stars {
+  color: #ffa500;
+  font-size: 1.1rem;
+}
+
+.rating-stars.large {
+  font-size: 1.5rem;
+}
+
+.rating-stars.small {
+  font-size: 0.9rem;
+}
+
+.rating-excellent { color: #28a745; }
+.rating-good { color: #17a2b8; }
+.rating-average { color: #ffc107; }
+.rating-poor { color: #dc3545; }
+
+.badge-warning { background-color: #ffc107; color: #000; }
+.badge-success { background-color: #28a745; color: #fff; }
+.badge-danger { background-color: #dc3545; color: #fff; }
+.badge-secondary { background-color: #6c757d; color: #fff; }
+.badge-info { background-color: #17a2b8; color: #fff; }
+
+.review-preview {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.btn-dropdown {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  color: #495057;
+}
+
+.btn-dropdown:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+}
+
+.chevron-down.rotated {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 768px) {
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .custom-dropdown {
+    width: 100%;
+  }
+
+  .btn-dropdown {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+// Styles pour les boutons d'action
+.btn-outline-primary {
+  border-color: $primary-color;
+  color: $primary-color;
+  padding: 0.6rem 1.2rem;
+  border-radius: $border-radius;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: $primary-color;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: $box-shadow-sm;
+  }
+
+  &[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.btn-outline-secondary {
+  border-color: $secondary-color;
+  color: $secondary-color;
+  padding: 0.6rem 1.2rem;
+  border-radius: $border-radius;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: $secondary-color;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: $box-shadow-sm;
+  }
+}

@@ -1,0 +1,584 @@
+<!-- Breadcrumb et header -->
+<div class="page-header">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <button class="btn btn-outline-primary mb-4" (click)="goBack()">
+        <i class="fas fa-arrow-left me-1"></i>
+        Retour
+      </button>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="javascript:void(0)" (click)="goBack()">
+              <i class="fas fa-star me-1"></i>Avis Produits
+            </a>
+          </li>
+          <li class="breadcrumb-item active">Détails de l'avis</li>
+        </ol>
+      </nav>
+
+      <h2 class="page-title" *ngIf="review">
+        Avis #{{ review._id.slice(-8) }}
+        <span class="badge ms-2" [ngClass]="getStatusBadgeClass(review.status)">
+          {{ getStatusLabel(review.status) }}
+        </span>
+      </h2>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div class="custom-dropdown" *ngIf="permissions.moderateReviews && review" [class.open]="isActionsDropdownOpen" #statusDropdownn>
+      <button class="btn btn-primary dropdown-toggle"
+              (click)="toggleStatusDropdown()">
+        <i class="fas fa-cog me-1"></i>
+        {{ getActionLabel(selectedActions) }}
+        <i class="fas fa-chevron-down" [class.rotated]="isActionsDropdownOpen"></i>
+
+      </button>
+      <ul class="dropdown-menu custom-dropdown-menu"
+          [class.show]="isActionsDropdownOpen">
+        <li *ngFor="let option of optionsActionsDatas">
+          <button class="dropdown-item"
+                  type="button"
+                  [class.active]="selectedActions === option.value"
+                  (click)="setActionToDo(option.value); closeDropdown()">
+              <span class="status-badge" [ngClass]="'status-' + option.value">
+                {{ option.label }}
+              </span>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Message d'erreur -->
+<div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="fas fa-exclamation-triangle me-2"></i>
+  {{ errorMessage }}
+  <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+</div>
+
+<!-- Contenu principal -->
+<div *ngIf="!isLoading && review" class="review-details-content">
+  <!-- Onglets -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <button class="nav-link"
+              [class.active]="activeTab === 'details'"
+              (click)="setActiveTab('details')">
+        <i class="fas fa-info-circle me-1"></i>
+        Détails
+      </button>
+    </li>
+    <li class="nav-item" *ngIf="permissions.respondToReviews">
+      <button class="nav-link"
+              [class.active]="activeTab === 'response'"
+              (click)="setActiveTab('response')">
+        <i class="fas fa-reply me-1"></i>
+        Réponse
+        <span class="badge badge-info ms-1" *ngIf="review.pharmacyResponse?.message">1</span>
+      </button>
+    </li>
+    <li class="nav-item" *ngIf="relatedReviews.length > 0">
+      <button class="nav-link"
+              [class.active]="activeTab === 'related'"
+              (click)="setActiveTab('related')">
+        <i class="fas fa-link me-1"></i>
+        Autres avis du produit
+        <span class="badge badge-secondary ms-1">{{ relatedReviewsLength }}</span>
+      </button>
+    </li>
+    <li class="nav-item" *ngIf="relatedReviews.length > 0">
+      <button class="nav-link"
+              [class.active]="activeTab === 'relatedother'"
+              (click)="setActiveTab('relatedother')">
+        <i class="fas fa-user-alt me-1"></i>
+        Avis similaires du client
+        <span class="badge badge-secondary ms-1">{{ relatedReviewsOtherLength }}</span>
+      </button>
+    </li>
+  </ul>
+
+  <!-- Onglet Détails -->
+  <div *ngIf="activeTab === 'details'" class="tab-content">
+    <div class="row">
+      <!-- Informations principales -->
+      <div class="col-lg-8">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-comment me-2"></i>
+              Détails de l'avis
+            </h5>
+          </div>
+          <div class="card-body">
+            <!-- En-tête de l'avis -->
+            <div class="review-header mb-3">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="reviewer-info">
+                  <h6 class="reviewer-name">
+                    {{ review.customer?.getFullName() || 'Anonyme' }}
+                    <span class="badge badge-success ms-2" *ngIf="review.isVerifiedPurchase">
+                      <i class="fas fa-check"></i> Achat vérifié
+                    </span>
+                  </h6>
+                  <small class="text-muted">
+                    <i class="fas fa-calendar me-1"></i>
+                    {{ review.createdAt | date:'EEEE d MMMM yyyy à HH:mm':'fr' }}
+                  </small>
+                </div>
+                <div class="review-rating">
+                  <div class="rating-stars large" [ngClass]="getRatingClass(review.rating)">
+                    {{ getRatingStars(review.rating) }}
+                  </div>
+                  <span class="rating-value">{{ review.rating }}/5</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Titre et commentaire -->
+            <div class="review-content">
+              <h6 *ngIf="review.title" class="review-title">{{ review.title }}</h6>
+              <p *ngIf="review.comment" class="review-comment">{{ review.comment }}</p>
+
+              <div *ngIf="!review.title && !review.comment" class="text-muted">
+                <em>Aucun commentaire textuel fourni.</em>
+              </div>
+            </div>
+
+            <!-- Aspects évalués -->
+            <div *ngIf="review.aspects && Object.keys(review.aspects).length > 0" class="review-aspects mt-3">
+              <h6>Aspects évalués</h6>
+              <div class="row">
+                <div class="col-md-3" *ngIf="review.aspects.quality">
+                  <div class="aspect-item">
+                    <span class="aspect-label">Qualité</span>
+                    <div class="aspect-rating">
+                      <span class="rating-stars">{{ getRatingStars(review.aspects.quality) }}</span>
+                      <span class="rating-value">{{ review.aspects.quality }}/5</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3" *ngIf="review.aspects.service">
+                  <div class="aspect-item">
+                    <span class="aspect-label">Service</span>
+                    <div class="aspect-rating">
+                      <span class="rating-stars">{{ getRatingStars(review.aspects.service) }}</span>
+                      <span class="rating-value">{{ review.aspects.service }}/5</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3" *ngIf="review.aspects.delivery">
+                  <div class="aspect-item">
+                    <span class="aspect-label">Livraison</span>
+                    <div class="aspect-rating">
+                      <span class="rating-stars">{{ getRatingStars(review.aspects.delivery) }}</span>
+                      <span class="rating-value">{{ review.aspects.delivery }}/5</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3" *ngIf="review.aspects.value">
+                  <div class="aspect-item">
+                    <span class="aspect-label">Rapport qualité/prix</span>
+                    <div class="aspect-rating">
+                      <span class="rating-stars">{{ getRatingStars(review.aspects.value) }}</span>
+                      <span class="rating-value">{{ review.aspects.value }}/5</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recommandation -->
+            <div *ngIf="review.wouldRecommend !== undefined" class="recommendation mt-3">
+              <span class="badge" [ngClass]="review.wouldRecommend ? 'badge-success' : 'badge-warning'">
+                <i class="fas" [ngClass]="review.wouldRecommend ? 'fa-thumbs-up' : 'fa-thumbs-down'"></i>
+                {{ review.wouldRecommend ? 'Recommande ce produit' : 'Ne recommande pas ce produit' }}
+              </span>
+            </div>
+
+            <!-- Votes d'utilité -->
+            <div class="review-votes mt-3" *ngIf="review.helpfulVotes > 0 || review.unhelpfulVotes > 0">
+              <small class="text-muted">
+                Cet avis a été jugé utile par {{ review.helpfulVotes }} personne(s)
+                <span *ngIf="review.unhelpfulVotes > 0">
+                  et inutile par {{ review.unhelpfulVotes }} personne(s)
+                </span>
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informations contextuelles -->
+      <div class="col-lg-4">
+        <!-- Informations produit -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-box me-2"></i>
+              Produit concerné
+            </h6>
+          </div>
+          <div class="card-body" *ngIf="review.product">
+            <div class="product-info">
+              <img *ngIf="review.product?.mainImage"
+                   [src]="internatPathUrl + review.product?.mainImage?.url"
+                   class="product-image mb-2"
+                   alt="Image produit">
+
+              <h6 class="product-name">{{ review.product.name }}</h6>
+              <p class="product-sku text-muted">SKU: {{ review.product.sku }}</p>
+
+              <button class="btn btn-outline-primary btn-sm" (click)="navigateToProduct()">
+                <i class="fas fa-external-link-alt me-1"></i>
+                Voir le produit
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations client -->
+        <div class="card mb-4" *ngIf="review.customer">
+          <div class="card-header">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-user me-2"></i>
+              Client
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="customer-info">
+              <h6 class="customer-name">{{ review.customer.getFullName() }}</h6>
+              <p class="customer-email text-muted">{{ review.customer.email }}</p>
+
+              <div class="customer-stats mt-3">
+                <small class="text-muted d-block">
+                  <i class="fas fa-shopping-cart me-1"></i>
+                  {{ totalOrdersByCustomer || 0 }} commande(s)
+                </small>
+                <small class="text-muted d-block">
+                  <i class="fas fa-star me-1"></i>
+<!--                  {{ review.customer.totalReviews || 0 }} avis donné(s)-->
+                </small>
+              </div>
+
+<!--              <button class="btn btn-outline-primary btn-sm mt-2" (click)="navigateToCustomer()">-->
+<!--                <i class="fas fa-external-link-alt me-1"></i>-->
+<!--                Voir le profil-->
+<!--              </button>-->
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations techniques -->
+        <div class="card">
+          <div class="card-header">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-info-circle me-2"></i>
+              Informations techniques
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="tech-info">
+              <div class="info-item">
+                <span class="label">ID de l'avis:</span>
+                <span class="value">{{ review._id }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Date de création:</span>
+                <span class="value">{{ review.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="info-item" *ngIf="review.updatedAt">
+                <span class="label">Dernière modification:</span>
+                <span class="value">{{ review.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">IP du client:</span>
+                <span class="value">{{ review.clientIp || 'Non disponible' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">User Agent:</span>
+                <span class="value text-truncate" [title]="review.userAgent">
+                  {{ review.userAgent || 'Non disponible' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onglet Réponse -->
+  <div *ngIf="activeTab === 'response'" class="tab-content">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-reply me-2"></i>
+              Réponse de la pharmacie
+            </h5>
+          </div>
+          <div class="card-body">
+            <!-- Réponse existante -->
+            <div *ngIf="review.pharmacyResponse?.message && !isEditingResponse" class="existing-response">
+              <div class="response-content">
+                <p class="response-message">{{ review.pharmacyResponse.message }}</p>
+                <div class="response-meta">
+                  <small class="text-muted">
+                    <i class="fas fa-user me-1"></i>
+                    Par {{ review.pharmacyResponse.respondedBy?.name || 'Pharmacie' }}
+                    le {{ review.pharmacyResponse.respondedAt | date:'dd/MM/yyyy à HH:mm' }}
+                  </small>
+                </div>
+              </div>
+
+              <div class="response-actions mt-3" *ngIf="permissions.respondToReviews">
+                <button class="btn btn-outline-primary btn-sm" (click)="toggleResponseEdit()">
+                  <i class="fas fa-edit me-1"></i>
+                  Modifier la réponse
+                </button>
+              </div>
+            </div>
+
+            <!-- Formulaire de réponse -->
+            <div *ngIf="!review.pharmacyResponse?.message || isEditingResponse">
+              <form [formGroup]="responseForm" (ngSubmit)="savePharmacyResponse()">
+                <div class="mb-3">
+                  <label class="form-label">
+                    {{ isEditingResponse ? 'Modifier la réponse' : 'Votre réponse au client' }}
+                    <span class="text-danger">*</span>
+                  </label>
+                  <textarea class="form-control"
+                            formControlName="message"
+                            rows="5"
+                            placeholder="Rédigez votre réponse professionnelle et courtoise..."></textarea>
+                  <div class="form-text">
+                    Minimum 10 caractères, maximum 1000 caractères
+                    <span class="float-end">
+                      {{ responseForm.get('message')?.value?.length || 0 }}/1000
+                    </span>
+                  </div>
+                  <div *ngIf="responseForm.get('message')?.invalid && responseForm.get('message')?.touched"
+                       class="text-danger small">
+                    <div *ngIf="responseForm.get('message')?.errors?.['required']">
+                      La réponse est obligatoire
+                    </div>
+                    <div *ngIf="responseForm.get('message')?.errors?.['minlength']">
+                      La réponse doit contenir au moins 10 caractères
+                    </div>
+                    <div *ngIf="responseForm.get('message')?.errors?.['maxlength']">
+                      La réponse ne peut pas dépasser 1000 caractères
+                    </div>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                  <button type="button"
+                          class="btn btn-outline-secondary"
+                          (click)="cancelResponseEdit()"
+                          *ngIf="isEditingResponse">
+                    Annuler
+                  </button>
+                  <button type="submit"
+                          class="btn btn-primary"
+                          [disabled]="responseForm.invalid || isSubmitting">
+                    <i class="fas fa-paper-plane me-1" *ngIf="!isSubmitting"></i>
+                    <i class="fas fa-spinner fa-spin me-1" *ngIf="isSubmitting"></i>
+                    {{ isEditingResponse ? 'Mettre à jour' : 'Envoyer la réponse' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onglet Avis similaires -->
+  <div *ngIf="activeTab === 'related'" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-link me-2"></i>
+          Autres avis du produit
+        </h5>
+        <p class="text-muted">
+          les {{relatedReviewsStartSlice}} premiers avis
+        </p>
+      </div>
+      <div class="card-body">
+        <div *ngIf="relatedReviews.length === 0" class="text-center text-muted py-4">
+          <i class="fas fa-comments fa-2x mb-2"></i>
+          <p>Aucun autre avis de ce client</p>
+        </div>
+
+        <div *ngFor="let relatedReview of relatedReviews" class="related-review-item">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="review-info">
+              <h6 class="product-name">{{ relatedReview.product?.name }}</h6>
+              <div class="rating-stars" [ngClass]="getRatingClass(relatedReview.rating)">
+                {{ getRatingStars(relatedReview.rating) }}
+              </div>
+              <p *ngIf="relatedReview.comment" class="review-comment">
+                {{ relatedReview.comment | slice:0:150 }}
+                <span *ngIf="relatedReview.comment.length > 150">...</span>
+              </p>
+              <small class="text-muted">
+                {{ relatedReview.createdAt | date:'dd/MM/yyyy' }}
+              </small>
+            </div>
+            <div class="review-actions">
+              <span class="badge" [ngClass]="getStatusBadgeClass(relatedReview.status)">
+                {{ getStatusLabel(relatedReview.status) }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-center mt-3" *ngIf="relatedReviewsLength > relatedReviewsStartSlice">
+          <button class="btn btn-outline-primary" (click)="loadMoreRelatedReviews('')">
+            <i class="fas fa-chevron-down me-1"></i>
+            Charger plus d'avis
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="activeTab === 'relatedother'" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-link me-2"></i>
+          Autres avis du même client
+        </h5>
+        <p class="text-muted">
+          les {{relatedReviewsStartSliceOthers}} premiers avis
+        </p>
+      </div>
+      <div class="card-body">
+        <div *ngIf="relatedReviewsOthers.length === 0" class="text-center text-muted py-4">
+          <i class="fas fa-comments fa-2x mb-2"></i>
+          <p>Aucun autre avis de ce client</p>
+        </div>
+
+        <div *ngFor="let relatedReview of relatedReviewsOthers" class="related-review-item">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="review-info">
+              <h6 class="product-name">{{ relatedReview.product?.name }}</h6>
+              <div class="rating-stars" [ngClass]="getRatingClass(relatedReview.rating)">
+                {{ getRatingStars(relatedReview.rating) }}
+              </div>
+              <p *ngIf="relatedReview.comment" class="review-comment">
+                {{ relatedReview.comment | slice:0:150 }}
+                <span *ngIf="relatedReview.comment.length > 150">...</span>
+              </p>
+              <small class="text-muted">
+                {{ relatedReview.createdAt | date:'dd/MM/yyyy' }}
+              </small>
+            </div>
+            <div class="review-actions">
+              <span class="badge" [ngClass]="getStatusBadgeClass(relatedReview.status)">
+                {{ getStatusLabel(relatedReview.status) }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-center mt-3" *ngIf="relatedReviewsOtherLength > relatedReviewsStartSliceOthers">
+          <button class="btn btn-outline-primary" (click)="loadMoreRelatedReviews('others')">
+            <i class="fas fa-chevron-down me-1"></i>
+            Charger plus d'avis
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal de modération -->
+<!--<ng-template #moderationModal>-->
+<!--  <div class="modal-header">-->
+<!--    <h4 class="modal-title">-->
+<!--      <i class="fas fa-gavel me-2"></i>-->
+<!--      Modération de l'avis-->
+<!--    </h4>-->
+<!--    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>-->
+<!--  </div>-->
+<!--  <div class="modal-body" *ngIf="review">-->
+<!--    <form [formGroup]="moderationForm">-->
+<!--      &lt;!&ndash; Aperçu de l'avis &ndash;&gt;-->
+<!--      <div class="review-preview mb-4">-->
+<!--        <h6>Aperçu de l'avis</h6>-->
+<!--        <div class="preview-content">-->
+<!--          <div class="rating-stars" [ngClass]="getRatingClass(review.rating)">-->
+<!--            {{ getRatingStars(review.rating) }}-->
+<!--          </div>-->
+<!--          <p *ngIf="review.title" class="fw-bold">{{ review.title }}</p>-->
+<!--          <p *ngIf="review.comment">{{ review.comment }}</p>-->
+<!--        </div>-->
+<!--      </div>-->
+
+<!--      &lt;!&ndash; Formulaire de modération &ndash;&gt;-->
+<!--      <div class="mb-3">-->
+<!--        <label class="form-label">-->
+<!--          Nouveau statut <span class="text-danger">*</span>-->
+<!--        </label>-->
+<!--        <select class="form-select" formControlName="status">-->
+<!--          <option value="">Sélectionner un statut</option>-->
+<!--          <option value="approved">Approuver</option>-->
+<!--          <option value="rejected">Rejeter</option>-->
+<!--          <option value="flagged">Signaler</option>-->
+<!--          <option value="pending">Remettre en attente</option>-->
+<!--        </select>-->
+<!--        <div *ngIf="moderationForm.get('status')?.invalid && moderationForm.get('status')?.touched"-->
+<!--             class="text-danger small">-->
+<!--          Veuillez sélectionner un statut-->
+<!--        </div>-->
+<!--      </div>-->
+
+<!--      <div class="mb-3">-->
+<!--        <label class="form-label">Note de modération (optionnel)</label>-->
+<!--        <textarea class="form-control"-->
+<!--                  formControlName="moderationNote"-->
+<!--                  rows="3"-->
+<!--                  placeholder="Ajoutez une note expliquant votre décision..."></textarea>-->
+<!--        <div class="form-text">-->
+<!--          Maximum 500 caractères-->
+<!--          <span class="float-end">-->
+<!--            {{ moderationForm.get('moderationNote')?.value?.length || 0 }}/500-->
+<!--          </span>-->
+<!--        </div>-->
+<!--      </div>-->
+
+<!--      &lt;!&ndash; Suggestions selon le statut &ndash;&gt;-->
+<!--      <div *ngIf="moderationForm.get('status')?.value" class="status-suggestions">-->
+<!--        <div *ngIf="moderationForm.get('status')?.value === 'rejected'" class="alert alert-warning">-->
+<!--          <strong>Avis rejeté:</strong> L'avis ne sera pas visible publiquement.-->
+<!--          Assurez-vous que cette décision est justifiée.-->
+<!--        </div>-->
+<!--        <div *ngIf="moderationForm.get('status')?.value === 'flagged'" class="alert alert-info">-->
+<!--          <strong>Avis signalé:</strong> L'avis nécessite une révision supplémentaire-->
+<!--          avant publication.-->
+<!--        </div>-->
+<!--        <div *ngIf="moderationForm.get('status')?.value === 'approved'" class="alert alert-success">-->
+<!--          <strong>Avis approuvé:</strong> L'avis sera visible publiquement.-->
+<!--        </div>-->
+<!--      </div>-->
+<!--    </form>-->
+<!--  </div>-->
+<!--  <div class="modal-footer">-->
+<!--    <button type="button" class="btn btn-secondary" (click)="closeModal()">-->
+<!--      Annuler-->
+<!--    </button>-->
+<!--    <button type="button"-->
+<!--            class="btn btn-primary"-->
+<!--            [disabled]="moderationForm.invalid || isSubmitting"-->
+<!--            (click)="updateReviewStatus()">-->
+<!--      <i class="fas fa-save me-1" *ngIf="!isSubmitting"></i>-->
+<!--      <i class="fas fa-spinner fa-spin me-1" *ngIf="isSubmitting"></i>-->
+<!--      {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer' }}-->
+<!--    </button>-->
+<!--  </div>-->
+<!--</ng-template>-->

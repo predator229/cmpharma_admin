@@ -1,0 +1,278 @@
+<!-- stats Header -->
+<div class="stats-header">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h2 class="stats-title">
+        <i class="fas fa-chart-pie me-2"></i>
+        Statistiques Générales
+      </h2>
+      <p class="text-muted mb-0">
+        Suivi en temps réel de vos indicateurs clés
+        <small class="ms-2">
+          <i class="fas fa-clock me-1"></i>
+          Dernière mise à jour: {{ lastUpdated | date:'EEEE d MMMM yyyy, HH:mm':'fr' }}
+        </small>
+      </p>
+    </div>
+
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      <div class="custom-dropdown" [class.open]="isPeriodDropdownOpen" #statusDropdown>
+        <button type="button"
+                class="btn btn-dropdown"
+                (click)="toggleStatusDropdown()">
+                <span class="status-badge">
+                  <i class="fas fa-calendar-alt me-1"></i>
+                  {{ getPeriodLabel(selectedPeriod) }}
+                </span>
+          <i class="fas fa-chevron-down" [class.rotated]="isPeriodDropdownOpen"></i>
+        </button>
+        <ul class="dropdown-menu custom-dropdown-menu"
+            [class.show]="isPeriodDropdownOpen">
+          <li *ngFor="let option of optionsPeriodDatas">
+            <button class="dropdown-item"
+                    type="button"
+                    [class.active]="selectedPeriod === option.value"
+                    (click)="setDateIntervalFromPeriod(option.value); closeDropdown(statusDropdown)">
+              <span class="status-badge" [ngClass]="'status-' + option.value">
+                {{ option.label }}
+              </span>
+            </button>
+          </li>
+        </ul>
+      </div>
+      <!-- Boutons d'action -->
+      <button class="btn btn-outline-primary btn-sm" (click)="refreshDashboard()" [disabled]="isLoading">
+        <i class="fas fa-sync-alt" [ngClass]="{'fa-spin': isLoading}"></i>
+        Actualiser
+      </button>
+      <button class="btn btn-outline-secondary btn-sm" (click)="exportDashboard()">
+        <i class="fas fa-download"></i>
+        Exporter
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Erreur -->
+<div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="fas fa-exclamation-triangle me-2"></i>
+  {{ errorMessage }}
+  <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+</div>
+
+<div *ngIf="!isLoading" class="stats-content">
+  <div class="row mb-4">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-chart-area me-2"></i>Analyse des Tendances</h5>
+          <ul class="nav nav-tabs card-header-tabs" role="tablist">
+            <li class="nav-item">
+              Performance
+            </li>
+          </ul>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 400px; position: relative;">
+            <canvas #analyticsChartPerformance></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5><i class="fas fa-tachometer-alt me-2"></i>KPIs Clés</h5>
+        </div>
+        <div class="card-body">
+          <div class="kpi-item mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted">Taux de conversion</span>
+              <span class="fw-bold text-primary">{{ analyticsDataPerformance.conversionRate }}%</span>
+            </div>
+            <div class="progress mt-1" style="height: 4px;">
+              <div class="progress-bar bg-primary" [style.width.%]="analyticsDataPerformance.conversionRate"></div>
+            </div>
+          </div>
+
+          <div class="kpi-item mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted">Satisfaction client</span>
+              <span class="fw-bold text-success">{{ analyticsDataPerformance.customerSatisfaction }}%</span>
+            </div>
+            <div class="progress mt-1" style="height: 4px;">
+              <div class="progress-bar bg-success" [style.width.%]="analyticsDataPerformance.customerSatisfaction"></div>
+            </div>
+          </div>
+
+          <div class="kpi-item mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted">Temps de réponse moyen</span>
+              <span class="fw-bold text-info">{{ analyticsDataPerformance.avgResponseTime }}h</span>
+            </div>
+          </div>
+
+          <div class="kpi-item mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted">Taux de rétention</span>
+              <span class="fw-bold text-warning">{{ analyticsDataPerformance.retentionRate }}%</span>
+            </div>
+            <div class="progress mt-1" style="height: 4px;">
+              <div class="progress-bar bg-warning" [style.width.%]="analyticsDataPerformance.retentionRate"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row mb-4">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-chart-area me-2"></i>Analyse des Tendances</h5>
+          <ul class="nav nav-tabs card-header-tabs" role="tablist">
+            <li class="nav-item">
+              Clients
+            </li>
+          </ul>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 400px; position: relative;">
+            <canvas #analyticsChartCustomers></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-chart-area me-2"></i>Analyse des Tendances</h5>
+          <ul class="nav nav-tabs card-header-tabs" role="tablist">
+            <li class="nav-item">
+              Produits
+            </li>
+          </ul>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 400px; position: relative;">
+            <canvas #analyticsChartProducts></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row mb-4">
+    <!-- Graphique des commandes -->
+    <div class="col-lg-4">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h5>
+            <i class="fas fa-shopping-cart me-2"></i>
+            Évolution des Commandes
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 300px; position: relative;">
+            <canvas #ordersChart></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Graphique des revenus -->
+    <div class="col-lg-4">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h5>
+            <i class="fas fa-dollar-sign me-2"></i>
+            Évolution des Revenus
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 300px; position: relative;">
+            <canvas #revenueChart></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Graphiques des tickets -->
+    <div class="col-lg-4">
+      <div class="col-lg-12 col-md-12 mb-3">
+        <div class="card chart-card">
+          <div class="card-header">
+            <h5>
+              <i class="fas fa-ticket-alt me-2"></i>
+              Évolution des tickets
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="height: 300px; position: relative;">
+              <canvas #ticketsChart></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row mb-4">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-chart-line me-2"></i> Performance - {{ getPeriodLabel() }}</h5>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active">
+              <i class="fas fa-chart-line me-2"></i>
+              Graphique
+            </button>
+          </li>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 400px; position: relative;">
+            <canvas #chartCanvas></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <label class="form-label mb-0 fw-bold">Période d'analyse :</label>
+            <div class="custom-dropdown" [class.open]="isPeriodDropdownOpen" #statusDropdown>
+              <button type="button"
+                      class="btn btn-outline-primary dropdown-toggle"
+                      (click)="toggleStatusDropdown()">
+            <span class="status-badge">
+              <i class="fas fa-calendar-alt me-1"></i>
+              {{ getPeriodLabel(selectedPeriod) }}
+            </span>
+                <i class="fas fa-chevron-down" [class.rotated]="isPeriodDropdownOpen"></i>
+              </button>
+              <ul class="dropdown-menu custom-dropdown-menu"
+                  [class.show]="isPeriodDropdownOpen">
+                <li *ngFor="let option of optionsPeriodDatas">
+                  <button class="dropdown-item"
+                          type="button"
+                          [class.active]="selectedPeriod === option.value"
+                          (click)="setDateIntervalFromPeriod(option.value); closeDropdown(statusDropdown)">
+          <span class="status-badge" [ngClass]="'status-' + option.value">
+            {{ option.label }}
+          </span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <!-- Indicateur du type d'intervalle -->
+            <div class="justify-content-between">
+              <div class="badge bg-info ms-2">
+                <i class="fas fa-info-circle me-1"></i>
+                Analyse par {{ getXAxisLabel().toLowerCase() }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

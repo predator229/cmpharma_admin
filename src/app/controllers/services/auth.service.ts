@@ -190,6 +190,41 @@ export class AuthService {
     return sendPasswordResetEmail(this.auth, email);
   }
 
+  async editOpenedDefaultSettingsUser(opened: boolean) {
+    const token = await this.getRealToken();
+    if (!token) throw new Error('Pas de token utilisateur');
+
+    const uid = this.getUid();
+    if (!uid) throw new Error('Pas d’UID utilisateur');
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    });
+
+    const apiResponse = await this.apiService.post('users/set-setings-font', { uid, opened }, headers)
+      .pipe(
+        map((response: ApiUserDetails): UserDetails | null => {
+          try {
+            return UserDetails.fromApiResponse(response);
+          } catch (error) {
+            this.userDetailsLoaded = false;
+            this.userDetailsLoaded$.next(false);
+            return null;
+          }
+        }),
+        catchError(error => {
+          this.userDetailsLoaded = false;
+          this.userDetailsLoaded$.next(false);
+          this.userDetails = null;
+          this.userDetails$.next(null);
+          return of(null); // Retourne un observable avec `null` en cas d'erreur
+        })
+      )
+      .toPromise();  // Utilisation de toPromise pour convertir l'Observable en Promesse
+  }
+
   async editSettingsUser(font: string) {
     if (!font) throw new Error('Veuillez remplir tous les champs');
     const token = await this.getRealToken();
@@ -212,7 +247,6 @@ export class AuthService {
           } catch (error) {
             this.userDetailsLoaded = false;
             this.userDetailsLoaded$.next(false);
-            console.error('Erreur lors de la transformation de la réponse API', error);
             return null;
           }
         }),
@@ -221,7 +255,6 @@ export class AuthService {
           this.userDetailsLoaded$.next(false);
           this.userDetails = null;
           this.userDetails$.next(null);
-          console.error('Erreur API lors de la récupération des détails utilisateur', error);
           return of(null); // Retourne un observable avec `null` en cas d'erreur
         })
       )

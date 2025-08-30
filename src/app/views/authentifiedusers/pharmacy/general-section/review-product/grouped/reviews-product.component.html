@@ -1,0 +1,739 @@
+<!-- Breadcrumb et header -->
+<div class="page-header">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <button class="btn btn-outline-primary mb-4" (click)="goBack()">
+        <i class="fas fa-arrow-left me-1"></i>
+        Retour
+      </button>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="javascript:void(0)" (click)="goBack()">
+              <i class="fas fa-star me-1"></i>Avis Produits
+            </a>
+          </li>
+          <li class="breadcrumb-item active">{{ productStats?.productName }}</li>
+        </ol>
+      </nav>
+
+      <h2 class="page-title" *ngIf="productStats">
+        {{ productStats.productName }}
+        <small class="text-muted">{{ productStats.productSku }}</small>
+      </h2>
+    </div>
+  </div>
+
+  <!-- Actions header -->
+  <div class="header-actions d-flex align-items-center flex-wrap gap-2">
+    <div class="custom-dropdown" [class.open]="isPeriodDropdownOpen">
+      <button class="btn btn-dropdown" (click)="togglePeriodDropdown()">
+        <i class="fas fa-calendar-alt me-1"></i>
+        {{ getPeriodLabel(selectedPeriod) }}
+        <i class="fas fa-chevron-down" [class.rotated]="isPeriodDropdownOpen"></i>
+      </button>
+      <ul class="dropdown-menu custom-dropdown-menu" [class.show]="isPeriodDropdownOpen">
+        <li *ngFor="let option of optionsPeriodDatas">
+          <button class="dropdown-item"
+                  [class.active]="selectedPeriod === option.value"
+                  (click)="setDateIntervalFromPeriod(option.value); closeDropdown()">
+            {{ option.label }}
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="custom-dropdown" *ngIf="permissions.moderateReviews" [class.open]="isActionsDropdownOpen">
+      <button class="btn btn-primary dropdown-toggle" (click)="toggleActionsDropdown()">
+        <i class="fas fa-cog me-1"></i>
+        {{ getActionLabel(selectedActions) }}
+        <i class="fas fa-chevron-down" [class.rotated]="isActionsDropdownOpen"></i>
+      </button>
+      <ul class="dropdown-menu custom-dropdown-menu" [class.show]="isActionsDropdownOpen">
+        <li *ngFor="let option of optionsActionsDatas">
+          <button class="dropdown-item"
+                  [class.active]="selectedActions === option.value"
+                  (click)="setActionToDo(option.value); closeDropdown()">
+            {{ option.label }}
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <button class="btn btn-outline-primary" (click)="refreshData()" [disabled]="isLoading">
+      <i class="fas fa-sync-alt" [ngClass]="{'fa-spin': isLoading}"></i>
+      Actualiser
+    </button>
+
+    <button class="btn btn-outline-primary" (click)="navigateToProduct()" *ngIf="productStats">
+      <i class="fas fa-external-link-alt me-1"></i>
+      Voir le produit
+    </button>
+  </div>
+</div>
+
+<!-- Message d'erreur -->
+<div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="fas fa-exclamation-triangle me-2"></i>
+  {{ errorMessage }}
+  <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+</div>
+
+<!-- Contenu principal -->
+<div *ngIf="!isLoading && productStats" class="product-reviews-content">
+
+  <!-- Onglets -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'overview'" (click)="setActiveTab('overview')">
+        <i class="fas fa-chart-bar me-1"></i>
+        Vue d'ensemble
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'reviews'" (click)="setActiveTab('reviews')">
+        <i class="fas fa-comments me-1"></i>
+        Avis clients
+        <span class="badge badge-secondary ms-1">{{ totalReviews }}</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'analytics'" (click)="setActiveTab('analytics')">
+        <i class="fas fa-analytics me-1"></i>
+        Analytiques
+      </button>
+    </li>
+  </ul>
+
+  <!-- Onglet Vue d'ensemble -->
+  <div *ngIf="activeTab === 'overview'" class="tab-content">
+    <div class="row">
+      <!-- Image et infos produit -->
+      <div class="col-lg-4">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-box me-2"></i>
+              Informations produit
+            </h5>
+          </div>
+          <div class="card-body text-center" style="min-height: 400px">
+            <img *ngIf="productStats.productImage"
+                 [src]="internatPathUrl + productStats.productImage"
+                 class="product-image-large mb-3"
+                 alt="Image produit">
+            <h5>{{ productStats.productName }}</h5>
+            <p class="text-muted">SKU: {{ productStats.productSku }}</p>
+
+            <div class="product-quick-stats">
+              <div class="row text-center">
+                <div class="col-4">
+                  <div class="stat-item">
+                    <div class="stat-value">{{ productStats.totalQuantitySold }}</div>
+                    <div class="stat-label">Vendus</div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="stat-item">
+                    <div class="stat-value">{{ productStats.productViews | number }}</div>
+                    <div class="stat-label">Vues</div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="stat-item">
+                    <div class="stat-value">{{ productStats.uniqueCustomers }}</div>
+                    <div class="stat-label">Clients</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistiques principales -->
+      <div class="col-lg-8">
+        <div class="row">
+          <!-- Note moyenne -->
+          <div class="col-md-6 mb-4">
+            <div class="card stat-card">
+              <div class="card-body text-center">
+                <div class="rating-display">
+                  <div class="rating-number">{{ productStats.averageRating | number:'1.1-1' }}</div>
+                  <div class="rating-stars large" [ngClass]="getRatingClass(productStats.averageRating)">
+                    {{ getRatingStars(productStats.averageRating) }}
+                  </div>
+                  <p class="rating-subtitle">Note moyenne sur {{ productStats.totalReviews }} avis</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recommandations -->
+          <div class="col-md-6 mb-4">
+            <div class="card stat-card">
+              <div class="card-body text-center">
+                <div class="recommendation-display">
+                  <div class="recommendation-percentage"
+                       [ngClass]="{'text-success': productStats.wouldRecommendPercentage >= 80,
+                                   'text-warning': productStats.wouldRecommendPercentage >= 60,
+                                   'text-danger': productStats.wouldRecommendPercentage < 60}">
+                    {{ productStats.wouldRecommendPercentage | number:'1.0-0' }}%
+                  </div>
+                  <p class="recommendation-subtitle">des clients recommandent ce produit</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Distribution des notes -->
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Distribution des notes</h5>
+          </div>
+          <div class="card-body">
+            <div class="rating-distribution">
+              <div *ngFor="let i of [5,4,3,2,1]" class="rating-bar-item">
+                <span class="star-label">{{ i }} <i class="fas fa-star"></i></span>
+                <div class="progress rating-progress">
+                  <div class="progress-bar"
+                       [ngClass]="{'bg-success': i >= 4, 'bg-warning': i === 3, 'bg-danger': i <= 2}"
+                       [style.width.%]="productStats.totalReviews > 0 ? (productStats.ratingDistribution[i] / productStats.totalReviews) * 100 : 0">
+                  </div>
+                </div>
+                <span class="count-label">{{ productStats.ratingDistribution[i] || 0 }}</span>
+                <span class="percentage-label">
+                  ({{ productStats.totalReviews > 0 ? ((productStats.ratingDistribution[i] || 0) / productStats.totalReviews * 100).toFixed(1) : 0 }}%)
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aspects évalués -->
+    <div *ngIf="productStats.averageAspects && Object.keys(productStats.averageAspects).length > 0" class="card mt-4">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Aspects évalués</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3" *ngIf="productStats.averageAspects.quality">
+            <div class="aspect-card">
+              <div class="aspect-name">Qualité</div>
+              <div class="aspect-rating">
+                <span class="rating-stars">{{ getRatingStars(productStats.averageAspects.quality) }}</span>
+                <span class="rating-value">{{ productStats.averageAspects.quality | number:'1.1-1' }}/5</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3" *ngIf="productStats.averageAspects.service">
+            <div class="aspect-card">
+              <div class="aspect-name">Service</div>
+              <div class="aspect-rating">
+                <span class="rating-stars">{{ getRatingStars(productStats.averageAspects.service) }}</span>
+                <span class="rating-value">{{ productStats.averageAspects.service | number:'1.1-1' }}/5</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3" *ngIf="productStats.averageAspects.delivery">
+            <div class="aspect-card">
+              <div class="aspect-name">Livraison</div>
+              <div class="aspect-rating">
+                <span class="rating-stars">{{ getRatingStars(productStats.averageAspects.delivery) }}</span>
+                <span class="rating-value">{{ productStats.averageAspects.delivery | number:'1.1-1' }}/5</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3" *ngIf="productStats.averageAspects.value">
+            <div class="aspect-card">
+              <div class="aspect-name">Rapport qualité/prix</div>
+              <div class="aspect-rating">
+                <span class="rating-stars">{{ getRatingStars(productStats.averageAspects.value) }}</span>
+                <span class="rating-value">{{ productStats.averageAspects.value | number:'1.1-1' }}/5</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistiques détaillées -->
+    <div class="row mt-4 mb-4">
+      <div class="col-md-3">
+        <div class="card stat-card-small">
+          <div class="card-body text-center">
+            <div class="stat-icon text-primary">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-number">{{ productStats.uniqueCustomers }}</div>
+            <div class="stat-label">Clients uniques</div>
+            <small class="text-muted">sur {{ productStats.totalPurchases }} achats</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stat-card-small">
+          <div class="card-body text-center">
+            <div class="stat-icon text-success">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-number">{{ productStats.verifiedPurchasesPercentage | number:'1.0-0' }}%</div>
+            <div class="stat-label">Achats vérifiés</div>
+            <small class="text-muted">{{ productStats.approvedReviews }} avis approuvés</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stat-card-small">
+          <div class="card-body text-center">
+            <div class="stat-icon text-info">
+              <i class="fas fa-thumbs-up"></i>
+            </div>
+            <div class="stat-number">{{ productStats.helpfulVotesTotal }}</div>
+            <div class="stat-label">Votes utiles</div>
+            <small class="text-muted">vs {{ productStats.unhelpfulVotesTotal }} inutiles</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stat-card-small">
+          <div class="card-body text-center">
+            <div class="stat-icon text-warning">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-number">{{ productStats.pendingReviews }}</div>
+            <div class="stat-label">En attente</div>
+            <small class="text-muted">{{ productStats.flaggedReviews }} signalés</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onglet Avis clients -->
+  <div *ngIf="activeTab === 'reviews'" class="tab-content">
+
+    <!-- Filtres pour les avis -->
+    <div class="reviews-filters mb-4">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="search-box">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Rechercher dans les avis..."
+                   [(ngModel)]="searchText"
+                   (keyup)="filterReviews()">
+            <i class="fas fa-search"></i>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" [(ngModel)]="ratingFilter" (change)="filterReviews()">
+            <option value="">Toutes les notes</option>
+            <option value="5">5 étoiles</option>
+            <option value="4">4 étoiles</option>
+            <option value="3">3 étoiles</option>
+            <option value="2">2 étoiles</option>
+            <option value="1">1 étoile</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" [(ngModel)]="statusFilter" (change)="filterReviews()">
+            <option value="">Tous les statuts</option>
+            <option value="pending">En attente</option>
+            <option value="approved">Approuvés</option>
+            <option value="rejected">Rejetés</option>
+            <option value="flagged">Signalés</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-outline-primary" (click)="clearFilters()">
+            <i class="fas fa-times"></i> Effacer les filtres
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Résumé des filtres -->
+    <div class="filter-summary mb-3" *ngIf="searchText || ratingFilter || statusFilter">
+      <small class="text-muted">
+        Affichage de {{ filteredReviews.length }} avis sur {{ totalReviews }}
+        <span *ngIf="searchText"> • Recherche: "{{ searchText }}"</span>
+        <span *ngIf="ratingFilter"> • Note: {{ ratingFilter }} étoiles</span>
+        <span *ngIf="statusFilter"> • Statut: {{ getStatusLabel(statusFilter) }}</span>
+      </small>
+    </div>
+
+    <!-- Liste des avis -->
+    <div class="reviews-container">
+      <div *ngIf="filteredReviews.length === 0" class="empty-state text-center py-5">
+        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+        <h4>Aucun avis trouvé</h4>
+        <p class="text-muted">
+          {{ searchText || ratingFilter || statusFilter ? 'Aucun avis ne correspond à vos critères.' : 'Ce produit n\'a pas encore d\'avis.' }}
+        </p>
+      </div>
+
+      <div *ngFor="let review of getPaginatedReviews()" class="card review-card mb-3">
+        <div class="card-body">
+          <!-- En-tête de l'avis -->
+          <div class="review-header d-flex justify-content-between align-items-start mb-3">
+            <div class="reviewer-info">
+              <h6 class="reviewer-name mb-1">
+                {{ review.customer?.getFullName() || 'Anonyme' }}
+                <span class="badge badge-success ms-2" *ngIf="review.isVerifiedPurchase">
+                  <i class="fas fa-check"></i> Achat vérifié
+                </span>
+              </h6>
+              <small class="text-muted">
+                <i class="fas fa-calendar me-1"></i>
+                {{ review.createdAt | date:'EEEE d MMMM yyyy à HH:mm':'fr' }}
+              </small>
+            </div>
+            <div class="review-meta">
+              <div class="rating-stars mb-1" [ngClass]="getRatingClass(review.rating)">
+                {{ getRatingStars(review.rating) }}
+              </div>
+              <span class="badge" [ngClass]="getStatusBadgeClass(review.status)">
+                {{ getStatusLabel(review.status) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Contenu de l'avis -->
+          <div class="review-content">
+            <h6 *ngIf="review.title" class="review-title">{{ review.title }}</h6>
+            <p *ngIf="review.comment" class="review-comment">{{ review.comment }}</p>
+
+            <!-- Aspects évalués -->
+            <div *ngIf="review.aspects && Object.keys(review.aspects).length > 0" class="review-aspects mt-3">
+              <h6>Aspects évalués</h6>
+              <div class="row">
+                <div class="col-sm-3" *ngIf="review.aspects.quality">
+                  <div class="aspect-item-small">
+                    <span class="aspect-label">Qualité</span>
+                    <div class="aspect-rating">
+                      <span class="rating-stars small">{{ getRatingStars(review.aspects.quality) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-sm-3" *ngIf="review.aspects.service">
+                  <div class="aspect-item-small">
+                    <span class="aspect-label">Service</span>
+                    <div class="aspect-rating">
+                      <span class="rating-stars small">{{ getRatingStars(review.aspects.service) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-sm-3" *ngIf="review.aspects.delivery">
+                  <div class="aspect-item-small">
+                    <span class="aspect-label">Livraison</span>
+                    <div class="aspect-rating">
+                      <span class="rating-stars small">{{ getRatingStars(review.aspects.delivery) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-sm-3" *ngIf="review.aspects.value">
+                  <div class="aspect-item-small">
+                    <span class="aspect-label">Rapport Q/P</span>
+                    <div class="aspect-rating">
+                      <span class="rating-stars small">{{ getRatingStars(review.aspects.value) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recommandation -->
+            <div *ngIf="review.wouldRecommend !== undefined" class="recommendation mt-2">
+              <span class="badge" [ngClass]="review.wouldRecommend ? 'badge-success' : 'badge-warning'">
+                <i class="fas" [ngClass]="review.wouldRecommend ? 'fa-thumbs-up' : 'fa-thumbs-down'"></i>
+                {{ review.wouldRecommend ? 'Recommande ce produit' : 'Ne recommande pas' }}
+              </span>
+            </div>
+
+            <!-- Votes d'utilité -->
+            <div class="review-votes mt-2" *ngIf="review.helpfulVotes > 0 || review.unhelpfulVotes > 0">
+              <small class="text-muted">
+                <i class="fas fa-thumbs-up text-success"></i> {{ review.helpfulVotes }}
+                <i class="fas fa-thumbs-down text-danger ms-3"></i> {{ review.unhelpfulVotes }}
+                • Cet avis a été jugé utile par {{ review.helpfulVotes }} personne(s)
+              </small>
+            </div>
+          </div>
+
+          <!-- Réponse de la pharmacie -->
+          <div *ngIf="review.pharmacyResponse?.message" class="pharmacy-response mt-3">
+            <div class="response-header">
+              <i class="fas fa-reply text-primary"></i>
+              <strong class="ms-1">Réponse de la pharmacie</strong>
+              <small class="text-muted ms-2">
+                le {{ review.pharmacyResponse.respondedAt | date:'dd/MM/yyyy à HH:mm' }}
+              </small>
+            </div>
+            <div class="response-content">
+              <p class="response-message">{{ review.pharmacyResponse.message }}</p>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="review-actions mt-3 d-flex justify-content-between align-items-center">
+            <div class="action-buttons">
+              <button class="btn btn-sm btn-outline-primary me-2"
+                      (click)="navigateToReviewDetail(review._id)"
+                      title="Voir les détails complets">
+                <i class="fas fa-eye"></i> Détails
+              </button>
+
+              <button class="btn btn-sm btn-outline-info me-2"
+                      (click)="openResponseModal(review)"
+                      *ngIf="permissions.respondToReviews"
+                      title="Répondre à l'avis">
+                <i class="fas fa-reply"></i>
+                {{ review.pharmacyResponse?.message ? 'Modifier' : 'Répondre' }}
+              </button>
+            </div>
+
+            <div class="quick-actions" *ngIf="permissions.moderateReviews && review.status === 'pending'">
+              <button class="btn btn-sm btn-success me-1" title="Approuver rapidement">
+                <i class="fas fa-check"></i>
+              </button>
+              <button class="btn btn-sm btn-danger me-1" title="Rejeter rapidement">
+                <i class="fas fa-times"></i>
+              </button>
+              <button class="btn btn-sm btn-warning" title="Signaler">
+                <i class="fas fa-flag"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="filteredReviews.length > 0" class="d-flex justify-content-between align-items-center mt-4 pagination-wrapper">
+      <div class="pagination-info">
+        Affichage de {{ paginationStart + 1 }} à {{ paginationEnd }} sur {{ filteredReviews.length }} avis
+      </div>
+      <nav aria-label="Page navigation">
+        <ul class="pagination">
+          <li class="page-item" [ngClass]="{'disabled': currentPage === 1}">
+            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage - 1)">Précédent</a>
+          </li>
+          <li class="page-item" *ngFor="let page of getPageNumbers()" [ngClass]="{'active': page === currentPage}">
+            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(page)">{{ page }}</a>
+          </li>
+          <li class="page-item" [ngClass]="{'disabled': currentPage === totalPages}">
+            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage + 1)">Suivant</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Onglet Analytiques -->
+  <div *ngIf="activeTab === 'analytics'" class="tab-content">
+    <div class="row">
+      <!-- Tendances temporelles -->
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Informations temporelles</h5>
+          </div>
+          <div class="card-body">
+            <div class="temporal-info">
+              <div class="info-item">
+                <span class="label">Premier avis:</span>
+                <span class="value">{{ productStats.firstReviewDate | date:"dd/MM/yyyy" }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Dernier avis:</span>
+                <span class="value">{{ productStats.lastReviewDate | date:"dd/MM/yyyy" }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Période d'analyse:</span>
+                <span class="value">{{ getPeriodLabel(selectedPeriod) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Répartition par statut -->
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Répartition par statut</h5>
+          </div>
+          <div class="card-body">
+            <div class="status-breakdown">
+              <div class="status-item">
+                <span class="badge badge-success">{{ productStats.approvedReviews }}</span>
+                <span class="status-label">Approuvés</span>
+                <div class="status-percentage">
+                  {{ productStats.totalReviews > 0 ? (productStats.approvedReviews / productStats.totalReviews * 100).toFixed(1) : 0 }}%
+                </div>
+              </div>
+              <div class="status-item">
+                <span class="badge badge-warning">{{ productStats.pendingReviews }}</span>
+                <span class="status-label">En attente</span>
+                <div class="status-percentage">
+                  {{ productStats.totalReviews > 0 ? (productStats.pendingReviews / productStats.totalReviews * 100).toFixed(1) : 0 }}%
+                </div>
+              </div>
+              <div class="status-item">
+                <span class="badge badge-danger">{{ productStats.rejectedReviews }}</span>
+                <span class="status-label">Rejetés</span>
+                <div class="status-percentage">
+                  {{ productStats.totalReviews > 0 ? (productStats.rejectedReviews / productStats.totalReviews * 100).toFixed(1) : 0 }}%
+                </div>
+              </div>
+              <div class="status-item">
+                <span class="badge badge-secondary">{{ productStats.flaggedReviews }}</span>
+                <span class="status-label">Signalés</span>
+                <div class="status-percentage">
+                  {{ productStats.totalReviews > 0 ? (productStats.flaggedReviews / productStats.totalReviews * 100).toFixed(1) : 0 }}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Métriques avancées -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Métriques de performance</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4">
+                <div class="metric-item">
+                  <div class="metric-label">Taux de conversion avis</div>
+                  <div class="metric-value">
+                    {{ productStats.totalPurchases > 0 ? (productStats.totalReviews / productStats.totalPurchases * 100).toFixed(1) : 0 }}%
+                  </div>
+                  <small class="text-muted">{{ productStats.totalReviews }} avis sur {{ productStats.totalPurchases }} achats</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="metric-item">
+                  <div class="metric-label">Engagement client</div>
+                  <div class="metric-value">
+                    {{ productStats.helpfulVotesTotal + productStats.unhelpfulVotesTotal }}
+                  </div>
+                  <small class="text-muted">Total des votes sur les avis</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="metric-item">
+                  <div class="metric-label">Ratio utilité</div>
+                  <div class="metric-value">
+                    {{ (productStats.helpfulVotesTotal + productStats.unhelpfulVotesTotal) > 0 ?
+                    (productStats.helpfulVotesTotal / (productStats.helpfulVotesTotal + productStats.unhelpfulVotesTotal) * 100).toFixed(1) : 0 }}%
+                  </div>
+                  <small class="text-muted">Votes utiles vs total des votes</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de réponse -->
+<ng-template #responseModal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-reply me-2"></i>
+      {{ isEditingResponse ? 'Modifier la réponse' : 'Répondre à l\'avis' }}
+    </h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body" *ngIf="selectedReview">
+    <!-- Aperçu de l'avis -->
+    <div class="review-preview mb-4">
+      <h6>Avis de {{ selectedReview.customer?.getFullName() || 'Anonyme' }}</h6>
+      <div class="preview-content">
+        <div class="rating-stars" [ngClass]="getRatingClass(selectedReview.rating)">
+          {{ getRatingStars(selectedReview.rating) }}
+        </div>
+        <p *ngIf="selectedReview.title" class="fw-bold">{{ selectedReview.title }}</p>
+        <p *ngIf="selectedReview.comment">{{ selectedReview.comment }}</p>
+      </div>
+    </div>
+
+    <!-- Formulaire de réponse -->
+    <form [formGroup]="responseForm" (ngSubmit)="savePharmacyResponse()">
+      <div class="mb-3">
+        <label class="form-label">
+          {{ isEditingResponse ? 'Modifier votre réponse' : 'Votre réponse au client' }}
+          <span class="text-danger">*</span>
+        </label>
+        <textarea class="form-control"
+                  formControlName="message"
+                  rows="5"
+                  placeholder="Rédigez votre réponse professionnelle et courtoise..."></textarea>
+        <div class="form-text">
+          Minimum 10 caractères, maximum 1000 caractères
+          <span class="float-end">
+            {{ responseForm.get('message')?.value?.length || 0 }}/1000
+          </span>
+        </div>
+        <div *ngIf="responseForm.get('message')?.invalid && responseForm.get('message')?.touched"
+             class="text-danger small">
+          <div *ngIf="responseForm.get('message')?.errors?.['required']">
+            La réponse est obligatoire
+          </div>
+          <div *ngIf="responseForm.get('message')?.errors?.['minlength']">
+            La réponse doit contenir au moins 10 caractères
+          </div>
+          <div *ngIf="responseForm.get('message')?.errors?.['maxlength']">
+            La réponse ne peut pas dépasser 1000 caractères
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">
+          Annuler
+        </button>
+        <button type="submit"
+                class="btn btn-primary"
+                [disabled]="responseForm.invalid || isSubmitting">
+          <i class="fas fa-paper-plane me-1" *ngIf="!isSubmitting"></i>
+          <i class="fas fa-spinner fa-spin me-1" *ngIf="isSubmitting"></i>
+          {{ isEditingResponse ? 'Mettre à jour' : 'Envoyer la réponse' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<!-- Loading state -->
+<div *ngIf="isLoading" class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
+  <div class="text-center">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-2 text-muted">Chargement des détails du produit...</p>
+  </div>
+</div>
+
+<!-- État vide si pas de produit -->
+<div *ngIf="!isLoading && !productStats" class="empty-state text-center py-5">
+  <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+  <h4>Produit non trouvé</h4>
+  <p class="text-muted">Le produit demandé n'existe pas ou vous n'avez pas les permissions pour le voir.</p>
+  <button class="btn btn-primary" (click)="goBack()">
+    <i class="fas fa-arrow-left me-1"></i>
+    Retour à la liste
+  </button>
+</div>

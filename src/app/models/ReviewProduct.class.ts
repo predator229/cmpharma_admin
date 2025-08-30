@@ -2,6 +2,8 @@ import {CustomerClass} from "./Customer.class";
 import {Product} from "./Product";
 import {PharmacyClass} from "./Pharmacy.class";
 import {OrderClass} from "./Order.class";
+import {CommonFunctions} from "../controllers/comonsfunctions";
+import {Admin} from "./Admin.class";
 
 export interface ReviewAspects {
   quality?: number;
@@ -13,15 +15,15 @@ export interface ReviewAspects {
 export interface PharmacyResponse {
   message?: string;
   respondedAt?: Date;
-  respondedBy?: string;
+  respondedBy?: Admin | null;
 }
 
-export class ReviewClass {
+export class ProductReviewClass {
   _id?: string;
 
   customer: CustomerClass | null;
+  pharmacy: PharmacyClass | null;
   product?: Product | null;
-  pharmacy?: PharmacyClass | null;
   order?: OrderClass | null;
 
   rating: number;
@@ -41,6 +43,8 @@ export class ReviewClass {
   wouldRecommend?: boolean;
 
   pharmacyResponse: PharmacyResponse;
+  userAgent?: string;
+  clientIp?: string;
 
   createdAt: Date;
   updatedAt: Date;
@@ -48,9 +52,9 @@ export class ReviewClass {
   constructor(data: any) {
     this._id = data._id;
 
-    this.customer = data.client ? new CustomerClass(data.customer) : null;
+    this.customer = data.customer ? new CustomerClass(data.customer) : new CustomerClass({});
     this.product = data.product ? new Product(data.product) : null;
-    this.pharmacy = data.pharmacy ? new PharmacyClass(data.pharmacy) : null;
+    this.pharmacy = data.pharmacy ? CommonFunctions.mapToPharmacy(data.pharmacy) : null;
     this.order = data.order ? new OrderClass(data.order) : null;
 
     this.rating = data.rating || 1;
@@ -77,9 +81,11 @@ export class ReviewClass {
     this.pharmacyResponse = {
       message: data.pharmacyResponse?.message,
       respondedAt: data.pharmacyResponse?.respondedAt ? new Date(data.pharmacyResponse.respondedAt) : undefined,
-      respondedBy: data.pharmacyResponse?.respondedBy
+      respondedBy: data.pharmacyResponse?.respondedBy ? new Admin(data.pharmacyResponse?.respondedBy) : null
     };
 
+    this.userAgent = data.userAgent ?? '';
+    this.clientIp = data.clientIp ?? '';
     this.createdAt = new Date(data.createdAt);
     this.updatedAt = new Date(data.updatedAt);
   }

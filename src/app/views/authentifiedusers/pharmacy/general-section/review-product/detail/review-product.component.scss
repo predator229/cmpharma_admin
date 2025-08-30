@@ -1,0 +1,898 @@
+
+$primary-color: #d91a72;
+$primary-hover: #b91560;
+$secondary-color: #6c757d;
+$success-color: #28a745;
+$info-color: #17a2b8;
+$light-bg: #f8f9fa;
+$white-bg: #ffffff;
+$dark-text: #343a40;
+$muted-text: #6c757d;
+$text-muted: #6c757d;
+$border-color: #e9ecef;
+$danger-color: #dc3545;
+$sidebar-width: 350px;
+$border-radius-base: 10px;
+$border-radius-pill: 50px;
+$transition-base: all 0.2s ease-in-out;
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+$border-radius-sm: 4px;
+$warning-color: #ffc107;
+
+$border-radius: 8px;
+$box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+$transition: all 0.3s ease;
+
+.header {
+  background: $white-bg;
+  border-bottom: 1px solid $border-color;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+// Page header
+.page-header {
+  background: $white-bg;
+  border-bottom: 1px solid $border-color;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  .breadcrumb {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 1rem;
+
+    .breadcrumb-item {
+      a {
+        color: $primary-color;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+
+      &.active {
+        color: $secondary-color;
+      }
+    }
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 0;
+    color: #2c3e50;
+
+    .badge {
+      font-size: 0.75rem;
+      vertical-align: middle;
+    }
+  }
+}
+
+// Onglets
+.nav-tabs {
+  border-bottom: 2px solid #e9ecef;
+
+  .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: $secondary-color;
+    font-weight: 500;
+    padding: 12px 20px;
+    transition: $transition;
+
+    &:hover {
+      background-color: #f8f9fa;
+      border-color: transparent;
+      color: $primary-color;
+    }
+
+    &.active {
+      background-color: transparent;
+      border-bottom-color: $primary-color;
+      color: $primary-color;
+      font-weight: 600;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+    }
+  }
+}
+
+// Contenu des onglets
+.tab-content {
+  padding-top: 1rem;
+}
+
+// Cards
+.card {
+  border: 1px solid #e9ecef;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+
+  .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+
+    .card-title {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+  }
+}
+
+// Informations de l'avis
+.review-details-content {
+  .review-header {
+    .reviewer-info {
+      .reviewer-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2c3e50;
+      }
+    }
+
+    .review-rating {
+      text-align: right;
+
+      .rating-stars {
+        &.large {
+          font-size: 1.5rem;
+        }
+      }
+
+      .rating-value {
+        display: block;
+        font-weight: 600;
+        color: $secondary-color;
+        margin-top: 0.25rem;
+      }
+    }
+  }
+
+  .review-content {
+    .review-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 0.75rem;
+    }
+
+    .review-comment {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #495057;
+      margin-bottom: 0;
+    }
+  }
+}
+
+// Aspects évalués
+.review-aspects {
+  .aspect-item {
+    text-align: center;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: $border-radius;
+    margin-bottom: 1rem;
+
+    .aspect-label {
+      display: block;
+      font-weight: 600;
+      color: $secondary-color;
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .aspect-rating {
+      .rating-stars {
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+
+      .rating-value {
+        font-weight: 600;
+        color: #2c3e50;
+      }
+    }
+  }
+}
+
+// Étoiles de notation
+.rating-stars {
+  color: #ffc107;
+  font-size: 1.2rem;
+
+  &.rating-excellent {
+    color: $success-color;
+  }
+
+  &.rating-good {
+    color: #28a745;
+  }
+
+  &.rating-average {
+    color: $warning-color;
+  }
+
+  &.rating-poor {
+    color: $danger-color;
+  }
+}
+
+// Badges de statut
+.badge {
+  &.badge-success {
+    background-color: $success-color;
+  }
+
+  &.badge-warning {
+    background-color: $warning-color;
+    color: #212529;
+  }
+
+  &.badge-danger {
+    background-color: $danger-color;
+  }
+
+  &.badge-info {
+    background-color: $info-color;
+  }
+
+  &.badge-secondary {
+    background-color: $secondary-color;
+  }
+}
+
+// Informations produit
+.product-info {
+  text-align: center;
+
+  .product-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: $border-radius;
+    border: 1px solid #e9ecef;
+  }
+
+  .product-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+  }
+
+  .product-sku {
+    font-size: 0.875rem;
+  }
+}
+
+// Informations client
+.customer-info {
+  .customer-name {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .customer-email {
+    font-size: 0.875rem;
+  }
+
+  .customer-stats {
+    border-top: 1px solid #e9ecef;
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
+  }
+}
+
+// Informations techniques
+.tech-info {
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f3f4;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      font-weight: 500;
+      color: $secondary-color;
+      font-size: 0.875rem;
+    }
+
+    .value {
+      font-weight: 500;
+      color: #2c3e50;
+      font-size: 0.875rem;
+      max-width: 60%;
+      text-align: right;
+    }
+  }
+}
+
+// Réponse de la pharmacie
+.existing-response {
+  .response-content {
+    background-color: #f8f9fa;
+    border-left: 4px solid $primary-color;
+    padding: 1rem;
+    border-radius: 0 $border-radius $border-radius 0;
+
+    .response-message {
+      font-style: italic;
+      margin-bottom: 0.5rem;
+      color: #495057;
+    }
+
+    .response-meta {
+      border-top: 1px solid #e9ecef;
+      padding-top: 0.5rem;
+    }
+  }
+
+  .response-actions {
+    text-align: right;
+  }
+}
+
+// Timeline d'activité
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #e9ecef;
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+
+    &.timeline-item-last {
+      margin-bottom: 0;
+    }
+
+    .timeline-marker {
+      position: absolute;
+      left: -2.5rem;
+      top: 0;
+      width: 2rem;
+      height: 2rem;
+      background-color: white;
+      border: 2px solid #e9ecef;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      i {
+        font-size: 0.875rem;
+      }
+    }
+
+    .timeline-content {
+      background-color: white;
+      border: 1px solid #e9ecef;
+      border-radius: $border-radius;
+      padding: 1rem;
+
+      .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+
+        .activity-title {
+          font-weight: 600;
+          color: #2c3e50;
+        }
+
+        .activity-date {
+          font-size: 0.875rem;
+          color: $secondary-color;
+        }
+      }
+
+      .activity-details {
+        .status-change {
+          margin: 0.5rem 0;
+
+          .fa-arrow-right {
+            color: $secondary-color;
+          }
+        }
+
+        .activity-note {
+          background-color: #f8f9fa;
+          padding: 0.5rem;
+          border-radius: $border-radius;
+          font-style: italic;
+          margin-top: 0.5rem;
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+}
+
+// Avis similaires
+.related-review-item {
+  padding: 1rem;
+  border: 1px solid #e9ecef;
+  border-radius: $border-radius;
+  margin-bottom: 1rem;
+  transition: $transition;
+
+  &:hover {
+    box-shadow: $box-shadow;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .review-info {
+    .product-name {
+      color: #2c3e50;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .review-comment {
+      color: #495057;
+      margin: 0.5rem 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+// Recommandation
+.recommendation {
+  margin-top: 1rem;
+
+  .badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+// Votes d'utilité
+.review-votes {
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f3f4;
+  margin-top: 1rem;
+}
+
+// États responsive
+@media (max-width: 768px) {
+  .page-header {
+    .d-flex {
+      flex-direction: column;
+      align-items: stretch !important;
+
+      .d-flex {
+        margin-top: 1rem;
+        justify-content: center;
+      }
+    }
+  }
+
+  .review-header {
+    .d-flex {
+      flex-direction: column;
+      align-items: stretch !important;
+
+      .review-rating {
+        text-align: left !important;
+        margin-top: 1rem;
+      }
+    }
+  }
+
+  .timeline {
+    padding-left: 1.5rem;
+
+    .timeline-item .timeline-marker {
+      left: -2rem;
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.review-details-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+// Bouttons d'action
+.btn {
+  border-radius: $border-radius;
+  font-weight: 500;
+  transition: $transition;
+
+  &.btn-outline-primary {
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+    }
+  }
+
+  &.btn-outline-secondary {
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// Formulaires
+.form-control {
+  border-radius: $border-radius;
+  border: 1px solid #ced4da;
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+}
+
+.form-select {
+  border-radius: $border-radius;
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+}
+
+// Messages d'alerte
+.alert {
+  border-radius: $border-radius;
+  border: none;
+
+  &.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+
+  &.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+  }
+
+  &.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+  }
+
+  &.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+}
+
+// Modal personnalisé
+.modal {
+  .modal-content {
+    border-radius: $border-radius;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .modal-header {
+    border-bottom: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+
+    .modal-title {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+
+      &:hover {
+        opacity: 0.7;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    border-top: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+  }
+}
+
+// Aperçu de l'avis dans la modal
+.review-preview {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: $border-radius;
+  padding: 1rem;
+
+  h6 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .preview-content {
+    .rating-stars {
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      margin-bottom: 0.5rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+// Suggestions de statut
+.status-suggestions {
+  margin-top: 1rem;
+
+  .alert {
+    padding: 0.75rem;
+    margin-bottom: 0;
+
+    strong {
+      font-weight: 600;
+    }
+  }
+}
+
+// Loading spinner
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+// États vides
+.text-center {
+  &.text-muted {
+    .fa-2x {
+      opacity: 0.5;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      font-size: 1.1rem;
+      margin-bottom: 0;
+    }
+  }
+}
+
+// Dropdown personnalisé
+.dropdown {
+  .dropdown-toggle {
+    &::after {
+      margin-left: 0.5rem;
+    }
+  }
+
+  .dropdown-menu {
+    border-radius: $border-radius;
+    border: 1px solid #e9ecef;
+    box-shadow: $box-shadow;
+
+    .dropdown-item {
+      padding: 0.5rem 1rem;
+      color: #495057;
+
+      &:hover {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+      }
+
+      &.text-success:hover {
+        background-color: rgba(40, 167, 69, 0.1);
+        color: $success-color;
+      }
+
+      &.text-danger:hover {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: $danger-color;
+      }
+
+      &.text-warning:hover {
+        background-color: rgba(255, 193, 7, 0.1);
+        color: #856404;
+      }
+
+      i {
+        width: 1rem;
+        text-align: center;
+      }
+    }
+
+    .dropdown-divider {
+      margin: 0.5rem 0;
+    }
+  }
+}
+
+// Compteur de caractères
+.form-text {
+  font-size: 0.875rem;
+  color: $secondary-color;
+
+  .float-end {
+    font-weight: 500;
+  }
+}
+
+// Scroll personnalisé pour les zones de texte longues
+.modal-body {
+  max-height: 80vh;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
+}
+
+// Transitions d'entrée pour les éléments
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Amélioration des badges
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.025em;
+
+  i {
+    margin-right: 0.25rem;
+  }
+}
+
+// Amélioration des boutons
+.btn-group {
+  .btn {
+    border-radius: $border-radius;
+
+    &:not(:last-child) {
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+// Responsive amélioré
+@media (max-width: 576px) {
+  .modal {
+    .modal-dialog {
+      margin: 0.5rem;
+      max-width: calc(100% - 1rem);
+    }
+  }
+
+  .review-aspects {
+    .row > div {
+      margin-bottom: 1rem;
+    }
+  }
+
+  .d-flex.gap-2 {
+    flex-direction: column;
+
+    .btn {
+      width: 100%;
+      margin-bottom: 0.5rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+// États de focus améliorés
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+  outline: none;
+}
+
+// Animation des icônes
+.fas {
+  transition: transform 0.2s ease;
+}
+
+.btn:hover .fas {
+  transform: scale(1.1);
+}
+
+// Style pour les liens de navigation
+a {
+  color: $primary-color;
+  text-decoration: none;
+
+  &:hover {
+    color: darken($primary-color, 15%);
+    text-decoration: underline;
+  }
+}
+
+// Amélioration des alertes d'erreur
+.text-danger {
+  &.small {
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+
+    div {
+      margin-bottom: 0.25rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+// Style pour les éléments tronqués
+.text-truncate {
+  cursor: help;
+}

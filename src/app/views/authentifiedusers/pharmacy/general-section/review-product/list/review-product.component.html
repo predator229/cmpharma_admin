@@ -1,0 +1,463 @@
+  <!-- Stats Header -->
+<div class="stats-header">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h2 class="stats-title">
+        <i class="fas fa-star me-2"></i>
+        Avis Produits
+      </h2>
+
+      <p class="text-muted mb-0">
+        Suivi en temps réel de vos indicateurs clés
+        <small class="ms-2">
+          <i class="fas fa-clock me-1"></i>
+          Dernière mise à jour: {{ lastUpdated | date:'EEEE d MMMM yyyy, HH:mm':'fr' }}
+        </small>
+      </p>
+    </div>
+
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      <!-- Boutons d'action -->
+      <div class="custom-dropdown" [class.open]="isPeriodDropdownOpen" #statusDropdownn>
+        <button type="button"
+                class="btn btn-dropdown"
+                (click)="toggleStatusDropdown()">
+                <span class="status-badge">
+                  <i class="fas fa-calendar-alt me-1"></i>
+                  {{ getPeriodLabel(selectedPeriod) }}
+                </span>
+          <i class="fas fa-chevron-down" [class.rotated]="isPeriodDropdownOpen"></i>
+        </button>
+        <ul class="dropdown-menu custom-dropdown-menu"
+            [class.show]="isPeriodDropdownOpen">
+          <li *ngFor="let option of optionsPeriodDatas">
+            <button class="dropdown-item"
+                    type="button"
+                    [class.active]="selectedPeriod === option.value"
+                    (click)="setDateIntervalFromPeriod(option.value); closeDropdown()">
+              <span class="status-badge" [ngClass]="'status-' + option.value">
+                {{ option.label }}
+              </span>
+            </button>
+          </li>
+        </ul>
+      </div>
+      <button class="btn btn-outline-primary btn-sm" (click)="refreshDashboard()" [disabled]="isLoading">
+        <i class="fas fa-sync-alt" [ngClass]="{'fa-spin': isLoading}"></i>
+        Actualiser
+      </button>
+      <button class="btn btn-outline-secondary btn-sm" (click)="exportDashboard()">
+        <i class="fas fa-download"></i>
+        Exporter
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="reviews-filters mb-4">
+  <div class="row">
+    <div class="col-md-3">
+      <div class="search-box">
+        <input type="text"
+               class="form-control"
+               placeholder="Rechercher un produit..."
+               [(ngModel)]="searchText"
+               (keyup)="filterStats()">
+        <i class="fas fa-search"></i>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" [(ngModel)]="ratingFilter" (change)="filterStats()">
+        <option value="">Toutes les notes</option>
+        <option value="5">5 étoiles</option>
+        <option value="4">4 étoiles</option>
+        <option value="3">3 étoiles</option>
+        <option value="2">2 étoiles</option>
+        <option value="1">1 étoile</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" [(ngModel)]="statusFilter" (change)="filterStats()">
+        <option value="">Tous les statuts</option>
+        <option value="high_rating">Notes élevées (≥4)</option>
+        <option value="low_rating">Notes faibles (<3)</option>
+        <option value="pending_moderation">En attente modération</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-outline-secondary" (click)="clearFilters()">
+        <i class="fas fa-times"></i> Effacer
+      </button>
+    </div>
+  </div>
+</div>
+<div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="fas fa-exclamation-triangle me-2"></i>
+  {{ errorMessage }}
+  <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+</div>
+<div *ngIf="!isLoading" class="stats-content">
+  <!-- Empty state -->
+  <div *ngIf="!isLoading && filteredStats.length === 0" class="empty-state">
+    <i class="fas fa-star"></i>
+    <h3>Aucun avis trouvé</h3>
+    <p>{{ searchText || ratingFilter || statusFilter ? 'Aucun produit ne correspond à vos critères de recherche.' : 'Aucun avis produit disponible.' }}</p>
+  </div>
+
+  <!-- Tableau des statistiques -->
+  <div *ngIf="!isLoading && filteredStats.length > 0" class="table-responsive">
+    <table class="table table-hover reviews-table">
+      <thead>
+      <tr>
+        <th>
+          <div class="th-content" (click)="sort('productName')">
+            Produit
+            <i class="fas" [ngClass]="getSortIcon('productName')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('averageRating')">
+            Note moyenne
+            <i class="fas" [ngClass]="getSortIcon('averageRating')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('totalReviews')">
+            Total avis
+            <i class="fas" [ngClass]="getSortIcon('totalReviews')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('uniqueCustomers')">
+            Clients uniques
+            <i class="fas" [ngClass]="getSortIcon('uniqueCustomers')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('totalQuantitySold')">
+            Quantité vendue
+            <i class="fas" [ngClass]="getSortIcon('totalQuantitySold')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('productViews')">
+            Vues produit
+            <i class="fas" [ngClass]="getSortIcon('productViews')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('wouldRecommendPercentage')">
+            Recommandations
+            <i class="fas" [ngClass]="getSortIcon('wouldRecommendPercentage')"></i>
+          </div>
+        </th>
+        <th>Statut</th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let stat of getPaginatedStats()">
+        <td>
+          <div class="product-info" [routerLink]="['/pharmacy/products',stat._id ]">
+            <img *ngIf="stat.productImage"
+                 [src]="internatPathUrl + stat.productImage"
+                 class="product-image"
+                 alt="Image produit">
+            <div class="product-details">
+              <span class="product-name">{{ stat.productName }}</span>
+              <small class="product-sku text-muted d-block">SKU: {{ stat.productSku }}</small>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="rating-info">
+            <div class="rating-stars" [ngClass]="getRatingClass(stat.averageRating)">
+              {{ getRatingStars(stat.averageRating) }}
+            </div>
+            <small class="rating-value">{{ stat.averageRating | number:'1.1-1' }}/5</small>
+          </div>
+        </td>
+        <td>
+          <div class="reviews-count">
+            <span class="count-number">{{ stat.totalReviews }}</span>
+            <div class="review-breakdown">
+              <small class="text-success" *ngIf="stat.approvedReviews > 0">
+                <i class="fas fa-check"></i> {{ stat.approvedReviews }}
+              </small>
+              <small class="text-warning ms-1" *ngIf="stat.pendingReviews > 0">
+                <i class="fas fa-clock"></i> {{ stat.pendingReviews }}
+              </small>
+              <small class="text-danger ms-1" *ngIf="stat.rejectedReviews > 0">
+                <i class="fas fa-times"></i> {{ stat.rejectedReviews }}
+              </small>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="customers-count">{{ stat.uniqueCustomers }}</span>
+          <small class="text-muted d-block">sur {{ stat.totalPurchases }} achats</small>
+        </td>
+        <td>
+          <span class="quantity-sold">{{ stat.totalQuantitySold }}</span>
+          <small class="text-muted d-block">unités</small>
+        </td>
+        <td>
+          <span class="views-count">{{ stat.productViews | number }}</span>
+          <small class="text-muted d-block">vues</small>
+        </td>
+        <td>
+          <div class="recommendation-info">
+              <span class="percentage"
+                    [ngClass]="{'text-success': stat.wouldRecommendPercentage >= 80,
+                                'text-warning': stat.wouldRecommendPercentage >= 60 && stat.wouldRecommendPercentage < 80,
+                                'text-danger': stat.wouldRecommendPercentage < 60}">
+                {{ stat.wouldRecommendPercentage | number:'1.0-0' }}%
+              </span>
+            <small class="text-muted d-block">recommandent</small>
+          </div>
+        </td>
+        <td>
+          <div class="status-indicators">
+              <span class="badge badge-info" *ngIf="stat.verifiedPurchasesPercentage > 0">
+                {{ stat.verifiedPurchasesPercentage | number:'1.0-0' }}% vérifiés
+              </span>
+            <span class="badge badge-warning" *ngIf="stat.pendingReviews > 0">
+                {{ stat.pendingReviews }} en attente
+              </span>
+            <span class="badge badge-secondary" *ngIf="stat.flaggedReviews > 0">
+                {{ stat.flaggedReviews }} signalés
+              </span>
+          </div>
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-outline-primary btn-sm me-1"
+                    (click)="viewProductReviews(stat)"
+                    *ngIf="permissions.viewReviews"
+                    title="Voir tous les avis">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="!isLoading && filteredStats.length > 0" class="d-flex justify-content-between align-items-center mt-3 pagination-wrapper">
+    <div class="pagination-info">
+      Affichage de {{paginationStart + 1}} à {{paginationEnd}} sur {{filteredStats.length}} produits
+    </div>
+    <nav aria-label="Page navigation">
+      <ul class="pagination">
+        <li class="page-item" [ngClass]="{'disabled': currentPage === 1}">
+          <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage - 1)">Précédent</a>
+        </li>
+        <li class="page-item" *ngFor="let page of getPageNumbers()" [ngClass]="{'active': page === currentPage}">
+          <a class="page-link" href="javascript:void(0)" (click)="pageChanged(page)">{{page}}</a>
+        </li>
+        <li class="page-item" [ngClass]="{'disabled': currentPage === totalPages}">
+          <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage + 1)">Suivant</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<!-- Modal des avis produit -->
+<ng-template #productReviewsModal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      Avis pour {{ selectedProductStats?.productName }}
+      <span class="badge badge-secondary ms-2">{{ selectedReviews.length }} avis</span>
+    </h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body" *ngIf="selectedProductStats">
+    <!-- Résumé du produit -->
+    <div class="product-summary mb-4">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="rating-summary">
+            <div class="average-rating">
+              <span class="rating-number">{{ selectedProductStats.averageRating | number:'1.1-1' }}</span>
+              <div class="rating-stars" [ngClass]="getRatingClass(selectedProductStats.averageRating)">
+                {{ getRatingStars(selectedProductStats.averageRating) }}
+              </div>
+            </div>
+            <p class="rating-count">Basé sur {{ selectedProductStats.totalReviews }} avis</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="rating-distribution">
+            <div *ngFor="let i of [5,4,3,2,1]" class="rating-bar">
+              <span class="star-label">{{ i }}★</span>
+              <div class="progress">
+                <div class="progress-bar"
+                     [style.width.%]="(selectedProductStats.ratingDistribution[i] / selectedProductStats.totalReviews) * 100">
+                </div>
+              </div>
+              <span class="count">{{ selectedProductStats.ratingDistribution[i] || 0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aspects moyens -->
+    <div *ngIf="selectedProductStats.averageAspects && Object.keys(selectedProductStats.averageAspects).length > 0"
+         class="aspects-summary mb-4">
+      <h6>Aspects évalués</h6>
+      <div class="row">
+        <div class="col-md-3" *ngIf="selectedProductStats.averageAspects.quality">
+          <div class="aspect-item">
+            <span class="aspect-label">Qualité</span>
+            <div class="aspect-rating">
+              <span class="rating-stars">{{ getRatingStars(selectedProductStats.averageAspects.quality) }}</span>
+              <span class="rating-value">{{ selectedProductStats.averageAspects.quality | number:'1.1-1' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3" *ngIf="selectedProductStats.averageAspects.service">
+          <div class="aspect-item">
+            <span class="aspect-label">Service</span>
+            <div class="aspect-rating">
+              <span class="rating-stars">{{ getRatingStars(selectedProductStats.averageAspects.service) }}</span>
+              <span class="rating-value">{{ selectedProductStats.averageAspects.service | number:'1.1-1' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3" *ngIf="selectedProductStats.averageAspects.delivery">
+          <div class="aspect-item">
+            <span class="aspect-label">Livraison</span>
+            <div class="aspect-rating">
+              <span class="rating-stars">{{ getRatingStars(selectedProductStats.averageAspects.delivery) }}</span>
+              <span class="rating-value">{{ selectedProductStats.averageAspects.delivery | number:'1.1-1' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3" *ngIf="selectedProductStats.averageAspects.value">
+          <div class="aspect-item">
+            <span class="aspect-label">Rapport qualité/prix</span>
+            <div class="aspect-rating">
+              <span class="rating-stars">{{ getRatingStars(selectedProductStats.averageAspects.value) }}</span>
+              <span class="rating-value">{{ selectedProductStats.averageAspects.value | number:'1.1-1' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Liste des avis -->
+    <div class="reviews-list">
+      <h4>Avis clients ({{ selectedReviewsLength }})</h4>
+
+      <h6>
+        Tout afficher
+        <button class="btn btn-link btn-sm" (click)="gotoselectedReviewPage()">
+          <i class="fas fa-plus-circle"></i>
+        </button>
+      </h6>
+
+      <div class="reviews-filter"></div>
+
+      <div *ngIf="selectedReviews.length === 0" class="no-reviews">
+        <p class="text-muted">Aucun avis disponible pour ce produit.</p>
+      </div>
+
+      <div *ngFor="let review of selectedReviews" class="review-item">
+        <div class="review-header">
+          <div class="reviewer-info">
+            <span class="reviewer-name">{{ review.customer?.getFullName() || 'Anonyme' }}</span>
+            <span class="badge badge-success ms-2" *ngIf="review.isVerifiedPurchase">
+              <i class="fas fa-check"></i> Achat vérifié
+            </span>
+            <span class="badge" [ngClass]="getStatusBadgeClass(review.status)">
+              {{ getStatusLabel(review.status) }}
+            </span>
+          </div>
+          <div class="review-meta">
+            <div class="rating-stars" [ngClass]="getRatingClass(review.rating)">
+              {{ getRatingStars(review.rating) }}
+            </div>
+            <span class="review-date">{{ review.createdAt | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+
+        <div class="review-content">
+          <h6 *ngIf="review.title" class="review-title">{{ review.title }}</h6>
+          <p *ngIf="review.comment" class="review-comment">{{ review.comment }}</p>
+
+          <!-- Aspects détaillés -->
+          <div *ngIf="review.aspects && Object.keys(review.aspects).length > 0" class="review-aspects">
+            <small class="text-muted">Aspects évalués:</small>
+            <div class="aspects-list">
+              <span *ngIf="review.aspects.quality" class="aspect-tag">
+                Qualité: {{ getRatingStars(review.aspects.quality) }}
+              </span>
+              <span *ngIf="review.aspects.service" class="aspect-tag">
+                Service: {{ getRatingStars(review.aspects.service) }}
+              </span>
+              <span *ngIf="review.aspects.delivery" class="aspect-tag">
+                Livraison: {{ getRatingStars(review.aspects.delivery) }}
+              </span>
+              <span *ngIf="review.aspects.value" class="aspect-tag">
+                Rapport qualité/prix: {{ getRatingStars(review.aspects.value) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Recommandation -->
+          <div *ngIf="review.wouldRecommend !== undefined" class="recommendation">
+            <span class="badge" [ngClass]="review.wouldRecommend ? 'badge-success' : 'badge-warning'">
+              <i class="fas" [ngClass]="review.wouldRecommend ? 'fa-thumbs-up' : 'fa-thumbs-down'"></i>
+              {{ review.wouldRecommend ? 'Recommande ce produit' : 'Ne recommande pas' }}
+            </span>
+          </div>
+
+          <!-- Votes d'utilité -->
+          <div class="review-votes">
+            <small class="text-muted">
+              <i class="fas fa-thumbs-up text-success"></i> {{ review.helpfulVotes }}
+              <i class="fas fa-thumbs-down text-danger ms-2"></i> {{ review.unhelpfulVotes }}
+            </small>
+          </div>
+        </div>
+
+        <!-- Réponse de la pharmacie -->
+        <div *ngIf="review.pharmacyResponse && review.pharmacyResponse.message" class="pharmacy-response">
+          <div class="response-header">
+            <i class="fas fa-reply"></i>
+            <strong>Réponse de la pharmacie</strong>
+            <span class="response-date">{{ review.pharmacyResponse.respondedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <p class="response-message">{{ review.pharmacyResponse.message }}</p>
+        </div>
+
+        <!-- Actions de modération -->
+        <div class="moderation-actions">
+          <button class="btn btn-sm btn-success me-2" *ngIf="permissions.moderateReviews && review.status === 'pending'">
+            <i class="fas fa-check"></i> Approuver
+          </button>
+          <button class="btn btn-sm btn-danger me-2" *ngIf="permissions.moderateReviews && review.status === 'pending'">
+            <i class="fas fa-times"></i> Rejeter
+          </button>
+          <button class="btn btn-sm btn-warning" *ngIf="permissions.moderateReviews && review.status === 'pending'">
+            <i class="fas fa-flag"></i> Signaler
+          </button>
+          <button class="btn btn-sm btn-outline-primary"
+           (click)="gotoselectedUniqueReviewPage(review._id)"
+          >
+            <i class="fas fa-flag"></i> Voir en detail
+          </button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
+  </div>
+</ng-template>
