@@ -1,16 +1,54 @@
-<div class="order-management-container">
-  <div class="page-header">
-    <span class="h1-badge">Commandes</span>
-    <div class="header-actions">
-      <div class="search-box">
-        <input type="text" class="form-control" placeholder="Rechercher une commande..."
-               [(ngModel)]="searchText" (keyup)="filterOrders()">
-        <i class="fas fa-search"></i>
+<!--<div class="order-management-container">-->
+  <div class="stats-header">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+      <div>
+        <h2 class="stats-title">
+          <i class="fas fa-shop-lock me-2"></i>
+          Commandes
+        </h2>
+
+        <p class="text-muted mb-0">
+          Suivi en temps réel des commandes
+          <small class="ms-2">
+            <i class="fas fa-clock me-1"></i>
+            Dernière mise à jour: {{ lastUpdated | date:'EEEE d MMMM yyyy, HH:mm':'fr' }}
+          </small>
+        </p>
       </div>
-      <div class="btn-group">
-        <button class="btn btn-outline-primary" style="background-color: #4caf50; color: white"
-                (click)="exportOrdersList()" *ngIf="permissions.exportOrders">
-          <i class="fas fa-download"></i> Exporter
+
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <!-- Boutons d'action -->
+        <div class="custom-dropdown" [class.open]="isPeriodDropdownOpen" #statusDropdownn>
+          <button type="button"
+                  class="btn btn-dropdown"
+                  (click)="toggleStatusDropdown()">
+                <span class="status-badge">
+                  <i class="fas fa-calendar-alt me-1"></i>
+                  {{ getPeriodLabel(selectedPeriod) }}
+                </span>
+            <i class="fas fa-chevron-down" [class.rotated]="isPeriodDropdownOpen"></i>
+          </button>
+          <ul class="dropdown-menu custom-dropdown-menu"
+              [class.show]="isPeriodDropdownOpen">
+            <li *ngFor="let option of optionsPeriodDatas">
+              <button class="dropdown-item"
+                      type="button"
+                      [class.active]="selectedPeriod === option.value"
+                      (click)="setDateIntervalFromPeriod(option.value); closeDropdown()">
+              <span class="status-badge" [ngClass]="'status-' + option.value">
+                {{ option.label }}
+              </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <button class="btn btn-outline-primary btn-sm" (click)="refreshDashboard()" [disabled]="isLoading">
+          <i class="fas fa-sync-alt" [ngClass]="{'fa-spin': isLoading}"></i>
+          Actualiser
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" *ngIf="permissions.exportOrders" (click)="exportOrdersList()">
+          <i class="fas fa-download"></i>
+          Exporter
         </button>
         <button class="btn btn-outline-secondary" (click)="clearFilters()">
           <i class="fas fa-filter"></i> Effacer filtres
@@ -18,483 +56,520 @@
       </div>
     </div>
   </div>
-
-  <div class="order-list-container">
-    <div class="order-filters">
-      <div class="row">
-        <div class="col-md-2">
-          <div class="filter-group">
-            <label>Statut:</label>
-            <select class="form-select" [(ngModel)]="statusFilter" (change)="filterOrders()">
-              <option value="">Tous les statuts</option>
-              <option value="pending">En attente</option>
-              <option value="confirmed">Confirmée</option>
-              <option value="prescription_pending">En attente prescription</option>
-              <option value="preparing">En préparation</option>
-              <option value="ready_for_pickup">Prête pour retrait</option>
-              <option value="out_for_delivery">En cours de livraison</option>
-              <option value="delivered">Livrée</option>
-              <option value="completed">Terminée</option>
-              <option value="cancelled">Annulée</option>
-              <option value="returned">Retournée</option>
-              <option value="refunded">Remboursée</option>
-            </select>
-          </div>
-        </div>
-        <div class="col-md-2">
-          <div class="filter-group">
-            <label>Paiement:</label>
-            <select class="form-select" [(ngModel)]="paymentStatusFilter" (change)="filterOrders()">
-              <option value="">Tous les paiements</option>
-              <option value="pending">En attente</option>
-              <option value="paid">Payé</option>
-              <option value="failed">Échoué</option>
-              <option value="refunded">Remboursé</option>
-              <option value="partially_refunded">Partiellement remboursé</option>
-            </select>
-          </div>
-        </div>
-        <div class="col-md-2">
-          <div class="filter-group">
-            <label>Livraison:</label>
-            <select class="form-select" [(ngModel)]="deliveryMethodFilter" (change)="filterOrders()">
-              <option value="">Toutes les livraisons</option>
-              <option value="home_delivery">Livraison à domicile</option>
-              <option value="pickup">Retrait en pharmacie</option>
-              <option value="express">Livraison express</option>
-              <option value="scheduled">Livraison programmée</option>
-            </select>
-          </div>
-        </div>
-        <div class="col-md-2">
-          <div class="filter-group">
-            <label>Date début:</label>
-            <input type="date" class="form-control" [(ngModel)]="dateFromFilter" (change)="filterOrders()">
-          </div>
-        </div>
-        <div class="col-md-2">
-          <div class="filter-group">
-            <label>Date fin:</label>
-            <input type="date" class="form-control" [(ngModel)]="dateToFilter" (change)="filterOrders()">
-          </div>
-        </div>
-        <div class="col-md-2">
-          <div class="filter-group">
-            <label>Pharmacie:</label>
-            <select class="form-select" [(ngModel)]="pharmacyFilter" (change)="filterOrders()">
-              <option value="">Toutes les pharmacies</option>
-              <option *ngFor="let pharmacy of pharmaciesListArray" [value]="pharmacy.value">{{pharmacy.label}}</option>
-            </select>
-          </div>
-        </div>
+  <div class="reviews-filters mb-4">
+    <div class="row">
+      <div class="col-md-2">
+          <select class="form-select" [(ngModel)]="statusFilter" (change)="filterOrders()">
+            <option value="">Tous les statuts</option>
+            <option value="pending">En attente</option>
+            <option value="confirmed">Confirmée</option>
+            <option value="prescription_pending">En attente prescription</option>
+            <option value="preparing">En préparation</option>
+            <option value="ready_for_pickup">Prête pour retrait</option>
+            <option value="out_for_delivery">En cours de livraison</option>
+            <option value="delivered">Livrée</option>
+            <option value="completed">Terminée</option>
+            <option value="cancelled">Annulée</option>
+            <option value="returned">Retournée</option>
+            <option value="refunded">Remboursée</option>
+          </select>
+      </div>
+      <div class="col-md-2">
+  <!--      <div class="filter-group">-->
+  <!--        <label>Paiement:</label>-->
+          <select class="form-select" [(ngModel)]="paymentStatusFilter" (change)="filterOrders()">
+            <option value="">Tous les paiements</option>
+            <option value="pending">En attente</option>
+            <option value="paid">Payé</option>
+            <option value="failed">Échoué</option>
+            <option value="refunded">Remboursé</option>
+            <option value="partially_refunded">Partiellement remboursé</option>
+          </select>
+  <!--      </div>-->
+      </div>
+      <div class="col-md-2">
+  <!--      <div class="filter-group">-->
+  <!--        <label>Livraison:</label>-->
+          <select class="form-select" [(ngModel)]="deliveryMethodFilter" (change)="filterOrders()">
+            <option value="">Toutes les livraisons</option>
+            <option value="home_delivery">Livraison à domicile</option>
+            <option value="pickup">Retrait en pharmacie</option>
+            <option value="express">Livraison express</option>
+            <option value="scheduled">Livraison programmée</option>
+          </select>
+  <!--      </div>-->
+      </div>
+      <div class="col-md-2">
+  <!--      <div class="filter-group">-->
+  <!--        <label>Date début:</label>-->
+          <input type="date" class="form-control" [(ngModel)]="dateFromFilter" (change)="filterOrders()">
+  <!--      </div>-->
+      </div>
+      <div class="col-md-2">
+  <!--      <div class="filter-group">-->
+  <!--        <label>Date fin:</label>-->
+          <input type="date" class="form-control" [(ngModel)]="dateToFilter" (change)="filterOrders()">
+  <!--      </div>-->
+      </div>
+      <div class="col-md-2">
+  <!--      <div class="filter-group">-->
+  <!--        <label>Pharmacie:</label>-->
+          <select class="form-select" [(ngModel)]="pharmacyFilter" (change)="filterOrders()">
+            <option value="">Toutes les pharmacies</option>
+            <option *ngFor="let pharmacy of pharmaciesListArray" [value]="pharmacy.value">{{pharmacy.label}}</option>
+          </select>
+  <!--      </div>-->
       </div>
     </div>
+<!--    <div class="row">-->
+<!--        <div class="col-md-6">-->
+<!--          <div class="search-box">-->
+<!--            <i class="fas fa-search"></i>-->
+<!--            <input type="text"-->
+<!--                   class="form-control"-->
+<!--                   placeholder="Rechercher une commande..."-->
+<!--                   [(ngModel)]="searchText"-->
+<!--                   (keyup)="filterOrders()">-->
+<!--          </div>-->
+<!--        </div>-->
+<!--    </div>-->
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+  </div>
 
-    <!-- Empty state -->
-    <div *ngIf="!isLoading && filteredOrders.length === 0" class="empty-state">
-      <i class="fas fa-shopping-cart"></i>
-      <h3>Aucune commande trouvée</h3>
-      <p>{{ searchText || statusFilter || paymentStatusFilter ? 'Aucune commande ne correspond à vos critères de recherche.' : 'Aucune commande disponible.' }}</p>
-    </div>
+<div *ngIf="!isLoading" class="stats-content">
+  <div *ngIf="!isLoading && filteredOrders.length === 0" class="empty-state">
+    <i class="fas fa-star"></i>
+    <h3>Aucun avis trouvé</h3>
+    <p>{{ searchText || filteredOrders || statusFilter ? 'Aucune commande ne correspond à vos critères de recherche.' : 'Aucune commande disponible.' }}</p>
+  </div>
 
-    <div *ngIf="!isLoading && filteredOrders.length > 0" class="table-responsive">
-      <table class="table table-hover">
-        <thead>
+  <div *ngIf="!isLoading && filteredOrders.length > 0" class="table-responsive">
+    <table class="table table-hover reviews-table">
+      <thead>
         <tr>
-          <th>
-            <div class="th-content" (click)="sort('orderNumber')">
-              N° Commande
-              <i class="fas" [ngClass]="getSortIcon('orderNumber')"></i>
-            </div>
-          </th>
-          <th>
-            <div class="th-content" (click)="sort('customer.firstName')">
-              Client
-              <i class="fas" [ngClass]="getSortIcon('customer.firstName')"></i>
-            </div>
-          </th>
-          <th>
-            <div class="th-content" (click)="sort('pharmacy.name')">
-              Pharmacie
-              <i class="fas" [ngClass]="getSortIcon('pharmacy.name')"></i>
-            </div>
-          </th>
-          <th>
-            <div class="th-content" (click)="sort('status')">
-              Statut
-              <i class="fas" [ngClass]="getSortIcon('status')"></i>
-            </div>
-          </th>
-          <th>
-            <div class="th-content" (click)="sort('payment.status')">
-              Paiement
-              <i class="fas" [ngClass]="getSortIcon('payment.status')"></i>
-            </div>
-          </th>
-          <th>
-            <div class="th-content" (click)="sort('totalAmount')">
-              Montant
-              <i class="fas" [ngClass]="getSortIcon('totalAmount')"></i>
-            </div>
-          </th>
-          <th>Articles</th>
-          <th>
-            <div class="th-content" (click)="sort('deliveryInfo.method')">
-              Livraison
-              <i class="fas" [ngClass]="getSortIcon('deliveryInfo.method')"></i>
-            </div>
-          </th>
-          <th>
-            <div class="th-content" (click)="sort('orderDate')">
-              Date commande
-              <i class="fas" [ngClass]="getSortIcon('orderDate')"></i>
-            </div>
-          </th>
-          <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
+        <th>
+          <div class="th-content" (click)="sort('orderNumber')">
+            N° Commande
+            <i class="fas" [ngClass]="getSortIcon('orderNumber')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('customer.firstName')">
+            Client
+            <i class="fas" [ngClass]="getSortIcon('customer.firstName')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('pharmacy.name')">
+            Pharmacie
+            <i class="fas" [ngClass]="getSortIcon('pharmacy.name')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('status')">
+            Statut
+            <i class="fas" [ngClass]="getSortIcon('status')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('payment.status')">
+            Paiement
+            <i class="fas" [ngClass]="getSortIcon('payment.status')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('totalAmount')">
+            Montant
+            <i class="fas" [ngClass]="getSortIcon('totalAmount')"></i>
+          </div>
+        </th>
+        <th>Articles</th>
+        <th>
+          <div class="th-content" (click)="sort('deliveryInfo.method')">
+            Livraison
+            <i class="fas" [ngClass]="getSortIcon('deliveryInfo.method')"></i>
+          </div>
+        </th>
+        <th>
+          <div class="th-content" (click)="sort('orderDate')">
+            Date commande
+            <i class="fas" [ngClass]="getSortIcon('orderDate')"></i>
+          </div>
+        </th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+      <tbody>
         <tr *ngFor="let order of getPaginatedOrders()">
-          <td>
-            <div class="order-info">
-                <span class="order-number">
-                  <a [routerLink]="['/pharmacy/orders', order._id]">{{ order.orderNumber }}</a>
-                </span>
-            </div>
-          </td>
-          <td>
-            <div class="customer-info">
-              <span class="customer-name">{{ order.customer?.getFullName() || 'Client inconnu' }}</span>
-              <small class="customer-email text-muted d-block">{{ order.customer?.email }}</small>
-            </div>
-          </td>
-          <td>
-            <span *ngIf="order.pharmacy">{{ order.pharmacy.name }}</span>
-            <span *ngIf="!order.pharmacy" class="text-muted">—</span>
-          </td>
-          <td>
-              <span class="status-badge" [ngClass]="order.getStatusBadgeClass()">
-                {{ order.getStatusLabel() }}
+        <td>
+          <div class="order-info">
+              <span class="order-number">
+                <a [routerLink]="['/pharmacy/orders', order._id]">{{ order.orderNumber }}</a>
               </span>
-          </td>
-          <td>
-            <div class="payment-info">
-                <span class="payment-status"
-                      [ngClass]="{'text-success': order.payment.status === 'paid',
-                                  'text-warning': order.payment.status === 'pending',
-                                  'text-danger': order.payment.status === 'failed'}">
-                  {{ getPaymentStatusLabel(order.payment.status) }}
-                </span>
-              <small class="payment-method text-muted d-block">{{ getPaymentMethodLabel(order.payment.method) }}</small>
-            </div>
-          </td>
-          <td>
-            <span class="amount">{{ order.totalAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
-            <small class="discount text-muted d-block" *ngIf="order.discountAmount > 0">
-              -{{ order.discountAmount | currency:'EUR':'symbol':'1.2-2' }}
-            </small>
-          </td>
-          <td>
-            <span class="items-count">{{ order.getTotalItems() }} article(s)</span>
-            <small class="prescription-required text-warning d-block" *ngIf="order.requiresPrescription()">
-              <i class="fas fa-prescription"></i> Ordonnance requise
-            </small>
-          </td>
-          <td>
-            <div class="delivery-info">
-              <span class="delivery-method">{{ order.getDeliveryMethodLabel() }}</span>
-              <small class="tracking text-muted d-block" *ngIf="order.deliveryInfo.trackingNumber">
-                {{ order.deliveryInfo.trackingNumber }}
-              </small>
-            </div>
-          </td>
-          <td>{{ order.orderDate | date: 'dd/MM/yyyy HH:mm' }}</td>
-          <td>
-            <div class="action-buttons">
-              <button class="btn btn-outline-primary btn-sm me-1"
-                      (click)="viewOrderDetails(order)"
-                      title="Voir les détails">
-                <i class="fas fa-eye"></i>
-              </button>
-              <button class="btn btn-outline-warning btn-sm me-1"
-                      *ngIf="permissions.manageOrderStatus"
-                      (click)="openUpdateStatusModal(order)"
-                      title="Modifier le statut">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button class="btn btn-outline-danger btn-sm"
-                      *ngIf="permissions.deleteOrders && order.isCancellable()"
-                      (click)="deleteOrder(order)"
-                      title="Supprimer">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div *ngIf="!isLoading && filteredOrders.length > 0" class="d-flex justify-content-between align-items-center mt-3 pagination-wrapper">
-      <div class="pagination-info">
-        Affichage de {{paginationStart + 1}} à {{paginationEnd}} sur {{filteredOrders.length}} commandes
-      </div>
-      <nav aria-label="Page navigation">
-        <ul class="pagination">
-          <li class="page-item" [ngClass]="{'disabled': currentPage === 1}">
-            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage - 1)">Précédent</a>
-          </li>
-          <li class="page-item" *ngFor="let page of getPageNumbers()" [ngClass]="{'active': page === currentPage}">
-            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(page)">{{page}}</a>
-          </li>
-          <li class="page-item" [ngClass]="{'disabled': currentPage === totalPages}">
-            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage + 1)">Suivant</a>
-          </li>
-        </ul>
-      </nav>
-    </div>
-  </div>
-</div>
-
-<!-- Modal de détails de la commande -->
-<ng-template #orderDetailsModal>
-  <div class="modal-header">
-    <h4 class="modal-title">Détails de la commande {{ selectedOrder?.orderNumber }}</h4>
-    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
-  </div>
-  <div class="modal-body" *ngIf="selectedOrder">
-    <div class="order-details">
-      <div class="row">
-        <!-- Informations générales -->
-        <div class="col-md-6">
-          <div class="card mb-3">
-            <div class="card-header">
-              <h6><i class="fas fa-info-circle"></i> Informations générales</h6>
-            </div>
-            <div class="card-body">
-              <div class="detail-group">
-                <label>Numéro de commande:</label>
-                <p><strong>{{ selectedOrder.orderNumber }}</strong></p>
-              </div>
-              <div class="detail-group">
-                <label>Date de commande:</label>
-                <p>{{ selectedOrder.orderDate | date: 'dd/MM/yyyy HH:mm' }}</p>
-              </div>
-              <div class="detail-group">
-                <label>Statut:</label>
-                <p><span class="status-badge" [ngClass]="selectedOrder.getStatusBadgeClass()">{{ selectedOrder.getStatusLabel() }}</span></p>
-              </div>
-              <div class="detail-group" *ngIf="selectedOrder.clientNotes">
-                <label>Notes du client:</label>
-                <p>{{ selectedOrder.clientNotes }}</p>
-              </div>
-            </div>
           </div>
-        </div>
-
-        <!-- Informations client -->
-        <div class="col-md-6">
-          <div class="card mb-3">
-            <div class="card-header">
-              <h6><i class="fas fa-user"></i> Client</h6>
-            </div>
-            <div class="card-body">
-              <div class="detail-group">
-                <label>Nom:</label>
-                <p>{{ selectedOrder.customer?.getFullName() }}</p>
-              </div>
-              <div class="detail-group">
-                <label>Email:</label>
-                <p>{{ selectedOrder.customer?.email }}</p>
-              </div>
-              <div class="detail-group" *ngIf="selectedOrder.customer?.defaultPhone">
-                <label>Téléphone:</label>
-                <p>{{ selectedOrder.customer.defaultPhone.digits }}</p>
-              </div>
-              <div class="detail-group" *ngIf="selectedOrder.customer?.hasAllergies()">
-                <label>Allergies:</label>
-                <p class="text-warning">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  {{ selectedOrder.customer.medicalInfo.allergies.join(', ') }}
-                </p>
-              </div>
-            </div>
+        </td>
+        <td>
+          <div class="customer-info">
+            <span class="customer-name">{{ order.customer?.getFullName() || 'Client inconnu' }}</span>
+            <small class="customer-email text-muted d-block">{{ order.customer?.email }}</small>
           </div>
-        </div>
-      </div>
+        </td>
+        <td>
+          <span *ngIf="order.pharmacy">{{ order.pharmacy.name }}</span>
+          <span *ngIf="!order.pharmacy" class="text-muted">—</span>
+        </td>
+        <td>
+            <span class="status-badge" [ngClass]="order.getStatusBadgeClass()">
+              {{ order.getStatusLabel() }}
+            </span>
+        </td>
+        <td>
+          <div class="payment-info">
+              <span class="payment-status"
+                    [ngClass]="{'text-success': order.payment.status === 'paid',
+                                'text-warning': order.payment.status === 'pending',
+                                'text-danger': order.payment.status === 'failed'}">
+                {{ getPaymentStatusLabel(order.payment.status) }}
+              </span>
+            <small class="payment-method text-muted d-block">{{ getPaymentMethodLabel(order.payment.method) }}</small>
+          </div>
+        </td>
+        <td>
+          <span class="amount">{{ order.totalAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
+          <small class="discount text-muted d-block" *ngIf="order.discountAmount > 0">
+            -{{ order.discountAmount | currency:'EUR':'symbol':'1.2-2' }}
+          </small>
+        </td>
+        <td>
+          <span class="items-count">{{ order.getTotalItems() }} article(s)</span>
+          <small class="prescription-required text-warning d-block" *ngIf="order.requiresPrescription()">
+            <i class="fas fa-prescription"></i> Ordonnance requise
+          </small>
+        </td>
+        <td>
+          <div class="delivery-info">
+            <span class="delivery-method">{{ order.getDeliveryMethodLabel() }}</span>
+            <small class="tracking text-muted d-block" *ngIf="order.deliveryInfo.trackingNumber">
+              {{ order.deliveryInfo.trackingNumber }}
+            </small>
+          </div>
+        </td>
+        <td>{{ order.orderDate | date: 'dd/MM/yyyy HH:mm' }}</td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-outline-primary btn-sm me-1"
+                    (click)="viewOrderDetails(order)"
+                    title="Voir les détails">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn btn-outline-warning btn-sm me-1"
+                    *ngIf="permissions.manageOrderStatus"
+                    (click)="openUpdateStatusModal(order)"
+                    title="Modifier le statut">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm"
+                    *ngIf="permissions.deleteOrders && order.isCancellable()"
+                    (click)="deleteOrder(order)"
+                    title="Supprimer">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
 
-      <div class="row">
-        <!-- Informations de paiement -->
-        <div class="col-md-6">
-          <div class="card mb-3">
-            <div class="card-header">
-              <h6><i class="fas fa-credit-card"></i> Paiement</h6>
-            </div>
-            <div class="card-body">
-              <div class="detail-group">
-                <label>Méthode:</label>
-                <p>{{ selectedOrder.getPaymentMethodLabel() }}</p>
+  <div *ngIf="!isLoading && filteredOrders.length > 0" class="d-flex justify-content-between align-items-center mt-3 pagination-wrapper">
+    <div class="pagination-info">
+      Affichage de {{paginationStart + 1}} à {{paginationEnd}} sur {{filteredOrders.length}} commandes
+    </div>
+    <nav aria-label="Page navigation">
+      <ul class="pagination">
+        <li class="page-item" [ngClass]="{'disabled': currentPage === 1}">
+          <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage - 1)">Précédent</a>
+        </li>
+        <li class="page-item" *ngFor="let page of getPageNumbers()" [ngClass]="{'active': page === currentPage}">
+          <a class="page-link" href="javascript:void(0)" (click)="pageChanged(page)">{{page}}</a>
+        </li>
+        <li class="page-item" [ngClass]="{'disabled': currentPage === totalPages}">
+          <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage + 1)">Suivant</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <ng-template #orderDetailsModal>
+    <div class="modal-header">
+      <h4 class="modal-title">Détails de la commande {{ selectedOrder?.orderNumber }}</h4>
+      <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-body" *ngIf="selectedOrder">
+      <div class="order-details">
+        <div class="row">
+          <!-- Informations générales -->
+          <div class="col-md-6">
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> Informations générales</h6>
               </div>
-              <div class="detail-group">
-                <label>Statut:</label>
-                <p>
-                  <span [ngClass]="{'text-success': selectedOrder.payment.status === 'paid',
-                                  'text-warning': selectedOrder.payment.status === 'pending',
-                                  'text-danger': selectedOrder.payment.status === 'failed'}">
-                    {{ getPaymentStatusLabel(selectedOrder.payment.status) }}
+              <div class="card-body">
+                <div class="detail-group">
+                  <label>Numéro de commande:</label>
+                  <p><strong>{{ selectedOrder.orderNumber }}</strong></p>
+                </div>
+                <div class="detail-group">
+                  <label>Date de commande:</label>
+                  <p>{{ selectedOrder.orderDate | date: 'dd/MM/yyyy HH:mm' }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Statut:</label>
+                  <p><span class="status-badge" [ngClass]="selectedOrder.getStatusBadgeClass()">{{ selectedOrder.getStatusLabel() }}</span></p>
+                </div>
+                <div class="detail-group" *ngIf="selectedOrder.clientNotes.length > 0">
+                  <label>Notes du client:</label>
+                  <p *ngFor="let clientNote of selectedOrder.clientNotes">
+                    {{ clientNote.note }}
+                    <span *ngIf="clientNote.updatedAt" class="text-muted">
+                    (a {{ clientNote.updatedAt | date: 'dd/MM/yyyy HH:mm' }})
                   </span>
-                </p>
-              </div>
-              <div class="detail-group" *ngIf="selectedOrder.payment.transactionId">
-                <label>ID Transaction:</label>
-                <p><code>{{ selectedOrder.payment.transactionId }}</code></p>
-              </div>
-              <div class="detail-group" *ngIf="selectedOrder.payment.paidAt">
-                <label>Payé le:</label>
-                <p>{{ selectedOrder.payment.paidAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+                  </p>
+                </div>
+                <div class="detail-group" *ngIf="selectedOrder.pharmacyNotes.length > 0">
+                  <label>Vos notes aux client:</label>
+                  <p *ngFor="let pharmacyNote of selectedOrder.pharmacyNotes">
+                    {{ pharmacyNote.note }}
+                    <span *ngIf="pharmacyNote.updatedAt" class="text-muted">
+                    (a {{ pharmacyNote.updatedAt | date: 'dd/MM/yyyy HH:mm' }})
+                  </span>
+                  </p>
+                </div>
+                <div class="detail-group" *ngIf="selectedOrder.internalNotes.length > 0">
+                  <label>Note internes:</label>
+                  <p *ngFor="let internalNote of selectedOrder.internalNotes;">
+                    @if(isVisibleInternalNote(internalNote)){
+                      {{internalNote.note }}
+                      <span *ngIf="internalNote.updatedAt" class = "text-muted" >
+                    (a {{internalNote.updatedAt | date: 'dd/MM/yyyy HH:mm' }})
+                    </span >
+                      <span class="text-muted {{ getClassForInternalNote(internalNote) }}" [ngbTooltip]="getInternalNoteLabel(internalNote)">
+                      <i class="fa fa-eye"></i>
+                    </span >
+                    }
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Informations de livraison -->
-        <div class="col-md-6">
-          <div class="card mb-3">
-            <div class="card-header">
-              <h6><i class="fas fa-truck"></i> Livraison</h6>
-            </div>
-            <div class="card-body">
-              <div class="detail-group">
-                <label>Méthode:</label>
-                <p>{{ selectedOrder.getDeliveryMethodLabel() }}</p>
+          <!-- Informations client -->
+          <div class="col-md-6">
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6><i class="fas fa-user"></i> Client</h6>
               </div>
-              <div class="detail-group" *ngIf="selectedOrder.deliveryInfo.trackingNumber">
-                <label>Numéro de suivi:</label>
-                <p><code>{{ selectedOrder.deliveryInfo.trackingNumber }}</code></p>
-              </div>
-              <div class="detail-group" *ngIf="selectedOrder.deliveryInfo.estimatedDeliveryDate">
-                <label>Livraison prévue:</label>
-                <p>{{ selectedOrder.deliveryInfo.estimatedDeliveryDate | date: 'dd/MM/yyyy' }}</p>
-              </div>
-              <div class="detail-group">
-                <label>Adresse de livraison:</label>
-                <div class="address-info">
-                  <p class="mb-1">{{ selectedOrder.deliveryInfo.address.firstName }} {{ selectedOrder.deliveryInfo.address.lastName }}</p>
-                  <p class="mb-1">{{ selectedOrder.deliveryInfo.address.street }}</p>
-                  <p class="mb-1">{{ selectedOrder.deliveryInfo.address.postalCode }} {{ selectedOrder.deliveryInfo.address.city }}</p>
-                  <p class="mb-0" *ngIf="selectedOrder.deliveryInfo.address.country">{{ selectedOrder.deliveryInfo.address.country.name }}</p>
-                  <p class="text-muted mt-1" *ngIf="selectedOrder.deliveryInfo.address.instructions">
-                    <small><i class="fas fa-info-circle"></i> {{ selectedOrder.deliveryInfo.address.instructions }}</small>
+              <div class="card-body">
+                <div class="detail-group">
+                  <label>Nom:</label>
+                  <p>{{ selectedOrder.customer?.getFullName() }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Email:</label>
+                  <p>{{ selectedOrder.customer?.email }}</p>
+                </div>
+                <div class="detail-group" *ngIf="selectedOrder.customer?.defaultPhone">
+                  <label>Téléphone:</label>
+                  <p>{{ selectedOrder.customer.defaultPhone.digits }}</p>
+                </div>
+                <div class="detail-group" *ngIf="selectedOrder.customer?.hasAllergies()">
+                  <label>Allergies:</label>
+                  <p class="text-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {{ selectedOrder.customer.medicalInfo.allergies.join(', ') }}
                   </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Articles commandés -->
-      <div class="row">
-        <div class="col-12">
-          <div class="card mb-3">
-            <div class="card-header">
-              <h6><i class="fas fa-shopping-cart"></i> Articles commandés ({{ selectedOrder.items.length }})</h6>
+        <div class="row">
+          <!-- Informations de paiement -->
+          <div class="col-md-6">
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6><i class="fas fa-credit-card"></i> Paiement</h6>
+              </div>
+              <div class="card-body">
+                <div class="detail-group">
+                  <label>Méthode:</label>
+                  <p>{{ selectedOrder.getPaymentMethodLabel() }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Statut:</label>
+                  <p>
+                  <span [ngClass]="{'text-success': selectedOrder.payment.status === 'paid',
+                                  'text-warning': selectedOrder.payment.status === 'pending',
+                                  'text-danger': selectedOrder.payment.status === 'failed'}">
+                    {{ getPaymentStatusLabel(selectedOrder.payment.status) }}
+                  </span>
+                  </p>
+                </div>
+                <div class="detail-group" *ngIf="selectedOrder.payment.transactionId">
+                  <label>ID Transaction:</label>
+                  <p><code>{{ selectedOrder.payment.transactionId }}</code></p>
+                </div>
+                <div class="detail-group" *ngIf="selectedOrder.payment.paidAt">
+                  <label>Payé le:</label>
+                  <p>{{ selectedOrder.payment.paidAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+                </div>
+              </div>
             </div>
-            <div class="card-body p-0">
-              <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                  <thead class="table-light">
-                  <tr>
-                    <th>Produit</th>
-                    <th>Quantité</th>
-                    <th>Prix unitaire</th>
-                    <th>Total</th>
-                    <th>Ordonnance</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  <tr *ngFor="let item of selectedOrder.items">
-                    <td>
-                      <div class="product-info">
-                        <span class="product-name">{{ item.product.name }}</span>
-                        <small class="product-ref text-muted d-block" *ngIf="item.product.sku">
-                          Réf: {{ item.product.sku }}
-                        </small>
-                      </div>
-                    </td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ item.unitPrice | currency:'EUR':'symbol':'1.2-2' }}</td>
-                    <td>{{ item.totalPrice | currency:'EUR':'symbol':'1.2-2' }}</td>
-                    <td>
+          </div>
+
+          <!-- Informations de livraison -->
+          <div class="col-md-6">
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6><i class="fas fa-truck"></i> Livraison</h6>
+              </div>
+              <div class="card-body">
+                <div class="detail-group">
+                  <label>Méthode:</label>
+                  <p>{{ selectedOrder.getDeliveryMethodLabel() }}</p>
+                </div>
+                <div class="detail-group" *ngIf="selectedOrder.deliveryInfo.trackingNumber">
+                  <label>Numéro de suivi:</label>
+                  <p><code>{{ selectedOrder.deliveryInfo.trackingNumber }}</code></p>
+                </div>
+                <div class="detail-group" *ngIf="selectedOrder.deliveryInfo.estimatedDeliveryDate">
+                  <label>Livraison prévue:</label>
+                  <p>{{ selectedOrder.deliveryInfo.estimatedDeliveryDate | date: 'dd/MM/yyyy' }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Adresse de livraison:</label>
+                  <div class="address-info">
+                    <p class="mb-1">{{ selectedOrder.deliveryInfo.address.firstName }} {{ selectedOrder.deliveryInfo.address.lastName }}</p>
+                    <p class="mb-1">{{ selectedOrder.deliveryInfo.address.street }}</p>
+                    <p class="mb-1">{{ selectedOrder.deliveryInfo.address.postalCode }} {{ selectedOrder.deliveryInfo.address.city }}</p>
+                    <p class="mb-0" *ngIf="selectedOrder.deliveryInfo.address.country">{{ selectedOrder.deliveryInfo.address.country.name }}</p>
+                    <p class="text-muted mt-1" *ngIf="selectedOrder.deliveryInfo.address.instructions">
+                      <small><i class="fas fa-info-circle"></i> {{ selectedOrder.deliveryInfo.address.instructions }}</small>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Articles commandés -->
+        <div class="row">
+          <div class="col-12">
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6><i class="fas fa-shopping-cart"></i> Articles commandés ({{ selectedOrder.items.length }})</h6>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                    <tr>
+                      <th>Produit</th>
+                      <th>Quantité</th>
+                      <th>Prix unitaire</th>
+                      <th>Total</th>
+                      <th>Ordonnance</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr *ngFor="let item of selectedOrder.items">
+                      <td>
+                        <div class="product-info">
+                          <span class="product-name">{{ item.product.name }}</span>
+                          <small class="product-ref text-muted d-block" *ngIf="item.product.sku">
+                            Réf: {{ item.product.sku }}
+                          </small>
+                        </div>
+                      </td>
+                      <td>{{ item.quantity }}</td>
+                      <td>{{ item.unitPrice | currency:'EUR':'symbol':'1.2-2' }}</td>
+                      <td>{{ item.totalPrice | currency:'EUR':'symbol':'1.2-2' }}</td>
+                      <td>
                         <span *ngIf="item.prescriptionRequired"
                               [ngClass]="{'text-success': item.prescriptionProvided, 'text-warning': !item.prescriptionProvided}">
                           <i class="fas" [ngClass]="{'fa-check': item.prescriptionProvided, 'fa-clock': !item.prescriptionProvided}"></i>
                           {{ item.prescriptionProvided ? 'Fournie' : 'Requise' }}
                         </span>
-                      <span *ngIf="!item.prescriptionRequired" class="text-muted">—</span>
-                    </td>
-                  </tr>
-                  </tbody>
-                </table>
+                        <span *ngIf="!item.prescriptionRequired" class="text-muted">—</span>
+                      </td>
+                    </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Totaux -->
-      <div class="row">
-        <div class="col-md-6 offset-md-6">
-          <div class="card">
-            <div class="card-header">
-              <h6><i class="fas fa-calculator"></i> Récapitulatif</h6>
-            </div>
-            <div class="card-body">
-              <div class="d-flex justify-content-between mb-2">
-                <span>Sous-total:</span>
-                <span>{{ selectedOrder.subtotal | currency:'EUR':'symbol':'1.2-2' }}</span>
+        <!-- Totaux -->
+        <div class="row">
+          <div class="col-md-6 offset-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h6><i class="fas fa-calculator"></i> Récapitulatif</h6>
               </div>
-              <div class="d-flex justify-content-between mb-2" *ngIf="selectedOrder.shippingCost > 0">
-                <span>Frais de livraison:</span>
-                <span>{{ selectedOrder.shippingCost | currency:'EUR':'symbol':'1.2-2' }}</span>
-              </div>
-              <div class="d-flex justify-content-between mb-2" *ngIf="selectedOrder.taxAmount > 0">
-                <span>Taxes:</span>
-                <span>{{ selectedOrder.taxAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
-              </div>
-              <div class="d-flex justify-content-between mb-2 text-success" *ngIf="selectedOrder.discountAmount > 0">
-                <span>Remise:</span>
-                <span>-{{ selectedOrder.discountAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
-              </div>
-              <div class="d-flex justify-content-between mb-2" *ngIf="selectedOrder.coupon.appliedDiscount > 0">
-                <span>Coupon ({{ selectedOrder.coupon.code }}):</span>
-                <span class="text-success">-{{ selectedOrder.coupon.appliedDiscount | currency:'EUR':'symbol':'1.2-2' }}</span>
-              </div>
-              <hr>
-              <div class="d-flex justify-content-between">
-                <strong>Total:</strong>
-                <strong>{{ selectedOrder.totalAmount | currency:'EUR':'symbol':'1.2-2' }}</strong>
+              <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                  <span>Sous-total:</span>
+                  <span>{{ selectedOrder.subtotal | currency:'EUR':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2" *ngIf="selectedOrder.shippingCost > 0">
+                  <span>Frais de livraison:</span>
+                  <span>{{ selectedOrder.shippingCost | currency:'EUR':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2" *ngIf="selectedOrder.taxAmount > 0">
+                  <span>Taxes:</span>
+                  <span>{{ selectedOrder.taxAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 text-success" *ngIf="selectedOrder.discountAmount > 0">
+                  <span>Remise:</span>
+                  <span>-{{ selectedOrder.discountAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2" *ngIf="selectedOrder.coupon.appliedDiscount > 0">
+                  <span>Coupon ({{ selectedOrder.coupon.code }}):</span>
+                  <span class="text-success">-{{ selectedOrder.coupon.appliedDiscount | currency:'EUR':'symbol':'1.2-2' }}</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                  <strong>Total:</strong>
+                  <strong>{{ selectedOrder.totalAmount | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Historique des statuts -->
-      <div class="row mt-3" *ngIf="selectedOrder.statusHistory.length > 0">
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header">
-              <h6><i class="fas fa-history"></i> Historique des statuts</h6>
-            </div>
-            <div class="card-body">
-              <div class="timeline">
-                <div *ngFor="let history of selectedOrder.statusHistory" class="timeline-item">
-                  <div class="timeline-marker"></div>
-                  <div class="timeline-content">
-                    <h6 class="timeline-title">{{ getStatusLabel(history.status) }}</h6>
-                    <p class="timeline-date">{{ history.timestamp | date: 'dd/MM/yyyy HH:mm' }}</p>
-                    <p class="timeline-note" *ngIf="history.note">{{ history.note }}</p>
+        <!-- Historique des statuts -->
+        <div class="row mt-3" *ngIf="selectedOrder.statusHistory.length > 0">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header">
+                <h6><i class="fas fa-history"></i> Historique des statuts</h6>
+              </div>
+              <div class="card-body">
+                <div class="timeline">
+                  <div *ngFor="let history of selectedOrder.statusHistory" class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                      <h6 class="timeline-title">{{ getStatusLabel(history.status) }}</h6>
+                      <p class="timeline-date">{{ history.timestamp | date: 'dd/MM/yyyy HH:mm' }}</p>
+                      <p class="timeline-note" *ngIf="history.note">{{ history.note }}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -503,71 +578,70 @@
         </div>
       </div>
     </div>
-  </div>
-  <div class="modal-footer">
-    <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
-    <button type="button" class="btn btn-warning"
-            *ngIf="permissions.manageOrderStatus"
-            (click)="closeModal(); openUpdateStatusModal(selectedOrder!)">
-      <i class="fas fa-edit"></i> Modifier le statut
-    </button>
-  </div>
-</ng-template>
-
-<!-- Modal de mise à jour du statut -->
-<ng-template #updateStatusModal>
-  <div class="modal-header">
-    <h4 class="modal-title">Modifier le statut - {{ selectedOrder?.orderNumber }}</h4>
-    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
-  </div>
-  <form [formGroup]="updateStatusForm" (ngSubmit)="updateOrderStatus()">
-    <div class="modal-body">
-      <div class="alert alert-info">
-        <i class="fas fa-info-circle"></i>
-        <strong>Statut actuel:</strong> {{ selectedOrder?.getStatusLabel() }}
-      </div>
-
-      <div class="mb-3">
-        <label for="status" class="form-label">Nouveau statut <span class="text-danger">*</span></label>
-        <select class="form-select" id="status" formControlName="status" required>
-          <option value="pending">En attente</option>
-          <option value="confirmed">Confirmée</option>
-          <option value="prescription_pending">En attente de prescription</option>
-          <option value="preparing">En préparation</option>
-          <option value="ready_for_pickup">Prête pour retrait</option>
-          <option value="out_for_delivery">En cours de livraison</option>
-          <option value="delivered">Livrée</option>
-          <option value="completed">Terminée</option>
-          <option value="cancelled">Annulée</option>
-          <option value="returned">Retournée</option>
-          <option value="refunded">Remboursée</option>
-        </select>
-      </div>
-
-      <div class="mb-3">
-        <label for="note" class="form-label">Note (optionnelle)</label>
-        <textarea class="form-control" id="note" rows="3" formControlName="note"
-                  placeholder="Ajouter une note sur ce changement de statut..."></textarea>
-      </div>
-
-      <div class="mb-3" *ngIf="updateStatusForm.get('status')?.value === 'out_for_delivery'">
-        <label for="trackingNumber" class="form-label">Numéro de suivi</label>
-        <input type="text" class="form-control" id="trackingNumber" formControlName="trackingNumber"
-               placeholder="Entrez le numéro de suivi">
-      </div>
-
-      <div class="mb-3" *ngIf="['out_for_delivery', 'delivered'].includes(updateStatusForm.get('status')?.value)">
-        <label for="estimatedDeliveryDate" class="form-label">Date de livraison prévue</label>
-        <input type="datetime-local" class="form-control" id="estimatedDeliveryDate"
-               formControlName="estimatedDeliveryDate">
-      </div>
-    </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
-      <button type="submit" class="btn btn-primary" [disabled]="!updateStatusForm.valid || isSubmitting">
-        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-        Mettre à jour
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
+      <button type="button" class="btn btn-warning"
+              *ngIf="permissions.manageOrderStatus"
+              (click)="closeModal(); openUpdateStatusModal(selectedOrder!)">
+        <i class="fas fa-edit"></i> Modifier le statut
       </button>
     </div>
-  </form>
-</ng-template>
+  </ng-template>
+</div>
+
+<!--<ng-template #updateStatusModal>-->
+<!--  <div class="modal-header">-->
+<!--    <h4 class="modal-title">Modifier le statut - {{ selectedOrder?.orderNumber }}</h4>-->
+<!--    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>-->
+<!--  </div>-->
+<!--  <form [formGroup]="updateStatusForm" (ngSubmit)="updateOrderStatus()">-->
+<!--    <div class="modal-body">-->
+<!--      <div class="alert alert-info">-->
+<!--        <i class="fas fa-info-circle"></i>-->
+<!--        <strong>Statut actuel:</strong> {{ selectedOrder?.getStatusLabel() }}-->
+<!--      </div>-->
+
+<!--      <div class="mb-3">-->
+<!--        <label for="status" class="form-label">Nouveau statut <span class="text-danger">*</span></label>-->
+<!--        <select class="form-select" id="status" formControlName="status" required>-->
+<!--          <option value="pending">En attente</option>-->
+<!--          <option value="confirmed">Confirmée</option>-->
+<!--          <option value="prescription_pending">En attente de prescription</option>-->
+<!--          <option value="preparing">En préparation</option>-->
+<!--          <option value="ready_for_pickup">Prête pour retrait</option>-->
+<!--          <option value="out_for_delivery">En cours de livraison</option>-->
+<!--          <option value="delivered">Livrée</option>-->
+<!--          <option value="completed">Terminée</option>-->
+<!--          <option value="cancelled">Annulée</option>-->
+<!--          <option value="returned">Retournée</option>-->
+<!--          <option value="refunded">Remboursée</option>-->
+<!--        </select>-->
+<!--      </div>-->
+
+<!--      <div class="mb-3">-->
+<!--        <label for="note" class="form-label">Note (optionnelle)</label>-->
+<!--        <textarea class="form-control" id="note" rows="3" formControlName="note"-->
+<!--                  placeholder="Ajouter une note sur ce changement de statut..."></textarea>-->
+<!--      </div>-->
+
+<!--      <div class="mb-3" *ngIf="updateStatusForm.get('status')?.value === 'out_for_delivery'">-->
+<!--        <label for="trackingNumber" class="form-label">Numéro de suivi</label>-->
+<!--        <input type="text" class="form-control" id="trackingNumber" formControlName="trackingNumber"-->
+<!--               placeholder="Entrez le numéro de suivi">-->
+<!--      </div>-->
+
+<!--      <div class="mb-3" *ngIf="['out_for_delivery', 'delivered'].includes(updateStatusForm.get('status')?.value)">-->
+<!--        <label for="estimatedDeliveryDate" class="form-label">Date de livraison prévue</label>-->
+<!--        <input type="datetime-local" class="form-control" id="estimatedDeliveryDate"-->
+<!--               formControlName="estimatedDeliveryDate">-->
+<!--      </div>-->
+<!--    </div>-->
+<!--    <div class="modal-footer">-->
+<!--      <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>-->
+<!--      <button type="submit" class="btn btn-primary" [disabled]="!updateStatusForm.valid || isSubmitting">-->
+<!--        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>-->
+<!--        Mettre à jour-->
+<!--      </button>-->
+<!--    </div>-->
+<!--  </form>-->
+<!--</ng-template>-->

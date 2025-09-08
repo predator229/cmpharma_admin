@@ -13,7 +13,7 @@ import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { CommonFunctions } from "../../../../../../controllers/comonsfunctions";
 import { UserDetails } from "../../../../../../models/UserDatails";
 import { environment } from "../../../../../../../environments/environment";
-import {OrderClass, OrderItem} from "../../../../../../models/Order.class";
+import {InternalNotes, OrderClass, OrderItem} from "../../../../../../models/Order.class";
 import { MiniChatService } from "../../../../../../controllers/services/minichat.service";
 import {Product} from "../../../../../../models/Product";
 import {PrescriptionClass} from "../../../../../../models/Prescription.class";
@@ -1080,5 +1080,33 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
     if (this.selectedProduct) {
       this.router.navigate(['/pharmacy/products', this.selectedProduct._id]);
     }
+  }
+  getClassForInternalNote(internalNote: InternalNotes) {
+    switch (internalNote.type) {
+      case 'to_pharmacy': return 'bg-warning';
+      case 'to_person': return 'bg-success';
+      case 'to_admin': return 'bg-info';
+      case 'to_general': return 'bg-danger';
+      default: return '';
+    }
+  }
+
+  isVisibleInternalNote(internaNote: InternalNotes): boolean {
+    switch (internaNote.type) {
+      case 'to_pharmacy': return this.permissions.viewOrder;
+      case 'to_person': return this.permissions.viewOrder && ([internaNote.from._id, internaNote.to._id].includes(this.userDetail.id));
+      case 'to_admin': return this.permissions.viewOrder;
+      case 'to_general': return this.permissions.viewOrder;
+    }
+  }
+
+  getInternalNoteLabel(internalNote: InternalNotes) {
+    switch (internalNote.type) {
+      case "to_pharmacy": return 'Visible uniquement par les membres de la pharmacie';
+      case "to_person": return 'Visible uniquement par vous et la personne mentione dans la note';
+      case "to_admin": return 'Visible par les membres de votre pharmacie et par les administrateurs';
+      case "to_general": return 'Visible par tous les utilisateurs';
+    }
+    return "";
   }
 }

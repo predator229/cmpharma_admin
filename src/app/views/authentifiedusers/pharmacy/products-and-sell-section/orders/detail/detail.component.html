@@ -380,7 +380,7 @@
       </div>
 
       <!-- Notes section -->
-      <div class="row" *ngIf="order.clientNotes || order.pharmacyNotes || order.internalNotes">
+      <div class="row" *ngIf="order.clientNotes.length > 0 || order.pharmacyNotes.length > 0 || order.internalNotes.length > 0">
         <div class="col-12">
           <div class="card">
             <div class="card-header">
@@ -388,28 +388,39 @@
             </div>
             <div class="card-body">
               <div class="notes-container">
-                <div *ngIf="order.clientNotes" class="note-item mb-3">
+                <div *ngIf="order.clientNotes.length > 0" class="note-item mb-3">
                   <div class="note-header d-flex align-items-center mb-2">
                     <i class="fas fa-user text-primary me-2"></i>
                     <strong class="text-primary">Note client</strong>
                   </div>
-                  <div class="note-content">{{ order.clientNotes }}</div>
+                  <div class="note-content" *ngFor="let clientNote of order.clientNotes">{{ clientNote.note }}</div>
                 </div>
 
-                <div *ngIf="order.pharmacyNotes" class="note-item mb-3">
+                <div *ngIf="order.pharmacyNotes.length > 0" class="note-item mb-3">
                   <div class="note-header d-flex align-items-center mb-2">
                     <i class="fas fa-hospital text-info me-2"></i>
                     <strong class="text-info">Note pharmacie</strong>
                   </div>
-                  <div class="note-content">{{ order.pharmacyNotes }}</div>
+                  <div class="note-content" *ngFor="let pharmacyNote of order.pharmacyNotes">{{ pharmacyNote.note }}</div>
                 </div>
 
-                <div *ngIf="order.internalNotes" class="note-item mb-3">
+                <div *ngIf="order.internalNotes.length > 0" class="note-item mb-3">
                   <div class="note-header d-flex align-items-center mb-2">
                     <i class="fas fa-lock text-secondary me-2"></i>
                     <strong class="text-secondary">Note interne</strong>
                   </div>
-                  <div class="note-content">{{ order.internalNotes }}</div>
+                  <div class="note-content"
+                       *ngFor="let internalNote of order.internalNotes;">
+                    @if(isVisibleInternalNote(internalNote)){
+                      {{internalNote.note }}
+                        <span *ngIf="internalNote.updatedAt" class = "text-muted" >
+                        (a {{internalNote.updatedAt | date: 'dd/MM/yyyy HH:mm' }})
+                        </span >
+                          <span class="text-muted {{ getClassForInternalNote(internalNote) }}" [ngbTooltip]="getInternalNoteLabel(internalNote)">
+                          <i class="fa fa-eye"></i>
+                        </span >
+                      }
+                  </div>
                 </div>
               </div>
             </div>

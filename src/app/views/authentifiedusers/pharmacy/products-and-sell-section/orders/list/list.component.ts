@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import {Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener} from '@angular/core';
 import { CommonModule } from "@angular/common";
 import { SharedModule } from "../../../../../theme/shared/shared.module";
 import { AuthService } from "../../../../../../controllers/services/auth.service";
@@ -14,7 +14,7 @@ import { CommonFunctions } from "../../../../../../controllers/comonsfunctions";
 import { UserDetails } from "../../../../../../models/UserDatails";
 import { environment } from "../../../../../../../environments/environment";
 import { Select2 } from "ng-select2-component";
-import { OrderClass } from "../../../../../../models/Order.class";
+import {InternalNotes, OrderClass} from "../../../../../../models/Order.class";
 import { CustomerClass } from "../../../../../../models/Customer.class";
 import { PharmacyClass } from "../../../../../../models/Pharmacy.class";
 import {MiniChatService} from "../../../../../../controllers/services/minichat.service";
@@ -86,7 +86,18 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
   paginationEnd: number = 0;
   currentPage: number = 1;
 
+  errorMessage: string = '';
   internatPathUrl = environment.internalPathUrl;
+  lastUpdated = new Date();
+  isPeriodDropdownOpen: boolean = false;
+  optionsPeriodDatas = [
+    { value: '7d', label: '7 derniers jours' },
+    { value: '30d', label: '30 derniers jours' },
+    { value: '3m', label: '3 derniers mois' },
+    { value: '6m', label: '6 derniers mois' },
+    { value: '1y', label: '1 an' },
+    { value: 'all', label: 'Toute la période' }
+  ];
 
   permissions = {
     viewOrders: false,
@@ -118,6 +129,7 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
   pharmaciesListArray: Array<{value: string, label: string}> = [];
   customersListArray: Array<{value: string, label: string}> = [];
   private namespace = 'internal_messaging';
+  selectedPeriod: string = '30d';
 
   constructor(
     modalService: NgbModal,
@@ -171,10 +183,29 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
             return ord._id === order._id;
           });
 
+          switch (this.selectedPeriod){
+            case '7d':
+              if(order.orderDate && order.orderDate.getTime() < new Date().getTime() - 7 * 24 * 60 * 60 * 1000) return;
+              break;
+            case '30d':
+              if (order.orderDate && order.orderDate.getTime() < new Date().getTime() - 30 * 24 * 60 * 60 * 1000) return;
+              break;
+            case '3m':
+              if (order.orderDate && order.orderDate.getTime() < new Date().getTime() - 3 * 30 * 24 * 60 * 60 * 1000) return;
+              break;
+            case '6m':
+              if (order.orderDate && order.orderDate.getTime() < new Date().getTime() - 6 * 30 * 24 * 60 * 60 * 1000) return;
+              break;
+            case '1y':
+              if (order.orderDate && order.orderDate.getTime() < new Date().getTime() - 365 * 24 * 60 * 60 * 1000) return;
+              break;
+            case 'all': break;
+            default: return; break;
+          }
+
           if (!existingOrder) {
             this.orders.unshift(order);
           } else {
-            // this.notify.custom(`Nouvelle commande reçue 🎉 #${order.orderNumber}`, 'receive');
             const index = this.orders.findIndex(ord => ord._id === order._id);
             if (index > -1) {
               this.orders[index] = order;
@@ -205,6 +236,8 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
 
   async loadOrders(): Promise<void> {
     this.loadingService.setLoading(true);
+    this.errorMessage = '';
+
     try {
       const token = await this.auth.getRealToken();
       const uid = await this.auth.getUid();
@@ -227,7 +260,7 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.apiService.post('pharmacy-management/orders/list', { uid }, headers)
+      this.apiService.post('pharmacy-management/orders/list', { uid, period: this.selectedPeriod }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -240,6 +273,7 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
               this.orders = [];
               this.filterOrders();
             }
+            this.lastUpdated = new Date();
             this.loadingService.setLoading(false);
           },
           error: (error) => {
@@ -490,6 +524,7 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
   }
 
   private handleError(message: string): void {
+    this.errorMessage = message;
     Swal.fire({
       icon: 'error',
       title: 'Erreur',
@@ -661,4 +696,63 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
     };
     return methodLabels[method as keyof typeof methodLabels] || 'Inconnu';
   }
+
+  getClassForInternalNote(internalNote: InternalNotes) {
+    switch (internalNote.type) {
+      case 'to_pharmacy': return 'bg-warning';
+      case 'to_person': return 'bg-success';
+      case 'to_admin': return 'bg-info';
+      case 'to_general': return 'bg-danger';
+      default: return '';
+    }
+  }
+
+  isVisibleInternalNote(internaNote: InternalNotes): boolean {
+    switch (internaNote.type) {
+      case 'to_pharmacy': return this.permissions.viewOrders;
+      case 'to_person': return this.permissions.viewOrders && ([internaNote.from._id, internaNote.to._id].includes(this.userDetail.id));
+      case 'to_admin': return this.permissions.viewOrders;
+      case 'to_general': return this.permissions.viewOrders;
+    }
+  }
+
+  getInternalNoteLabel(internalNote: InternalNotes) {
+    switch (internalNote.type) {
+      case "to_pharmacy": return 'Visible uniquement par les membres de la pharmacie';
+      case "to_person": return 'Visible uniquement par vous et la personne mentione dans la note';
+      case "to_admin": return 'Visible par les membres de votre pharmacie et par les administrateurs';
+      case "to_general": return 'Visible par tous les utilisateurs';
+    }
+    return "";
+  }
+
+  getPeriodLabel(period: string): string {
+    const option = this.optionsPeriodDatas.find(opt => opt.value === period);
+    return option?.label || 'Période inconnue';
+  }
+
+  async setDateIntervalFromPeriod(period: string): Promise<void> {
+    this.selectedPeriod = period;
+    await this.loadOrders();
+  }
+
+  toggleStatusDropdown(): void {
+    this.isPeriodDropdownOpen = !this.isPeriodDropdownOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeDropdownsOnOutsideClick(event: Event) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.custom-dropdown')) {
+      this.isPeriodDropdownOpen = false;
+    }
+  }
+  closeDropdown() {
+    this.isPeriodDropdownOpen = false;
+  }
+
+  async refreshDashboard(): Promise<void> {
+    await this.loadOrders();
+  }
+
 }

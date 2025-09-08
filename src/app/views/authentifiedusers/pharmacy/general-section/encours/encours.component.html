@@ -449,16 +449,26 @@
       </div>
 
       <!-- Notes -->
-      <div class="modal-section notes-section" *ngIf="selectedOrder.clientNotes || selectedOrder.pharmacyNotes">
+      <div class="modal-section notes-section" *ngIf="selectedOrder.clientNotes.length > 0 || selectedOrder.pharmacyNotes.length > 0">
         <h3><i class="fas fa-sticky-note"></i> Notes</h3>
         <div class="notes-content">
           <div class="note-item" *ngIf="selectedOrder.clientNotes">
             <strong>Note du client:</strong>
-            <p>{{ selectedOrder.clientNotes }}</p>
+            <p *ngFor="let clientNote of selectedOrder.clientNotes">
+              {{ clientNote.note }}
+              <span *ngIf="clientNote.updatedAt" class="text-muted">
+                    (a {{ clientNote.updatedAt | date: 'dd/MM/yyyy HH:mm' }})
+                  </span>
+            </p>
           </div>
-          <div class="note-item" *ngIf="selectedOrder.pharmacyNotes">
+          <div class="note-item" *ngIf="selectedOrder.pharmacyNotes.length > 0">
             <strong>Note de la pharmacie:</strong>
-            <p>{{ selectedOrder.pharmacyNotes }}</p>
+            <p *ngFor="let pharmacyNote of selectedOrder.pharmacyNotes">
+              {{ pharmacyNote.note }}
+              <span *ngIf="pharmacyNote.updatedAt" class="text-muted">
+                (a {{ pharmacyNote.updatedAt | date: 'dd/MM/yyyy HH:mm' }})
+              </span>
+            </p>
           </div>
         </div>
       </div>

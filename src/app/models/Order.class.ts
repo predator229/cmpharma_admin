@@ -4,6 +4,7 @@ import {CustomerClass} from "./Customer.class";
 import {PharmacyClass} from "./Pharmacy.class";
 import {CommonFunctions} from "../controllers/comonsfunctions";
 import {PrescriptionClass} from "./Prescription.class";
+import {Admin} from "./Admin.class";
 
 export interface OrderItem {
   product: Product;
@@ -64,6 +65,31 @@ export interface ReturnInfo {
   refundStatus: 'none' | 'requested' | 'approved' | 'processed';
 }
 
+export interface ClientNotes {
+  note: string;
+  createdAt: Date;
+  updatedAt: Date;
+  from: CustomerClass;
+  to: PharmacyClass;
+}
+
+export interface PharmacyNotes {
+  note: string;
+  createdAt: Date;
+  updatedAt: Date;
+  from: Admin;
+  to: CustomerClass;
+}
+
+export interface InternalNotes {
+  note: string;
+  createdAt: Date;
+  updatedAt: Date;
+  from: Admin;
+  to: Admin;
+  type: 'to_person' | 'to_pharmacy' | 'to_admin' | 'to_general';
+}
+
 export class OrderClass {
   _id?: string;
 
@@ -97,9 +123,9 @@ export class OrderClass {
   coupon: CouponInfo;
 
   // Notes et commentaires
-  clientNotes?: string;
-  pharmacyNotes?: string;
-  internalNotes?: string;
+  clientNotes : ClientNotes[];
+  pharmacyNotes : PharmacyNotes[];
+  internalNotes : InternalNotes[];
 
   // Dates importantes
   orderDate: Date;
