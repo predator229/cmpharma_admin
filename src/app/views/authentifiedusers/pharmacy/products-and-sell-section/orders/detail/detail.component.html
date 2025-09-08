@@ -42,26 +42,27 @@
     </div>
     <!-- Quick actions -->
     <div class="header-actions">
-      <button class="btn btn-outline-primary mr-3" (click)="printOrder('invoice')">
-        <i class="fas fa-print"></i> Imprimer
-      </button>
-      <div class="btn-group">
-        <button class="btn btn-outline-secondary dropdown-toggle mr-3" data-bs-toggle="dropdown">
-          <i class="fas fa-download"></i> Exporter
-        </button>
-        <ul class="dropdown-menu">
-          <li><a class="dropdown-item" href="javascript:void(0)" (click)="exportOrderData('json')">JSON</a></li>
-          <li><a class="dropdown-item" href="javascript:void(0)" (click)="exportOrderData('excel')">Excel</a></li>
-          <li><a class="dropdown-item" href="javascript:void(0)" (click)="exportOrderData('pdf')">PDF</a></li>
-        </ul>
-      </div>
+<!--      <button class="btn btn-outline-primary mr-3" (click)="printOrder('invoice')">-->
+<!--        <i class="fas fa-print"></i> Imprimer-->
+<!--      </button>-->
+<!--      <div class="btn-group">-->
+<!--        <button class="btn btn-outline-secondary dropdown-toggle mr-3" data-bs-toggle="dropdown">-->
+<!--          <i class="fas fa-download"></i> Exporter-->
+<!--        </button>-->
+<!--        <ul class="dropdown-menu">-->
+<!--          <li><a class="dropdown-item" href="javascript:void(0)" (click)="exportOrderData('json')">JSON</a></li>-->
+<!--          <li><a class="dropdown-item" href="javascript:void(0)" (click)="exportOrderData('excel')">Excel</a></li>-->
+<!--          <li><a class="dropdown-item" href="javascript:void(0)" (click)="exportOrderData('pdf')">PDF</a></li>-->
+<!--        </ul>-->
+<!--      </div>-->
       <a (click)="goBack()" class="btn btn-outline-secondary">
         <i class="fas fa-arrow-left"></i> Retour
       </a>
     </div>
   </div>
 
-  <!-- Quick status actions -->
+
+  <!--   Quick status actions -->
   <div class="quick-actions-bar mb-4" *ngIf="canUpdateStatus()">
     <div class="d-flex gap-2 flex-wrap">
       <button class="btn btn-sm btn-success mr-3"
@@ -100,6 +101,171 @@
               [disabled]="isSubmitting">
         <i class="fas fa-times"></i> Annuler
       </button>
+    </div>
+  </div>
+
+  <div class="order-lifecycle-container mb-4" *ngIf="!isLoading && order">
+    <div class="card">
+      <div class="card-header bg-light">
+        <div class="d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">
+            <i class="fas fa-route me-2"></i>
+            Cycle de vie de la commande
+          </h6>
+          <div class="lifecycle-info">
+            <span class="badge bg-primary">{{ getLifecycleStageLabel() }}</span>
+            <small class="text-muted ms-2">
+              Étape {{ getCurrentStageIndex() }}/{{ getTotalStages() }}
+            </small>
+          </div>
+        </div>
+      </div>
+      <div class="card-body py-3">
+        <!-- Progress bar container -->
+        <div class="lifecycle-progress-container">
+          <!-- Main progress bar -->
+          <div class="progress mb-3" style="height: 8px;">
+            <div class="progress-bar bg-success"
+                 role="progressbar"
+                 [style.width.%]="getLifecycleProgress()"
+                 [attr.aria-valuenow]="getLifecycleProgress()"
+                 aria-valuemin="0"
+                 aria-valuemax="100">
+            </div>
+          </div>
+
+          <!-- Lifecycle stages -->
+          <div class="lifecycle-stages">
+            <div class="row text-center">
+              <!-- Stage 1: Commande créée -->
+              <div class="col lifecycle-stage"
+                   [class.completed]="isStageCompleted('created')"
+                   [class.active]="isStageActive('created')">
+                <div class="stage-icon">
+                  <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stage-label">Commande</div>
+                <div class="stage-date" *ngIf="order.orderDate">
+                  {{ formatDate(order.orderDate) }}
+                </div>
+              </div>
+
+              <!-- Stage 2: Validation/Prescription -->
+              <div class="col lifecycle-stage"
+                   [class.completed]="isStageCompleted('validated')"
+                   [class.active]="isStageActive('validated')">
+                <div class="stage-icon">
+                  <i class="fas" [ngClass]="order.requiresPrescription() ? 'fa-prescription' : 'fa-check-circle'"></i>
+                </div>
+                <div class="stage-label">
+                  {{ order.requiresPrescription() ? 'Validation Rx' : 'Validation' }}
+                </div>
+                <div class="stage-date" *ngIf="order.confirmedAt">
+                  {{ formatDate(order.confirmedAt) }}
+                </div>
+                <!-- Prescription status indicator -->
+                <div class="prescription-indicator" *ngIf="order.requiresPrescription()">
+                <span class="badge badge-sm"
+                      [ngClass]="{'bg-success': allPrescriptionsProvided(), 'bg-warning': !allPrescriptionsProvided()}">
+                  {{ getPrescriptionStatus() }}
+                </span>
+                </div>
+              </div>
+
+              <!-- Stage 3: Préparation -->
+              <div class="col lifecycle-stage"
+                   [class.completed]="isStageCompleted('preparing')"
+                   [class.active]="isStageActive('preparing')">
+                <div class="stage-icon">
+                  <i class="fas fa-pills"></i>
+                </div>
+                <div class="stage-label">Préparation</div>
+                <div class="stage-date" *ngIf="getDateStatus('preparing')">
+                  {{ formatDate(getDateStatus('preparing')) }}
+                </div>
+              </div>
+
+              <!-- Stage 5: Prêt/Expédition -->
+              <div class="col lifecycle-stage"
+                   [class.completed]="isStageCompleted('ready')"
+                   [class.active]="isStageActive('ready')">
+                <div class="stage-icon">
+                  <i class="fas" [ngClass]="order.deliveryInfo.method === 'pickup' ? 'fa-store' : 'fa-truck'"></i>
+                </div>
+                <div class="stage-label">
+                  {{ order.deliveryInfo.method === 'pickup' ? 'Retrait' : 'Expédition' }}
+                </div>
+                <div class="stage-date" *ngIf="getDateStatus('readyAt') || order.shippedAt">
+                  {{ formatDate(getDateStatus('ready') || order.shippedAt) }}
+                </div>
+              </div>
+
+              <!-- Stage 6: Livraison/Retrait -->
+              <div class="col lifecycle-stage"
+                   [class.completed]="isStageCompleted('delivered')"
+                   [class.active]="isStageActive('delivered')">
+                <div class="stage-icon">
+                  <i class="fas fa-check-double"></i>
+                </div>
+                <div class="stage-label">
+                  {{ order.deliveryInfo.method === 'pickup' ? 'Retiré' : 'Livré' }}
+                </div>
+                <div class="stage-date" *ngIf="order.deliveredAt">
+                  {{ formatDate(order.deliveredAt) }}
+                </div>
+              </div>
+
+              <!-- Stage 7: Finalisation -->
+              <div class="col lifecycle-stage"
+                   [class.completed]="isStageCompleted('completed')"
+                   [class.active]="isStageActive('completed')">
+                <div class="stage-icon">
+                  <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="stage-label">Facturation</div>
+                <div class="stage-date" *ngIf="order.invoiceGeneratedAt">
+                  {{ formatDate(order.invoiceGeneratedAt) }}
+                </div>
+                <!-- Documents generated indicators -->
+                <div class="documents-indicator mt-1">
+                <span class="badge badge-xs me-1"
+                      [ngClass]="{'bg-success': order.invoiceGenerated, 'bg-secondary': !order.invoiceGenerated}"
+                      title="Facture">
+                  <i class="fas fa-file-invoice"></i>
+                </span>
+                  <span class="badge badge-xs"
+                        [ngClass]="{'bg-success': order.fiscalReceiptGenerated, 'bg-secondary': !order.fiscalReceiptGenerated}"
+                        title="Bon fiscal">
+                  <i class="fas fa-receipt"></i>
+                </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current stage details -->
+          <div class="current-stage-details mt-3" *ngIf="getCurrentStageDetails()">
+            <div class="alert alert-info py-2 px-3">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-info-circle me-2"></i>
+                <div class="flex-grow-1">
+                  <strong>{{ getCurrentStageDetails().title }}</strong>
+                  <div class="small">{{ getCurrentStageDetails().description }}</div>
+                </div>
+                <div class="stage-actions" *ngIf="getCurrentStageDetails().actions?.length > 0">
+                  <button *ngFor="let action of getCurrentStageDetails().actions"
+                          class="btn btn-sm btn-outline-primary me-1"
+                          [disabled]="isSubmitting"
+                          (click)="executeStageAction(action.key)">
+                    <i class="fas" [ngClass]="action.icon"></i>
+                    {{ action.label }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -187,6 +353,16 @@
               [class.active]="activeTab === 'delivery'"
               (click)="setActiveTab('delivery')">
         <i class="fas fa-truck"></i> Livraison
+      </button>
+    </li>
+    <li class="nav-item" role="presentation" *ngIf="permissions.viewOrder">
+      <button class="nav-link"
+              [class.active]="activeTab === 'documents'"
+              (click)="setActiveTab('documents')">
+        <i class="fas fa-file-alt"></i> Documents
+        <span class="badge bg-success ms-1" *ngIf="getGeneratedDocumentsCount() > 0">
+      {{ getGeneratedDocumentsCount() }}
+    </span>
       </button>
     </li>
     <li class="nav-item" role="presentation" *ngIf="permissions.viewHistory">
@@ -810,6 +986,259 @@
       </div>
     </div>
 
+    <!-- Documents Tab Content -->
+    <div class="tab-pane" [class.show]="activeTab === 'documents'" [class.active]="activeTab === 'documents'" *ngIf="permissions.viewOrder">
+      <div class="row">
+        <!-- Generated Documents -->
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <h6 class="mb-0">
+                <i class="fas fa-file-alt me-2"></i>
+                Documents générés
+              </h6>
+              <div class="documents-actions">
+                <button class="btn btn-sm btn-outline-primary me-2"
+                        *ngIf="canGenerateInvoice()"
+                        [disabled]="isSubmitting"
+                        (click)="generateInvoice()">
+                  <i class="fas fa-file-invoice me-1"></i>
+                  Générer facture
+                </button>
+                <button class="btn btn-sm btn-outline-success"
+                        *ngIf="canGenerateFiscalReceipt()"
+                        [disabled]="isSubmitting"
+                        (click)="generateFiscalReceipt()">
+                  <i class="fas fa-receipt me-1"></i>
+                  Générer bon fiscal
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Documents list -->
+              <div class="documents-list">
+                <!-- Invoice -->
+                <div class="document-item d-flex align-items-center justify-content-between p-3 border rounded mb-3"
+                     [class.border-success]="order.invoiceGenerated">
+                  <div class="d-flex align-items-center">
+                    <div class="document-icon me-3">
+                      <i class="fas fa-file-invoice fa-2x"
+                         [class.text-success]="order.invoiceGenerated"
+                         [class.text-muted]="!order.invoiceGenerated"></i>
+                    </div>
+                    <div class="document-details">
+                      <h6 class="mb-1">Facture</h6>
+                      <div class="document-status">
+                    <span class="badge" [ngClass]="order.invoiceGenerated ? 'bg-success' : 'bg-secondary'">
+                      {{ order.invoiceGenerated ? 'Générée' : 'Non générée' }}
+                    </span>
+                        <small class="text-muted ms-2" *ngIf="order.invoiceGeneratedAt">
+                          le {{ formatDate(order.invoiceGeneratedAt) }}
+                        </small>
+                      </div>
+                      <div class="document-info mt-1" *ngIf="order.invoiceNumber">
+                        <small class="text-muted">N° {{ order.invoiceNumber }}</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="document-actions">
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary"
+                              *ngIf="order.invoiceGenerated"
+                              (click)="viewDocument('invoice')">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-secondary"
+                              *ngIf="order.invoiceGenerated"
+                              (click)="downloadDocument('invoice')">
+                        <i class="fas fa-download"></i>
+                      </button>
+                      <button class="btn btn-sm btn-primary"
+                              *ngIf="!order.invoiceGenerated && canGenerateInvoice()"
+                              [disabled]="isSubmitting"
+                              (click)="generateInvoice()">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fiscal Receipt -->
+                <div class="document-item d-flex align-items-center justify-content-between p-3 border rounded mb-3"
+                     [class.border-success]="order.fiscalReceiptGenerated">
+                  <div class="d-flex align-items-center">
+                    <div class="document-icon me-3">
+                      <i class="fas fa-receipt fa-2x"
+                         [class.text-success]="order.fiscalReceiptGenerated"
+                         [class.text-muted]="!order.fiscalReceiptGenerated"></i>
+                    </div>
+                    <div class="document-details">
+                      <h6 class="mb-1">Bon fiscal</h6>
+                      <div class="document-status">
+                    <span class="badge" [ngClass]="order.fiscalReceiptGenerated ? 'bg-success' : 'bg-secondary'">
+                      {{ order.fiscalReceiptGenerated ? 'Généré' : 'Non généré' }}
+                    </span>
+                        <small class="text-muted ms-2" *ngIf="order.fiscalReceiptGeneratedAt">
+                          le {{ formatDate(order.fiscalReceiptGeneratedAt) }}
+                        </small>
+                      </div>
+                      <div class="document-info mt-1" *ngIf="order.fiscalReceiptNumber">
+                        <small class="text-muted">N° {{ order.fiscalReceiptNumber }}</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="document-actions">
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary"
+                              *ngIf="order.fiscalReceiptGenerated"
+                              (click)="viewDocument('fiscal_receipt')">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-secondary"
+                              *ngIf="order.fiscalReceiptGenerated"
+                              (click)="downloadDocument('fiscal_receipt')">
+                        <i class="fas fa-download"></i>
+                      </button>
+                      <button class="btn btn-sm btn-success"
+                              *ngIf="!order.fiscalReceiptGenerated && canGenerateFiscalReceipt()"
+                              [disabled]="isSubmitting"
+                              (click)="generateFiscalReceipt()">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Delivery Note -->
+                <div class="document-item d-flex align-items-center justify-content-between p-3 border rounded mb-3"
+                     *ngIf="order.deliveryInfo.method !== 'pickup'"
+                     [class.border-success]="order.deliveryNoteGenerated">
+                  <div class="d-flex align-items-center">
+                    <div class="document-icon me-3">
+                      <i class="fas fa-clipboard-list fa-2x"
+                         [class.text-success]="order.deliveryNoteGenerated"
+                         [class.text-muted]="!order.deliveryNoteGenerated"></i>
+                    </div>
+                    <div class="document-details">
+                      <h6 class="mb-1">Bon de livraison</h6>
+                      <div class="document-status">
+                    <span class="badge" [ngClass]="order.deliveryNoteGenerated ? 'bg-success' : 'bg-secondary'">
+                      {{ order.deliveryNoteGenerated ? 'Généré' : 'Non généré' }}
+                    </span>
+                        <small class="text-muted ms-2" *ngIf="order.deliveryNoteGeneratedAt">
+                          le {{ formatDate(order.deliveryNoteGeneratedAt) }}
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="document-actions">
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary"
+                              *ngIf="order.deliveryNoteGenerated"
+                              (click)="viewDocument('delivery_note')">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-secondary"
+                              *ngIf="order.deliveryNoteGenerated"
+                              (click)="downloadDocument('delivery_note')">
+                        <i class="fas fa-download"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-info"
+                              *ngIf="!order.deliveryNoteGenerated && canGenerateDeliveryNote()"
+                              [disabled]="isSubmitting"
+                              (click)="generateDeliveryNote()">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Document generation info -->
+              <div class="alert alert-info mt-3" *ngIf="!hasAllRequiredDocuments()">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Information:</strong>
+                Les documents sont générés automatiquement selon l'état de la commande.
+                La facture est générée après livraison, le bon fiscal après règlement complet.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Templates & Settings -->
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header">
+              <h6><i class="fas fa-cog me-2"></i>Configuration documents</h6>
+            </div>
+            <div class="card-body">
+              <div class="document-settings">
+                <div class="mb-3">
+                  <label class="form-label">Modèle de facture</label>
+                  <select class="form-select form-select-sm" [(ngModel)]="documentSettings.invoiceTemplate">
+                    <option value="standard">Standard</option>
+                    <option value="pharmacy">Pharmacie</option>
+                    <option value="detailed">Détaillé</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Format d'export</label>
+                  <select class="form-select form-select-sm" [(ngModel)]="documentSettings.exportFormat">
+                    <option value="pdf">PDF</option>
+                    <option value="pdf_a3">PDF/A-3</option>
+                  </select>
+                </div>
+
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox"
+                         id="autoGenerate"
+                         [(ngModel)]="documentSettings.autoGenerate">
+                  <label class="form-check-label" for="autoGenerate">
+                    Génération automatique
+                  </label>
+                </div>
+
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox"
+                         id="emailToCustomer"
+                         [(ngModel)]="documentSettings.emailToCustomer">
+                  <label class="form-check-label" for="emailToCustomer">
+                    Envoyer par email au client
+                  </label>
+                </div>
+              </div>
+
+              <!-- Quick actions -->
+              <div class="document-quick-actions mt-4">
+                <h6 class="mb-3">Actions rapides</h6>
+                <div class="d-grid gap-2">
+                  <button class="btn btn-outline-primary btn-sm"
+                          [disabled]="!canRegenerateDocuments()"
+                          (click)="regenerateAllDocuments()">
+                    <i class="fas fa-sync me-2"></i>
+                    Régénérer tous les documents
+                  </button>
+                  <button class="btn btn-outline-success btn-sm"
+                          [disabled]="!hasGeneratedDocuments()"
+                          (click)="emailAllDocuments()">
+                    <i class="fas fa-envelope me-2"></i>
+                    Envoyer par email
+                  </button>
+                  <button class="btn btn-outline-info btn-sm"
+                          [disabled]="!hasGeneratedDocuments()"
+                          (click)="downloadAllDocuments()">
+                    <i class="fas fa-download me-2"></i>
+                    Télécharger tout (ZIP)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- History tab -->
     <div class="tab-pane" [class.show]="activeTab === 'history'" [class.active]="activeTab === 'history'" *ngIf="permissions.viewHistory">
       <div class="card">
@@ -834,9 +1263,6 @@
           <div *ngIf="!isLoadingHistory && orderHistory.length > 0" class="history-timeline">
             <div *ngFor="let entry of orderHistory" class="timeline-entry mb-3">
               <div class="d-flex">
-<!--                <div class="timeline-icon me-3">-->
-<!--                  <i class="fas" [ngClass]="getTimelineIcon(entry.action)"></i>-->
-<!--                </div>-->
                 <div class="timeline-content flex-grow-1">
                   <div class="d-flex justify-content-between align-items-start">
                     <div>
@@ -847,9 +1273,6 @@
                         <span *ngIf="entry.user"> • {{ entry.user }}</span>
                       </small>
                     </div>
-<!--                    <span class="badge" [ngClass]="'bg-' + getTimelineColor(entry.action)">-->
-<!--                      {{ entry.action }}-->
-<!--                    </span>-->
                   </div>
                 </div>
               </div>

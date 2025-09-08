@@ -133,6 +133,16 @@ export class OrderClass {
   shippedAt?: Date;
   deliveredAt?: Date;
   completedAt?: Date;
+  invoiceGeneratedAt?: Date;
+  fiscalReceiptGeneratedAt?: Date;
+  deliveryNoteGeneratedAt?: Date;
+
+  invoiceGenerated?: boolean;
+  fiscalReceiptGenerated?: boolean;
+  deliveryNoteGenerated?: boolean;
+
+  invoiceNumber?: string;
+  fiscalReceiptNumber?: string;
 
   // Historique des statuts
   statusHistory: StatusHistoryEntry[];
@@ -205,12 +215,22 @@ export class OrderClass {
     this.pharmacyNotes = data.pharmacyNotes;
     this.internalNotes = data.internalNotes;
 
+    this.invoiceNumber = data.invoiceNumber || undefined;
+    this.fiscalReceiptNumber = data.fiscalReceiptNumber || undefined;
+
     // Dates
     this.orderDate = data.orderDate ? new Date(data.orderDate) : new Date();
     this.confirmedAt = data.confirmedAt ? new Date(data.confirmedAt) : undefined;
     this.shippedAt = data.shippedAt ? new Date(data.shippedAt) : undefined;
     this.deliveredAt = data.deliveredAt ? new Date(data.deliveredAt) : undefined;
     this.completedAt = data.completedAt ? new Date(data.completedAt) : undefined;
+    this.invoiceGeneratedAt = data.invoiceGeneratedAt ? new Date(data.invoiceGeneratedAt) : undefined;
+    this.fiscalReceiptGeneratedAt = data.fiscalReceiptGeneratedAt ? new Date(data.fiscalReceiptGeneratedAt) : undefined;
+    this.deliveryNoteGeneratedAt = data.deliveryNoteGeneratedAt ? new Date(data.deliveryNoteGeneratedAt) : undefined;
+
+    this.deliveryNoteGenerated = data.deliveryNoteGenerated || false;
+    this.invoiceGenerated = data.invoiceGenerated || false;
+    this.fiscalReceiptGenerated = data.fiscalReceiptGenerated || false;
 
     // Historique
     this.statusHistory = (data.statusHistory || []).map((entry: any) => ({

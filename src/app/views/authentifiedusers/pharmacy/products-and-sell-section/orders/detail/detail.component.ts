@@ -326,7 +326,7 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
       });
 
       this.apiService.post('pharmacy-management/orders/history', {
-        orderId: this.orderId
+        orderId: this.orderId, uid : this.auth.getUid(),
       }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
@@ -1109,4 +1109,499 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
     }
     return "";
   }
+
+  // À ajouter dans votre composant TypeScript
+
+// ===== PROPRIÉTÉS DE COMPOSANT =====
+  documentSettings = {
+    invoiceTemplate: 'standard',
+    exportFormat: 'pdf',
+    autoGenerate: true,
+    emailToCustomer: false
+  };
+
+  printOptionss = {
+    format: 'invoice',
+    includeCustomerInfo: true,
+    includeItems: true,
+    includePayment: true,
+    includeDelivery: true,
+    includeNotes: false
+  };
+
+// ===== MÉTHODES LIFECYCLE =====
+
+  /**
+   * Obtient le label de l'étape actuelle du lifecycle
+   */
+  getLifecycleStageLabel(): string {
+    const stageLabels = {
+      'created': 'Commande créée',
+      'validated': 'Validation en cours',
+      'preparing': 'En préparation',
+      'quality_check': 'Contrôle qualité',
+      'ready': 'Prêt pour livraison/retrait',
+      'delivered': 'Livré/Retiré',
+      'completed': 'Finalisé et facturé'
+    };
+
+    return stageLabels[this.getCurrentLifecycleStage()] || 'État inconnu';
+  }
+
+  /**
+   * Détermine l'étape actuelle du lifecycle basé sur le statut de la commande
+   */
+  getCurrentLifecycleStage(): string {
+    if (!this.order) return 'created';
+
+    if (['cancelled', 'refunded', 'returned'].includes(this.order.status)) {
+      return 'completed';
+    }
+
+    if (this.order.status === 'delivered') { //&& this.order.invoiceGenerated
+      return 'completed';
+    }
+
+    if (this.order.status === 'completed') {
+      return 'delivered';
+    }
+
+    if (['out_for_delivery', 'ready_for_pickup'].includes(this.order.status)) {
+      return 'ready';
+    }
+
+    if (this.order.status === 'preparing') {
+      return 'preparing';
+    }
+
+    if (['confirmed', 'prescription_pending'].includes(this.order.status)) {
+      return 'validated';
+    }
+
+    return 'created';
+  }
+
+  /**
+   * Obtient l'index de l'étape actuelle (pour le calcul du pourcentage)
+   */
+  getCurrentStageIndex(): number {
+    const stages = ['created', 'validated', 'preparing', 'quality_check', 'ready', 'delivered', 'completed'];
+    return stages.indexOf(this.getCurrentLifecycleStage()) + 1;
+  }
+
+  /**
+   * Obtient le nombre total d'étapes
+   */
+  getTotalStages(): number {
+    return 7;
+  }
+
+  /**
+   * Calcule le pourcentage de progression du lifecycle
+   */
+  getLifecycleProgress(): number {
+    const currentIndex = this.getCurrentStageIndex();
+    const totalStages = this.getTotalStages();
+    return Math.round((currentIndex / totalStages) * 100);
+  }
+
+  /**
+   * Vérifie si une étape est complétée
+   */
+  isStageCompleted(stage: string): boolean {
+    const stageOrder = ['created', 'validated', 'preparing', 'quality_check', 'ready', 'delivered', 'completed'];
+    const currentStageIndex = stageOrder.indexOf(this.getCurrentLifecycleStage());
+    const checkStageIndex = stageOrder.indexOf(stage);
+
+    return checkStageIndex <= currentStageIndex;
+  }
+
+  /**
+   * Vérifie si une étape est actuellement active
+   */
+  isStageActive(stage: string): boolean {
+    return this.getCurrentLifecycleStage() === stage;
+  }
+
+  /**
+   * Obtient les détails de l'étape actuelle avec actions possibles
+   */
+  getCurrentStageDetails(): any {
+    const stage = this.getCurrentLifecycleStage();
+
+    const stageDetails = {
+      'created': {
+        title: 'Commande en attente de validation',
+        description: 'La commande doit être confirmée avant de passer à la préparation.',
+        actions: [
+          { key: 'confirm', label: 'Confirmer', icon: 'fa-check' }
+        ]
+      },
+      'validated': {
+        title: this.order.requiresPrescription() ? 'Validation des ordonnances' : 'Commande validée',
+        description: this.order.requiresPrescription()
+          ? 'En attente de réception/validation des ordonnances requises.'
+          : 'Commande validée, prête pour la préparation.',
+        actions: this.order.requiresPrescription()
+          ? [{ key: 'upload_prescription', label: 'Gérer ordonnances', icon: 'fa-prescription' }]
+          : [{ key: 'start_preparing', label: 'Commencer préparation', icon: 'fa-play' }]
+      },
+      'preparing': {
+        title: 'Préparation en cours',
+        description: 'Les médicaments sont en cours de préparation par l\'équipe pharmaceutique.',
+        actions: [
+          { key: 'quality_check', label: 'Contrôle qualité', icon: 'fa-search' }
+        ]
+      },
+      'quality_check': {
+        title: 'Contrôle qualité',
+        description: 'Vérification finale de la commande avant expédition/mise à disposition.',
+        actions: [
+          { key: 'mark_ready', label: 'Marquer prêt', icon: 'fa-check-circle' }
+        ]
+      },
+      'ready': {
+        title: this.order.deliveryInfo.method === 'pickup' ? 'Prêt pour retrait' : 'Prêt pour expédition',
+        description: this.order.deliveryInfo.method === 'pickup'
+          ? 'La commande est prête à être retirée en pharmacie.'
+          : 'La commande est prête à être expédiée.',
+        actions: this.order.deliveryInfo.method === 'pickup'
+          ? [{ key: 'mark_picked_up', label: 'Marquer retiré', icon: 'fa-hand-holding' }]
+          : [{ key: 'ship', label: 'Expédier', icon: 'fa-truck' }]
+      },
+      'delivered': {
+        title: this.order.deliveryInfo.method === 'pickup' ? 'Commande retirée' : 'Commande livrée',
+        description: 'La commande a été remise au client. Génération des documents finaux.',
+        actions: [
+          { key: 'generate_invoice', label: 'Générer facture', icon: 'fa-file-invoice' }
+        ]
+      },
+      'completed': {
+        title: 'Commande finalisée',
+        description: 'La commande est terminée et tous les documents ont été générés.',
+        actions: []
+      }
+    };
+
+    return stageDetails[stage] || null;
+  }
+
+  /**
+   * Exécute une action de l'étape actuelle
+   */
+  executeStageAction(actionKey: string): void {
+    switch (actionKey) {
+      case 'confirm':
+        this.quickStatusUpdate('confirmed');
+        break;
+      case 'upload_prescription':
+        this.manageOrderPrescriptions();
+        break;
+      case 'start_preparing':
+        this.quickStatusUpdate('preparing');
+        break;
+      case 'mark_ready':
+        this.quickStatusUpdate(this.order.deliveryInfo.method === 'pickup' ? 'ready_for_pickup' : 'out_for_delivery');
+        break;
+      case 'mark_picked_up':
+      case 'ship':
+        if (this.order.deliveryInfo.method === 'pickup') {
+          this.quickStatusUpdate('delivered');
+        } else {
+          this.openTrackingModal();
+        }
+        break;
+      case 'generate_invoice':
+        this.generateInvoice();
+        break;
+      default:
+        console.warn('Action non reconnue:', actionKey);
+    }
+  }
+
+// ===== MÉTHODES PRESCRIPTIONS =====
+
+  /**
+   * Vérifie si toutes les ordonnances requises sont fournies
+   */
+  allPrescriptionsProvided(): boolean {
+    if (!this.order.requiresPrescription()) return true;
+
+    const prescriptionRequiredItems = this.order.items.filter(item => item.prescriptionRequired);
+    return prescriptionRequiredItems.every(item => item.prescriptionProvided);
+  }
+
+  /**
+   * Obtient le statut des ordonnances
+   */
+  getPrescriptionStatus(): string {
+    if (!this.order.requiresPrescription()) return 'Non requise';
+
+    const totalRequired = this.order.items.filter(item => item.prescriptionRequired).length;
+    const totalProvided = this.order.items.filter(item => item.prescriptionRequired && item.prescriptionProvided).length;
+
+    return `${totalProvided}/${totalRequired}`;
+  }
+
+  /**
+   * Ouvre la modal de gestion des ordonnances
+   */
+  manageOrderPrescriptions(): void {
+    // Implémentation pour ouvrir une modal de gestion globale des ordonnances
+    console.log('Ouverture gestion ordonnances');
+  }
+
+// ===== MÉTHODES DOCUMENTS =====
+
+  /**
+   * Obtient le nombre de documents générés
+   */
+  getGeneratedDocumentsCount(): number {
+    let count = 0;
+    if (this.order.invoiceGenerated) count++;
+    if (this.order.fiscalReceiptGenerated) count++;
+    if (this.order.deliveryNoteGenerated) count++;
+    return count;
+  }
+
+  /**
+   * Vérifie si la facture peut être générée
+   */
+  canGenerateInvoice(): boolean {
+    return this.order.status === 'delivered' &&
+      this.order.payment.status === 'paid' &&
+         !this.order.invoiceGenerated &&
+          this.permissions.viewOrder
+  }
+
+  /**
+   * Vérifie si le bon fiscal peut être généré
+   */
+  canGenerateFiscalReceipt(): boolean {
+    return this.order.payment.status === 'paid' && !this.order.fiscalReceiptGenerated && this.permissions.viewOrder;
+  }
+
+  /**
+   * Vérifie si le bon de livraison peut être généré
+   */
+  canGenerateDeliveryNote(): boolean {
+    return ['preparing', 'ready_for_pickup', 'out_for_delivery'].includes(this.order.status) &&
+      this.order.deliveryInfo.method !== 'pickup' &&
+      this.permissions.addNotes && !this.order.deliveryNoteGenerated;
+  }
+
+  /**
+   * Génère la facture
+   */
+  generateInvoice(): void {
+    if (this.isSubmitting || !this.canGenerateInvoice()) return;
+
+    // this.isSubmitting = true;
+    //
+    // // Appel API pour générer la facture
+    // this.orderService.generateInvoice(this.order._id).subscribe({
+    //   next: (response) => {
+    //     this.order.invoiceGenerated = true;
+    //     this.order.invoiceNumber = response.invoiceNumber;
+    //     this.order.invoiceGeneratedAt = new Date();
+    //
+    //     this.showSuccessMessage('Facture générée avec succès');
+    //     this.isSubmitting = false;
+    //   },
+    //   error: (error) => {
+    //     this.showErrorMessage('Erreur lors de la génération de la facture');
+    //     this.isSubmitting = false;
+    //   }
+    // });
+  }
+
+  /**
+   * Génère le bon fiscal
+   */
+  generateFiscalReceipt(): void {
+    // if (this.isSubmitting || !this.canGenerateFiscalReceipt()) return;
+    //
+    // this.isSubmitting = true;
+    //
+    // this.orderService.generateFiscalReceipt(this.order._id).subscribe({
+    //   next: (response) => {
+    //     this.order.fiscalReceiptGenerated = true;
+    //     this.order.fiscalReceiptNumber = response.receiptNumber;
+    //     this.order.fiscalReceiptGeneratedAt = new Date();
+    //
+    //     this.showSuccessMessage('Bon fiscal généré avec succès');
+    //     this.isSubmitting = false;
+    //   },
+    //   error: (error) => {
+    //     this.showErrorMessage('Erreur lors de la génération du bon fiscal');
+    //     this.isSubmitting = false;
+    //   }
+    // });
+  }
+
+  /**
+   * Génère le bon de livraison
+   */
+  generateDeliveryNote(): void {
+    if (this.isSubmitting || !this.canGenerateDeliveryNote()) return;
+    //
+    // this.isSubmitting = true;
+    //
+    // this.orderService.generateDeliveryNote(this.order._id).subscribe({
+    //   next: (response) => {
+    //     this.order.deliveryNoteGenerated = true;
+    //     this.order.deliveryNoteGeneratedAt = new Date();
+    //
+    //     this.showSuccessMessage('Bon de livraison généré avec succès');
+    //     this.isSubmitting = false;
+    //   },
+    //   error: (error) => {
+    //     this.showErrorMessage('Erreur lors de la génération du bon de livraison');
+    //     this.isSubmitting = false;
+    //   }
+    // });
+  }
+
+  /**
+   * Visualise un document
+   */
+  viewDocument(documentType: string): void {
+    // const documentUrls = {
+    //   'invoice': this.order.invoiceUrl,
+    //   'fiscal_receipt': this.order.fiscalReceiptUrl,
+    //   'delivery_note': this.order.deliveryNoteUrl
+    // };
+    //
+    // const url = documentUrls[documentType];
+    // if (url) {
+    //   window.open(url, '_blank');
+    // }
+  }
+
+  /**
+   * Télécharge un document
+   */
+  downloadDocument(documentType: string): void {
+    // this.orderService.downloadDocument(this.order._id, documentType).subscribe({
+    //   next: (blob) => {
+    //     const url = window.URL.createObjectURL(blob);
+    //     const a = document.createElement('a');
+    //     a.href = url;
+    //     a.download = `${documentType}_${this.order.orderNumber}.pdf`;
+    //     a.click();
+    //     window.URL.revokeObjectURL(url);
+    //   },
+    //   error: (error) => {
+    //     this.showErrorMessage('Erreur lors du téléchargement du document');
+    //   }
+    // });
+  }
+
+  /**
+   * Vérifie si tous les documents requis sont générés
+   */
+  hasAllRequiredDocuments(): boolean {
+    return false;
+    // const requiredDocs = ['invoice', 'fiscal_receipt'];
+    // if (this.order.deliveryMethod !== 'pickup') {
+    //   requiredDocs.push('delivery_note');
+    // }
+    //
+    // return requiredDocs.every(doc => {
+    //   switch (doc) {
+    //     case 'invoice': return this.order.invoiceGenerated;
+    //     case 'fiscal_receipt': return this.order.fiscalReceiptGenerated;
+    //     case 'delivery_note': return this.order.deliveryNoteGenerated;
+    //     default: return false;
+    //   }
+    // });
+  }
+
+  /**
+   * Vérifie si des documents ont été générés
+   */
+  hasGeneratedDocuments(): boolean {
+    return false;
+    // return this.order.invoiceGenerated ||
+    //   this.order.fiscalReceiptGenerated ||
+    //   this.order.deliveryNoteGenerated;
+  }
+
+  /**
+   * Vérifie si les documents peuvent être régénérés
+   */
+  canRegenerateDocuments(): boolean {
+    return this.hasGeneratedDocuments() && this.permissions.viewOrder;
+  }
+
+  /**
+   * Régénère tous les documents
+   */
+  regenerateAllDocuments(): void {
+    // if (!this.canRegenerateDocuments()) return;
+    //
+    // if (confirm('Êtes-vous sûr de vouloir régénérer tous les documents ? Les anciens seront remplacés.')) {
+    //   this.isSubmitting = true;
+    //
+    //   this.orderService.regenerateAllDocuments(this.order._id).subscribe({
+    //     next: (response) => {
+    //       // Mettre à jour les informations des documents
+    //       Object.assign(this.order, response);
+    //       this.showSuccessMessage('Documents régénérés avec succès');
+    //       this.isSubmitting = false;
+    //     },
+    //     error: (error) => {
+    //       this.showErrorMessage('Erreur lors de la régénération des documents');
+    //       this.isSubmitting = false;
+    //     }
+    //   });
+    // }
+  }
+
+  /**
+   * Envoie tous les documents par email
+   */
+  emailAllDocuments(): void {
+    // if (!this.hasGeneratedDocuments()) return;
+    //
+    // this.isSubmitting = true;
+    //
+    // this.orderService.emailDocuments(this.order._id, this.order.customer.email).subscribe({
+    //   next: () => {
+    //     this.showSuccessMessage('Documents envoyés par email avec succès');
+    //     this.isSubmitting = false;
+    //   },
+    //   error: (error) => {
+    //     this.showErrorMessage('Erreur lors de l\'envoi des documents');
+    //     this.isSubmitting = false;
+    //   }
+    // });
+  }
+
+  /**
+   * Télécharge tous les documents dans un ZIP
+   */
+  downloadAllDocuments(): void {
+    if (!this.hasGeneratedDocuments()) return;
+
+    // this.orderService.downloadAllDocuments(this.order._id).subscribe({
+    //   next: (blob) => {
+    //     const url = window.URL.createObjectURL(blob);
+    //     const a = document.createElement('a');
+    //     a.href = url;
+    //     a.download = `documents_commande_${this.order.orderNumber}.zip`;
+    //     a.click();
+    //     window.URL.revokeObjectURL(url);
+    //   },
+    //   error: (error) => {
+    //     this.showErrorMessage('Erreur lors du téléchargement des documents');
+    //   }
+    // });
+  }
+
+
+  getDateStatus(status: string): Date | null {
+    return this.order.statusHistory.find(h => h.status === status)?.timestamp ?? null;
+  }
+
 }
