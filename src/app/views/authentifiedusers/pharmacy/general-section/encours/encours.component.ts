@@ -576,7 +576,13 @@ export class PharmacyOrdersEnCoursComponent implements OnInit, OnDestroy {
     if (order.status != 'pending' || !this.permissions.cancelOrder) return;
 
     if (confirm('Voulez-vous vraiment annuler cette commande ?')) {
-      const reason = prompt('Raison de l\'annulation (optionnel):');
+      let reason = prompt('Raison de l\'annulation (optionnel):');
+
+      if (reason === null) {
+        this.handleError('Cette commande n\'as pas ete annulee');
+        return;
+      }
+
 
       const token = await this.auth.getRealToken();
       const uid = await this.auth.getUid();
