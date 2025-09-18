@@ -79,7 +79,6 @@ export const NavigationItems: NavigationItem[] = [
     type: 'group',
     icon: 'icon-navigation',
     permissions: [
-      'pharmacies.view',
       'categories.view',
       'produits.view',
       'commandes.view',
@@ -87,14 +86,14 @@ export const NavigationItems: NavigationItem[] = [
       'clients.view'
     ],
     children: [
-      {
-        id: 'pharmacy-pharmacies',
-        title: 'Mes Pharmacies',
-        type: 'item',
-        icon: 'fa fa-hospital',
-        url: '/pharmacy/pharmacies/list',
-        permissions: ['pharmacies.view']
-      },
+      // {
+      //   id: 'pharmacy-pharmacies',
+      //   title: 'Mes Pharmacies',
+      //   type: 'item',
+      //   icon: 'fa fa-hospital',
+      //   url: '/pharmacy/pharmacies/list',
+      //   permissions: ['pharmacies.view']
+      // },
       {
         id: 'pharmacy-categories',
         title: 'Catégories',
@@ -199,6 +198,7 @@ export const NavigationItems: NavigationItem[] = [
     type: 'group',
     icon: 'icon-navigation',
     permissions: [
+      'pharmacies.view',
       'parametres.view',
       'admin_pharmacy.logs.view',
       'admin_pharmacy.config.view',

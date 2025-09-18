@@ -223,18 +223,18 @@
                   <i class="fas fa-file-invoice"></i>
                 </div>
                 <div class="stage-label">Facturation</div>
-                <div class="stage-date" *ngIf="order.invoiceGeneratedAt">
-                  {{ formatDate(order.invoiceGeneratedAt) }}
+                <div class="stage-date" *ngIf="order.invoice">
+                  {{ formatDate(order.invoice?.createdAt) }}
                 </div>
                 <!-- Documents generated indicators -->
                 <div class="documents-indicator mt-1">
                 <span class="badge badge-xs me-1"
-                      [ngClass]="{'bg-success': order.invoiceGenerated, 'bg-secondary': !order.invoiceGenerated}"
+                      [ngClass]="{'bg-success': order.invoice, 'bg-secondary': !order.invoice}"
                       title="Facture">
                   <i class="fas fa-file-invoice"></i>
                 </span>
                   <span class="badge badge-xs"
-                        [ngClass]="{'bg-success': order.fiscalReceiptGenerated, 'bg-secondary': !order.fiscalReceiptGenerated}"
+                        [ngClass]="{'bg-success': order.bonfiscal, 'bg-secondary': !order.bonfiscal}"
                         title="Bon fiscal">
                   <i class="fas fa-receipt"></i>
                 </span>
@@ -1019,42 +1019,42 @@
               <div class="documents-list">
                 <!-- Invoice -->
                 <div class="document-item d-flex align-items-center justify-content-between p-3 border rounded mb-3"
-                     [class.border-success]="order.invoiceGenerated">
+                     [class.border-success]="order.invoice">
                   <div class="d-flex align-items-center">
                     <div class="document-icon me-3">
                       <i class="fas fa-file-invoice fa-2x"
-                         [class.text-success]="order.invoiceGenerated"
-                         [class.text-muted]="!order.invoiceGenerated"></i>
+                         [class.text-success]="order.invoice"
+                         [class.text-muted]="!order.invoice"></i>
                     </div>
                     <div class="document-details">
                       <h6 class="mb-1">Facture</h6>
                       <div class="document-status">
-                    <span class="badge" [ngClass]="order.invoiceGenerated ? 'bg-success' : 'bg-secondary'">
-                      {{ order.invoiceGenerated ? 'Générée' : 'Non générée' }}
+                    <span class="badge" [ngClass]="order.invoice ? 'bg-success' : 'bg-secondary'">
+                      {{ order.invoice ? 'Générée' : 'Non générée' }}
                     </span>
-                        <small class="text-muted ms-2" *ngIf="order.invoiceGeneratedAt">
-                          le {{ formatDate(order.invoiceGeneratedAt) }}
+                        <small class="text-muted ms-2" *ngIf="order.invoice">
+                          le {{ formatDate(order.invoice?.createdAt) }}
                         </small>
                       </div>
-                      <div class="document-info mt-1" *ngIf="order.invoiceNumber">
-                        <small class="text-muted">N° {{ order.invoiceNumber }}</small>
+                      <div class="document-info mt-1" *ngIf="order.invoice?.invoiceNumber">
+                        <small class="text-muted">N° {{ order.invoice?.invoiceNumber }}</small>
                       </div>
                     </div>
                   </div>
                   <div class="document-actions">
                     <div class="btn-group">
                       <button class="btn btn-sm btn-outline-primary"
-                              *ngIf="order.invoiceGenerated"
+                              *ngIf="order.invoice"
                               (click)="viewDocument('invoice')">
                         <i class="fas fa-eye"></i>
                       </button>
                       <button class="btn btn-sm btn-outline-secondary"
-                              *ngIf="order.invoiceGenerated"
+                              *ngIf="order.invoice"
                               (click)="downloadDocument('invoice')">
                         <i class="fas fa-download"></i>
                       </button>
                       <button class="btn btn-sm btn-primary"
-                              *ngIf="!order.invoiceGenerated && canGenerateInvoice()"
+                              *ngIf="!order.invoice && canGenerateInvoice()"
                               [disabled]="isSubmitting"
                               (click)="generateInvoice()">
                         <i class="fas fa-plus"></i>
@@ -1065,42 +1065,42 @@
 
                 <!-- Fiscal Receipt -->
                 <div class="document-item d-flex align-items-center justify-content-between p-3 border rounded mb-3"
-                     [class.border-success]="order.fiscalReceiptGenerated">
+                     [class.border-success]="order.bonfiscal">
                   <div class="d-flex align-items-center">
                     <div class="document-icon me-3">
                       <i class="fas fa-receipt fa-2x"
-                         [class.text-success]="order.fiscalReceiptGenerated"
-                         [class.text-muted]="!order.fiscalReceiptGenerated"></i>
+                         [class.text-success]="order.bonfiscal"
+                         [class.text-muted]="!order.bonfiscal"></i>
                     </div>
                     <div class="document-details">
                       <h6 class="mb-1">Bon fiscal</h6>
                       <div class="document-status">
-                    <span class="badge" [ngClass]="order.fiscalReceiptGenerated ? 'bg-success' : 'bg-secondary'">
-                      {{ order.fiscalReceiptGenerated ? 'Généré' : 'Non généré' }}
+                    <span class="badge" [ngClass]="order.bonfiscal ? 'bg-success' : 'bg-secondary'">
+                      {{ order.bonfiscal ? 'Généré' : 'Non généré' }}
                     </span>
-                        <small class="text-muted ms-2" *ngIf="order.fiscalReceiptGeneratedAt">
-                          le {{ formatDate(order.fiscalReceiptGeneratedAt) }}
+                        <small class="text-muted ms-2" *ngIf="order.bonfiscal">
+                          le {{ formatDate(order.bonfiscal.createdAt) }}
                         </small>
                       </div>
-                      <div class="document-info mt-1" *ngIf="order.fiscalReceiptNumber">
-                        <small class="text-muted">N° {{ order.fiscalReceiptNumber }}</small>
+                      <div class="document-info mt-1" *ngIf="order.bonfiscal">
+                        <small class="text-muted">N° {{ order.bonfiscal?.bonfiscalNumber }}</small>
                       </div>
                     </div>
                   </div>
                   <div class="document-actions">
                     <div class="btn-group">
                       <button class="btn btn-sm btn-outline-primary"
-                              *ngIf="order.fiscalReceiptGenerated"
+                              *ngIf="order.bonfiscal"
                               (click)="viewDocument('fiscal_receipt')">
                         <i class="fas fa-eye"></i>
                       </button>
                       <button class="btn btn-sm btn-outline-secondary"
-                              *ngIf="order.fiscalReceiptGenerated"
+                              *ngIf="order.bonfiscal"
                               (click)="downloadDocument('fiscal_receipt')">
                         <i class="fas fa-download"></i>
                       </button>
                       <button class="btn btn-sm btn-success"
-                              *ngIf="!order.fiscalReceiptGenerated && canGenerateFiscalReceipt()"
+                              *ngIf="!order.bonfiscal && canGenerateFiscalReceipt()"
                               [disabled]="isSubmitting"
                               (click)="generateFiscalReceipt()">
                         <i class="fas fa-plus"></i>
@@ -1110,48 +1110,48 @@
                 </div>
 
                 <!-- Delivery Note -->
-                <div class="document-item d-flex align-items-center justify-content-between p-3 border rounded mb-3"
-                     *ngIf="order.deliveryInfo.method !== 'pickup'"
-                     [class.border-success]="order.deliveryNoteGenerated">
-                  <div class="d-flex align-items-center">
-                    <div class="document-icon me-3">
-                      <i class="fas fa-clipboard-list fa-2x"
-                         [class.text-success]="order.deliveryNoteGenerated"
-                         [class.text-muted]="!order.deliveryNoteGenerated"></i>
-                    </div>
-                    <div class="document-details">
-                      <h6 class="mb-1">Bon de livraison</h6>
-                      <div class="document-status">
-                    <span class="badge" [ngClass]="order.deliveryNoteGenerated ? 'bg-success' : 'bg-secondary'">
-                      {{ order.deliveryNoteGenerated ? 'Généré' : 'Non généré' }}
-                    </span>
-                        <small class="text-muted ms-2" *ngIf="order.deliveryNoteGeneratedAt">
-                          le {{ formatDate(order.deliveryNoteGeneratedAt) }}
-                        </small>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="document-actions">
-                    <div class="btn-group">
-                      <button class="btn btn-sm btn-outline-primary"
-                              *ngIf="order.deliveryNoteGenerated"
-                              (click)="viewDocument('delivery_note')">
-                        <i class="fas fa-eye"></i>
-                      </button>
-                      <button class="btn btn-sm btn-outline-secondary"
-                              *ngIf="order.deliveryNoteGenerated"
-                              (click)="downloadDocument('delivery_note')">
-                        <i class="fas fa-download"></i>
-                      </button>
-                      <button class="btn btn-sm btn-outline-info"
-                              *ngIf="!order.deliveryNoteGenerated && canGenerateDeliveryNote()"
-                              [disabled]="isSubmitting"
-                              (click)="generateDeliveryNote()">
-                        <i class="fas fa-plus"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+<!--                <div class="document-item d-flex align-items-center justify-content-between p-3 border rounded mb-3"-->
+<!--                     *ngIf="order.deliveryInfo.method !== 'pickup'"-->
+<!--                     [class.border-success]="order.invoice?.generations.length > 0">-->
+<!--                  <div class="d-flex align-items-center">-->
+<!--                    <div class="document-icon me-3">-->
+<!--                      <i class="fas fa-clipboard-list fa-2x"-->
+<!--                         [class.text-success]="order.invoice?.generations.length > 0"-->
+<!--                         [class.text-muted]="order.invoice?.generations.length == 0"></i>-->
+<!--                    </div>-->
+<!--                    <div class="document-details">-->
+<!--                      <h6 class="mb-1">Bon de livraison</h6>-->
+<!--                      <div class="document-status">-->
+<!--                    <span class="badge" [ngClass]="order.invoice?.generations.length > 0 ? 'bg-success' : 'bg-secondary'">-->
+<!--                      {{ order.invoice?.generations.length > 0 ? 'Généré' : 'Non généré' }}-->
+<!--                    </span>-->
+<!--                        <small class="text-muted ms-2" *ngIf="order.deliveryNoteGeneratedAt">-->
+<!--                          le {{ formatDate(order.deliveryNoteGeneratedAt) }}-->
+<!--                        </small>-->
+<!--                      </div>-->
+<!--                    </div>-->
+<!--                  </div>-->
+<!--                  <div class="document-actions">-->
+<!--                    <div class="btn-group">-->
+<!--                      <button class="btn btn-sm btn-outline-primary"-->
+<!--                              *ngIf="order.deliveryNoteGenerated"-->
+<!--                              (click)="viewDocument('delivery_note')">-->
+<!--                        <i class="fas fa-eye"></i>-->
+<!--                      </button>-->
+<!--                      <button class="btn btn-sm btn-outline-secondary"-->
+<!--                              *ngIf="order.deliveryNoteGenerated"-->
+<!--                              (click)="downloadDocument('delivery_note')">-->
+<!--                        <i class="fas fa-download"></i>-->
+<!--                      </button>-->
+<!--                      <button class="btn btn-sm btn-outline-info"-->
+<!--                              *ngIf="!order.deliveryNoteGenerated && canGenerateDeliveryNote()"-->
+<!--                              [disabled]="isSubmitting"-->
+<!--                              (click)="generateDeliveryNote()">-->
+<!--                        <i class="fas fa-plus"></i>-->
+<!--                      </button>-->
+<!--                    </div>-->
+<!--                  </div>-->
+<!--                </div>-->
               </div>
 
               <!-- Document generation info -->
@@ -1172,6 +1172,7 @@
               <h6><i class="fas fa-cog me-2"></i>Configuration documents</h6>
             </div>
             <div class="card-body">
+<!--              generatePrintContent damien -->
               <div class="document-settings">
                 <div class="mb-3">
                   <label class="form-label">Modèle de facture</label>
@@ -1217,13 +1218,21 @@
                           [disabled]="!canRegenerateDocuments()"
                           (click)="regenerateAllDocuments()">
                     <i class="fas fa-sync me-2"></i>
-                    Régénérer tous les documents
+                    Régénérer les documents possibles
                   </button>
                   <button class="btn btn-outline-success btn-sm"
                           [disabled]="!hasGeneratedDocuments()"
                           (click)="emailAllDocuments()">
                     <i class="fas fa-envelope me-2"></i>
-                    Envoyer par email
+                    <i class="fas fa-circle-user me-2"></i>
+                    Envoyer par email au client
+                  </button>
+                  <button class="btn btn-outline-success btn-sm"
+                          [disabled]="!hasGeneratedDocuments()"
+                          (click)="emailAllDocuments(true)">
+                    <i class="fas fa-envelope me-2"></i>
+                    <i class="fas fa-user-alt me-2"></i>
+                    M'envoyer par email
                   </button>
                   <button class="btn btn-outline-info btn-sm"
                           [disabled]="!hasGeneratedDocuments()"

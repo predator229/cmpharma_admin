@@ -43,8 +43,8 @@ const routes: Routes = [{
       { path:'reviews-products/:id',loadComponent: () =>import('./views/authentifiedusers/pharmacy/general-section/review-product/detail/review-product.component').then((c) => c.ProductReviewDetailsPharmacyComponent), },
       { path:'reviewspeproduct/:id',loadComponent: () =>import('./views/authentifiedusers/pharmacy/general-section/review-product/grouped/reviews-product.component').then((c) => c.ProductReviewsByProductComponent), },
 
-      { path: 'pharmacies/list', loadComponent: () =>import('./views/authentifiedusers/pharmacy/products-and-sell-section/pharmacies/list/list.component').then((c) => c.PharmacyListComponentPharmacie), },
-      { path: 'pharmacies/:id',  loadComponent: () => import('./views/authentifiedusers/pharmacy/products-and-sell-section/pharmacies/details/details.component').then((c) => c.PharmacyDetailComponentPharmacie), },
+      // { path: 'pharmacies/list', loadComponent: () =>import('./views/authentifiedusers/pharmacy/products-and-sell-section/pharmacies/list/list.component').then((c) => c.PharmacyListComponentPharmacie), },
+      { path: 'settings',  loadComponent: () => import('./views/authentifiedusers/pharmacy/settings-and-conf-section/pharmacies/details/details.component').then((c) => c.PharmacyDetailComponentPharmacie), },
 
       { path: 'categories/list', loadComponent: () =>import('./views/authentifiedusers/pharmacy/products-and-sell-section/categories/list/list.component').then((c) => c.PharmacyCategoryListComponent), },
       { path: 'categories/:id',  loadComponent: () => import('./views/authentifiedusers/pharmacy/products-and-sell-section/categories/category/category.component').then((c) => c.PharmacyCategoryDetailComponent), },

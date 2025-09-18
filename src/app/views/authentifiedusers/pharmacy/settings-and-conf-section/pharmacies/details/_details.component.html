@@ -1,23 +1,4 @@
 <div class="pharmacy-details-container">
-  <div class="product-header">
-    <div class="product-title">
-      <button class="btn btn-outline-secondary" (click)="goBack()">
-        <i class="fas fa-arrow-left"></i> Retour
-      </button>
-      <div *ngIf="pharmacy">
-        <div class="product-info">
-          <h1 class="h3 mb-1">{{ pharmacy.name }}</h1>
-        </div>
-      </div>
-    </div>
-    <div class="header-actions" *ngIf="pharmacy && pharmacy.status === 'pending'">
-      <span *ngIf="pharmacy.status === 'pending'" style="color: crimson">
-        {{ pharmacy.commentaire !='' ? pharmacy.commentaire : (pharmacy.status === 'pending' ? "Nous avons besoin d'information complémentaire" : 'pff') }}
-      </span>
-    </div>
-  </div>
-
-  <div class="card mb-4"></div>
   <div class="pharmacy-content" *ngIf="pharmacy">
     <div class="row">
       <!-- Colonne principale -->

@@ -144,7 +144,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
           .pipe(takeUntil(this.destroy$))
           .subscribe(loaded => {
             this.userDetail = this.auth.getUserDetails();
-            this.canIEdit = this.userDetail.hasPermission('pharmacies.edit', pharmacyId);
+            this.canIEdit = this.userDetail.hasPermission('pharmacies.edit', pharmacyId ?? this.userDetail.pharmaciesManaged[0]);
 
             this.permissions.viewPharmacy = this.userDetail.hasPermission('pharmacies.view');
             this.permissions.editPharmacy = this.userDetail.hasPermission('pharmacies.edit');
@@ -156,8 +156,8 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
           });
       }
 
-      if (pharmacyId) {
-        await this.loadPharmacyDetails(pharmacyId);
+      if (pharmacyId || this.userDetail.pharmaciesManaged[0]) {
+        await this.loadPharmacyDetails(pharmacyId ?? this.userDetail.pharmaciesManaged[0]);
 
         this.pharmacyForm = this.createFormInfoPharmacy();
         this.initializeWorkingHours();

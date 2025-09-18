@@ -88,7 +88,7 @@ export class PharmacyLogsComponent implements OnInit {
             this.userDetails.loadAllPermissions();
             if (this.userDetails?.onlyShowListPharm.length) {
               this.handleError("Une ou plusieurs de vos pharmacies sont en attente de compléments d'informations. Veuillez compléter toutes les informations requises pour poursuivre le processus d'enregistrement.\n");
-              window.location.href = "pharmacy/pharmacies/list";
+              window.location.href = "pharmacy/settings";
             }
           });
       }

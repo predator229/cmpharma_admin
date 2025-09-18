@@ -288,7 +288,6 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
           next: (response: any) => {
             if (response && !response.error && response.data) {
               this.order = new OrderClass(response.data.order);
-
               // Load additional data
               if (this.permissions.viewHistory) {
                 this.loadOrderHistory();
@@ -894,6 +893,13 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
     this.modalService.dismissAll();
   }
 
+  private handleSucces(message: string): void {
+    Swal.fire({
+      icon:'success',
+      title: 'Felicitations',
+      text: message,
+    })
+  }
   private handleError(message: string): void {
     Swal.fire({
       icon: 'error',
@@ -1039,11 +1045,9 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
   }
 
   exportOrderData(json: string) {
-    console.log('data exported');
   }
 
   uploadPrescription(item: OrderItem) {
-    console.log('upload prescription');
   }
 
   getItemsTotal() {
@@ -1348,7 +1352,6 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
    */
   manageOrderPrescriptions(): void {
     // Implémentation pour ouvrir une modal de gestion globale des ordonnances
-    console.log('Ouverture gestion ordonnances');
   }
 
 // ===== MÉTHODES DOCUMENTS =====
@@ -1358,9 +1361,9 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
    */
   getGeneratedDocumentsCount(): number {
     let count = 0;
-    if (this.order.invoiceGenerated) count++;
-    if (this.order.fiscalReceiptGenerated) count++;
-    if (this.order.deliveryNoteGenerated) count++;
+    if (this.order.invoice) count++;
+    if (this.order.bonfiscal) count++;
+    // if (this.order.deliveryNoteGenerated) count++;
     return count;
   }
 
@@ -1370,7 +1373,7 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
   canGenerateInvoice(): boolean {
     return this.order.status === 'delivered' &&
       this.order.payment.status === 'paid' &&
-         !this.order.invoiceGenerated &&
+         !this.order.invoice &&
           this.permissions.viewOrder
   }
 
@@ -1378,17 +1381,17 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
    * Vérifie si le bon fiscal peut être généré
    */
   canGenerateFiscalReceipt(): boolean {
-    return this.order.payment.status === 'paid' && !this.order.fiscalReceiptGenerated && this.permissions.viewOrder;
+    return this.order.payment.status === 'paid' && !this.order.bonfiscal && this.permissions.viewOrder;
   }
 
   /**
    * Vérifie si le bon de livraison peut être généré
    */
-  canGenerateDeliveryNote(): boolean {
-    return ['preparing', 'ready_for_pickup', 'out_for_delivery'].includes(this.order.status) &&
-      this.order.deliveryInfo.method !== 'pickup' &&
-      this.permissions.addNotes && !this.order.deliveryNoteGenerated;
-  }
+  // canGenerateDeliveryNote(): boolean {
+  //   return ['preparing', 'ready_for_pickup', 'out_for_delivery'].includes(this.order.status) &&
+  //     this.order.deliveryInfo.method !== 'pickup' &&
+  //     this.permissions.addNotes //&& !this.order.deliveryNoteGenerated;
+  // }
 
   /**
    * Génère la facture
@@ -1442,40 +1445,40 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
   /**
    * Génère le bon de livraison
    */
-  generateDeliveryNote(): void {
-    if (this.isSubmitting || !this.canGenerateDeliveryNote()) return;
-    //
-    // this.isSubmitting = true;
-    //
-    // this.orderService.generateDeliveryNote(this.order._id).subscribe({
-    //   next: (response) => {
-    //     this.order.deliveryNoteGenerated = true;
-    //     this.order.deliveryNoteGeneratedAt = new Date();
-    //
-    //     this.showSuccessMessage('Bon de livraison généré avec succès');
-    //     this.isSubmitting = false;
-    //   },
-    //   error: (error) => {
-    //     this.showErrorMessage('Erreur lors de la génération du bon de livraison');
-    //     this.isSubmitting = false;
-    //   }
-    // });
-  }
+  // generateDeliveryNote(): void {
+  //   if (this.isSubmitting || !this.canGenerateDeliveryNote()) return;
+  //   //
+  //   // this.isSubmitting = true;
+  //   //
+  //   // this.orderService.generateDeliveryNote(this.order._id).subscribe({
+  //   //   next: (response) => {
+  //   //     this.order.deliveryNoteGenerated = true;
+  //   //     this.order.deliveryNoteGeneratedAt = new Date();
+  //   //
+  //   //     this.showSuccessMessage('Bon de livraison généré avec succès');
+  //   //     this.isSubmitting = false;
+  //   //   },
+  //   //   error: (error) => {
+  //   //     this.showErrorMessage('Erreur lors de la génération du bon de livraison');
+  //   //     this.isSubmitting = false;
+  //   //   }
+  //   // });
+  // }
 
   /**
    * Visualise un document
    */
   viewDocument(documentType: string): void {
-    // const documentUrls = {
-    //   'invoice': this.order.invoiceUrl,
-    //   'fiscal_receipt': this.order.fiscalReceiptUrl,
-    //   'delivery_note': this.order.deliveryNoteUrl
-    // };
-    //
-    // const url = documentUrls[documentType];
-    // if (url) {
-    //   window.open(url, '_blank');
-    // }
+    const documentUrls = {
+      'invoice': this.order.invoice,
+      'fiscal_receipt': this.order.bonfiscal,
+      // 'delivery_note': this.order.deliveryNoteUrl
+    };
+
+    const url = documentUrls[documentType];
+    if (url) {
+      window.open(url, '_blank');
+    }
   }
 
   /**
@@ -1521,61 +1524,152 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
    * Vérifie si des documents ont été générés
    */
   hasGeneratedDocuments(): boolean {
-    return false;
-    // return this.order.invoiceGenerated ||
-    //   this.order.fiscalReceiptGenerated ||
-    //   this.order.deliveryNoteGenerated;
+    return this.order.invoice != null ||
+      this.order.bonfiscal?.bonfiscalNumber != null;
   }
 
   /**
    * Vérifie si les documents peuvent être régénérés
    */
   canRegenerateDocuments(): boolean {
-    return this.hasGeneratedDocuments() && this.permissions.viewOrder;
+    const statusesForInvoiceGeneration = ['delivered', 'completed'];
+    const statusesForBonFiscalGeneration = ['out_for_delivery', 'delivered', 'completed'];
+
+    return (statusesForInvoiceGeneration.includes(this.order.status) || statusesForBonFiscalGeneration.includes(this.order.status)) && this.permissions.viewOrder;
   }
 
   /**
    * Régénère tous les documents
    */
-  regenerateAllDocuments(): void {
-    // if (!this.canRegenerateDocuments()) return;
-    //
-    // if (confirm('Êtes-vous sûr de vouloir régénérer tous les documents ? Les anciens seront remplacés.')) {
-    //   this.isSubmitting = true;
-    //
-    //   this.orderService.regenerateAllDocuments(this.order._id).subscribe({
-    //     next: (response) => {
-    //       // Mettre à jour les informations des documents
-    //       Object.assign(this.order, response);
-    //       this.showSuccessMessage('Documents régénérés avec succès');
-    //       this.isSubmitting = false;
-    //     },
-    //     error: (error) => {
-    //       this.showErrorMessage('Erreur lors de la régénération des documents');
-    //       this.isSubmitting = false;
-    //     }
-    //   });
-    // }
+  async regenerateAllDocuments(): Promise<void> {
+    if (!this.canRegenerateDocuments()) return;
+
+    if (confirm('Êtes-vous sûr de vouloir régénérer tous les documents ? Les anciens seront remplacés.')) {
+      try {
+        const token = await this.auth.getRealToken();
+        const uid = await this.auth.getUid();
+
+        if (!token) {
+          this.handleError('Vous n\'êtes pas autorisé à accéder à cette ressource');
+          return;
+        }
+
+        const headers = new HttpHeaders({
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        });
+
+        if (!this.permissions.viewOrder) {
+          this.order = null;
+          return;
+        }
+        this.loadingService.setLoading(true);
+
+        this.apiService.post('pharmacy-management/order/regenerate-documents', {
+          orderId: this.orderId,
+          uid
+        }, headers)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (response: any) => {
+              if (response && !response.error && response.data) {
+                this.order = new OrderClass(response.data);
+
+                if (this.permissions.viewHistory) {
+                  this.loadOrderHistory();
+                }
+                if (this.permissions.viewRelatedOrders) {
+                  this.loadRelatedOrders();
+                }
+              } else {
+                this.handleError('Commande introuvable');
+                this.router.navigate(['/pharmacy/orders']);
+              }
+              this.loadingService.setLoading(false);
+              this.handleSucces('Documents régénérés avec succès');
+            },
+            error: (error) => {
+              this.handleError('Erreur lors du chargement de la commande');
+              this.loadingService.setLoading(false);
+              this.router.navigate(['/pharmacy/orders']);
+            }
+          });
+      } catch (error) {
+        this.handleError('Une erreur s\'est produite');
+        this.loadingService.setLoading(false);
+      }
+    }
   }
 
   /**
    * Envoie tous les documents par email
    */
-  emailAllDocuments(): void {
-    // if (!this.hasGeneratedDocuments()) return;
-    //
-    // this.isSubmitting = true;
-    //
-    // this.orderService.emailDocuments(this.order._id, this.order.customer.email).subscribe({
-    //   next: () => {
-    //     this.showSuccessMessage('Documents envoyés par email avec succès');
-    //     this.isSubmitting = false;
-    //   },
-    //   error: (error) => {
-    //     this.showErrorMessage('Erreur lors de l\'envoi des documents');
-    //     this.isSubmitting = false;
-    //   }
-    // });
+  async emailAllDocuments(toMe?: boolean): Promise<void> {
+
+    if (!this.hasGeneratedDocuments()) return;
+
+    if (!confirm('Êtes-vous sûr de vouloir transférer les documents par mail?')) {
+      return;
+    }
+
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      if (!token) {
+        this.handleError('Vous n\'êtes pas effectué cette operation');
+        return;
+      }
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      if (!this.permissions.viewOrder) {
+        this.order = null;
+        return;
+      }
+      this.loadingService.setLoading(true);
+
+      this.apiService.post('pharmacy-management/order/send-documents', {
+        orderId: this.orderId,
+        toMe,
+        format: this.documentSettings.exportFormat === 'pdf' ? 'pdf' : 'html',
+        settings: this.documentSettings,
+        uid
+      }, headers)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error && response.data) {
+              this.order = new OrderClass(response.data);
+
+              if (this.permissions.viewHistory) {
+                this.loadOrderHistory();
+              }
+              if (this.permissions.viewRelatedOrders) {
+                this.loadRelatedOrders();
+              }
+            } else {
+              this.handleError('Commande introuvable');
+              this.router.navigate(['/pharmacy/orders']);
+            }
+            this.loadingService.setLoading(false);
+            this.handleSucces('Documents envoyés par email avec succès');
+          },
+          error: (error) => {
+            this.handleError('Erreur lors du chargement de la commande');
+            this.loadingService.setLoading(false);
+            this.router.navigate(['/pharmacy/orders']);
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.loadingService.setLoading(false);
+    }
   }
 
   /**

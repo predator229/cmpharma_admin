@@ -5,6 +5,8 @@ import {PharmacyClass} from "./Pharmacy.class";
 import {CommonFunctions} from "../controllers/comonsfunctions";
 import {PrescriptionClass} from "./Prescription.class";
 import {Admin} from "./Admin.class";
+import {InvoiceClass} from "./Invoice.class";
+import {BonFiscalClass} from "./BonFiscal.class";
 
 export interface OrderItem {
   product: Product;
@@ -133,16 +135,9 @@ export class OrderClass {
   shippedAt?: Date;
   deliveredAt?: Date;
   completedAt?: Date;
-  invoiceGeneratedAt?: Date;
-  fiscalReceiptGeneratedAt?: Date;
-  deliveryNoteGeneratedAt?: Date;
 
-  invoiceGenerated?: boolean;
-  fiscalReceiptGenerated?: boolean;
-  deliveryNoteGenerated?: boolean;
-
-  invoiceNumber?: string;
-  fiscalReceiptNumber?: string;
+  invoice: InvoiceClass | null;
+  bonfiscal: BonFiscalClass | null;
 
   // Historique des statuts
   statusHistory: StatusHistoryEntry[];
@@ -215,8 +210,6 @@ export class OrderClass {
     this.pharmacyNotes = data.pharmacyNotes;
     this.internalNotes = data.internalNotes;
 
-    this.invoiceNumber = data.invoiceNumber || undefined;
-    this.fiscalReceiptNumber = data.fiscalReceiptNumber || undefined;
 
     // Dates
     this.orderDate = data.orderDate ? new Date(data.orderDate) : new Date();
@@ -224,13 +217,9 @@ export class OrderClass {
     this.shippedAt = data.shippedAt ? new Date(data.shippedAt) : undefined;
     this.deliveredAt = data.deliveredAt ? new Date(data.deliveredAt) : undefined;
     this.completedAt = data.completedAt ? new Date(data.completedAt) : undefined;
-    this.invoiceGeneratedAt = data.invoiceGeneratedAt ? new Date(data.invoiceGeneratedAt) : undefined;
-    this.fiscalReceiptGeneratedAt = data.fiscalReceiptGeneratedAt ? new Date(data.fiscalReceiptGeneratedAt) : undefined;
-    this.deliveryNoteGeneratedAt = data.deliveryNoteGeneratedAt ? new Date(data.deliveryNoteGeneratedAt) : undefined;
 
-    this.deliveryNoteGenerated = data.deliveryNoteGenerated || false;
-    this.invoiceGenerated = data.invoiceGenerated || false;
-    this.fiscalReceiptGenerated = data.fiscalReceiptGenerated || false;
+    this.invoice = data.invoice ? new InvoiceClass(data.invoice) : null;
+    this.bonfiscal = data.bonfiscal ? new BonFiscalClass(data.bonfiscal) : null;
 
     // Historique
     this.statusHistory = (data.statusHistory || []).map((entry: any) => ({
