@@ -1116,24 +1116,12 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
 
   // À ajouter dans votre composant TypeScript
 
-// ===== PROPRIÉTÉS DE COMPOSANT =====
   documentSettings = {
     invoiceTemplate: 'standard',
-    exportFormat: 'pdf',
+    exportFormat: 'A4',
     autoGenerate: true,
     emailToCustomer: false
   };
-
-  printOptionss = {
-    format: 'invoice',
-    includeCustomerInfo: true,
-    includeItems: true,
-    includePayment: true,
-    includeDelivery: true,
-    includeNotes: false
-  };
-
-// ===== MÉTHODES LIFECYCLE =====
 
   /**
    * Obtient le label de l'étape actuelle du lifecycle
@@ -1468,17 +1456,199 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
   /**
    * Visualise un document
    */
-  viewDocument(documentType: string): void {
-    const documentUrls = {
-      'invoice': this.order.invoice,
-      'fiscal_receipt': this.order.bonfiscal,
-      // 'delivery_note': this.order.deliveryNoteUrl
+  viewDocument(documentType: string, typeDoc = 'pdfData'): void {
+    console.log('=== Debug viewDocument ===');
+    console.log('documentType:', documentType);
+    console.log('typeDoc:', typeDoc);
+    console.log('order:', this.order);
+
+    const documentData = {
+      'invoice': {
+        'pdfData': this.order.invoice?.pdfData,
+        'htmlData': this.order.invoice?.htmlData
+      },
+      'fiscal_receipt': {
+        'pdfData': this.order.bonfiscal?.pdfData,
+        'htmlData': this.order.bonfiscal?.htmlData
+      },
     };
 
-    const url = documentUrls[documentType];
-    if (url) {
-      window.open(url, '_blank');
+    console.log('documentData:', documentData);
+    console.log('documentData[documentType]:', documentData[documentType]);
+
+    const bufferData = documentData[documentType]?.[typeDoc];
+    console.log('bufferData:', bufferData);
+
+    if (bufferData) {
+      if (typeDoc === 'pdfData') {
+        this.handlePdfData(bufferData);
+      } else if (typeDoc === 'htmlData') {
+        this.handleHtmlData(bufferData);
+      }
+    } else {
+      // Fallback vers htmlData si pdfData n'est pas disponible
+      const htmlData = documentData[documentType]?.['htmlData'];
+      console.log('Fallback htmlData:', htmlData);
+
+      if (htmlData) {
+        console.log(`PDF non disponible pour ${documentType}, ouverture de la version HTML`);
+        this.handleHtmlData(htmlData);
+      } else {
+        console.warn(`Aucun document ${documentType} disponible (ni PDF ni HTML)`);
+        this.showDocumentNotAvailableMessage(documentType);
+      }
     }
+  }
+
+  private handlePdfData(bufferData: any): void {
+
+    try {
+      let pdfBuffer: ArrayBuffer;
+
+      if (typeof bufferData === 'string') {
+        // Si c'est une string base64, la décoder
+        const binaryString = atob(bufferData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        pdfBuffer = bytes.buffer;
+      } else if (bufferData?.$binary?.base64) {
+        // Gérer le format MongoDB avec $binary
+        const base64Data = bufferData.$binary.base64;
+
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        pdfBuffer = bytes.buffer;
+      } else if (bufferData instanceof ArrayBuffer) {
+        console.log('Processing ArrayBuffer');
+        pdfBuffer = bufferData;
+      } else {
+        console.error('Format de données PDF non reconnu:', bufferData);
+        return;
+      }
+
+      console.log('PDF buffer size:', pdfBuffer.byteLength);
+
+      // Vérifier que le buffer n'est pas vide
+      if (pdfBuffer.byteLength === 0) {
+        return;
+      }
+
+      // Créer un Blob à partir du buffer
+      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+
+      // Créer une URL temporaire pour le blob
+      const url = URL.createObjectURL(blob);
+
+      // Ouvrir le document dans un nouvel onglet
+      const newWindow = window.open(url, '_blank');
+
+      if (!newWindow) {
+        this.downloadFile(blob, 'document.pdf');
+      }
+
+      // Nettoyer l'URL après utilisation
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 5000); // Augmenté à 5 secondes
+
+    } catch (error) {
+    }
+  }
+
+  private handleHtmlData(htmlData: string): void {
+    try {
+      if (!htmlData || htmlData.length === 0) {
+        return;
+      }
+
+      // Vérifier que c'est bien du HTML
+      if (!htmlData.includes('<html') && !htmlData.includes('<!DOCTYPE')) {
+      }
+
+      // Créer un Blob avec le contenu HTML
+      const blob = new Blob([htmlData], { type: 'text/html;charset=utf-8' });
+
+      // Créer une URL temporaire pour le blob
+      const url = URL.createObjectURL(blob);
+
+      // Ouvrir le document HTML dans un nouvel onglet
+      const newWindow = window.open(url, '_blank');
+
+      if (!newWindow) {
+        console.error('Impossible d\'ouvrir une nouvelle fenêtre (popup bloqué?)');
+        this.showHtmlInModal(htmlData);
+      }
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 5000);
+
+    } catch (error) {
+    }
+  }
+
+  private downloadFile(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  private showHtmlInModal(htmlData: string): void {
+
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    modal.style.zIndex = '9999';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+
+    const content = document.createElement('div');
+    content.style.backgroundColor = 'white';
+    content.style.width = '90%';
+    content.style.height = '90%';
+    content.style.position = 'relative';
+    content.style.overflow = 'auto';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.top = '10px';
+    closeBtn.style.right = '10px';
+    closeBtn.style.fontSize = '24px';
+    closeBtn.style.background = 'none';
+    closeBtn.style.border = 'none';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.onclick = () => document.body.removeChild(modal);
+
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    iframe.srcdoc = htmlData;
+
+    content.appendChild(closeBtn);
+    content.appendChild(iframe);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+  }
+
+  private showDocumentNotAvailableMessage(documentType: string): void {
+    alert(`Document ${documentType} non disponible`);
   }
 
   /**
@@ -1568,6 +1738,8 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
 
         this.apiService.post('pharmacy-management/order/regenerate-documents', {
           orderId: this.orderId,
+          documentType:this.documentSettings.invoiceTemplate,
+          format: this.documentSettings.exportFormat === 'pdf' ? 'pdf' : 'html',
           uid
         }, headers)
           .pipe(takeUntil(this.destroy$))
@@ -1638,7 +1810,7 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
         orderId: this.orderId,
         toMe,
         format: this.documentSettings.exportFormat === 'pdf' ? 'pdf' : 'html',
-        settings: this.documentSettings,
+        documentType:this.documentSettings.invoiceTemplate,
         uid
       }, headers)
         .pipe(takeUntil(this.destroy$))

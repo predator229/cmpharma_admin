@@ -15,12 +15,14 @@ body {
   min-height: calc(100vh - #{$temp});
   background: $body-bg;
   border-radius: 8px;
+  overflow: hidden;
 
   .coded-content {
     padding-left: 20px;
     padding-right: 20px;
     padding-top: 20px;
     height: 100%;
+    overflow: hidden;
   }
 
   .page-header + .row {
@@ -97,6 +99,7 @@ body {
 
 @media (max-width: 1024px) {
   .pc-container {
+    overflow: hidden;
     margin-left: 10px;
     margin-right: 10px;
     .page-header + .row,
@@ -105,6 +108,7 @@ body {
       padding-top: 20px;
       padding-left: 10px;
       padding-right: 10px;
+      overflow: hidden;
     }
   }
 
@@ -119,15 +123,21 @@ body {
 
 @include media-breakpoint-down(sm) {
   .pc-container {
+    overflow: hidden;
+
     .coded-content {
       padding: 15px;
       padding-left: 10px;
       padding-right: 10px;
+      overflow: hidden;
+
     }
 
     .container {
       padding-left: 0;
       padding-right: 0;
+      overflow: hidden;
+
     }
   }
 

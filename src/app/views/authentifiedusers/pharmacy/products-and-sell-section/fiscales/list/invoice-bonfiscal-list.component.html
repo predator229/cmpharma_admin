@@ -1,0 +1,463 @@
+<!--Invoice and BonFiscal Management Container-->
+<div class="document-management-container">
+  <div class="stats-header">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+      <div>
+        <h2 class="stats-title">
+          <i class="fas fa-file-invoice me-2"></i>
+          Factures & Bons Fiscaux
+        </h2>
+
+        <p class="text-muted mb-0">
+          Gestion des documents fiscaux et factures
+          <small class="ms-2">
+            <i class="fas fa-clock me-1"></i>
+            Dernière mise à jour: {{ lastUpdated | date:'EEEE d MMMM yyyy, HH:mm':'fr' }}
+          </small>
+        </p>
+      </div>
+
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <!-- Period Filter Dropdown -->
+        <div class="custom-dropdown" [class.open]="isPeriodDropdownOpen" #statusDropdownn>
+          <button type="button"
+                  class="btn btn-dropdown"
+                  (click)="toggleStatusDropdown()">
+                <span class="status-badge">
+                  <i class="fas fa-calendar-alt me-1"></i>
+                  {{ getPeriodLabel(selectedPeriod) }}
+                </span>
+            <i class="fas fa-chevron-down" [class.rotated]="isPeriodDropdownOpen"></i>
+          </button>
+          <ul class="dropdown-menu custom-dropdown-menu"
+              [class.show]="isPeriodDropdownOpen">
+            <li *ngFor="let option of optionsPeriodDatas">
+              <button class="dropdown-item"
+                      type="button"
+                      [class.active]="selectedPeriod === option.value"
+                      (click)="setDateIntervalFromPeriod(option.value); closeDropdown()">
+              <span class="status-badge" [ngClass]="'status-' + option.value">
+                {{ option.label }}
+              </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Action Buttons -->
+        <button class="btn btn-outline-primary btn-sm" (click)="refreshDashboard()" [disabled]="isLoading">
+          <i class="fas fa-sync-alt" [ngClass]="{'fa-spin': isLoading}"></i>
+          Actualiser
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" *ngIf="permissions.exportDocuments" (click)="exportDocumentsList()">
+          <i class="fas fa-download"></i>
+          Exporter
+        </button>
+        <button class="btn btn-outline-secondary" (click)="clearFilters()">
+          <i class="fas fa-filter"></i> Effacer filtres
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="reviews-filters mb-4">
+    <div class="row">
+      <div class="col-md-2">
+        <select class="form-select" [(ngModel)]="typeFilter" (change)="filterDocuments()">
+          <option value="">Tous les types</option>
+          <option value="invoice">Factures</option>
+          <option value="bon_fiscal">Bons Fiscaux</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <input type="date" class="form-control" [(ngModel)]="dateFromFilter" (change)="filterDocuments()" placeholder="Date début">
+      </div>
+      <div class="col-md-2">
+        <input type="date" class="form-control" [(ngModel)]="dateToFilter" (change)="filterDocuments()" placeholder="Date fin">
+      </div>
+      <div class="col-md-2">
+        <select class="form-select" [(ngModel)]="pharmacyFilter" (change)="filterDocuments()">
+          <option value="">Toutes les pharmacies</option>
+          <option *ngFor="let pharmacy of pharmaciesListArray" [value]="pharmacy.value">{{pharmacy.label}}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select" [(ngModel)]="customerFilter" (change)="filterDocuments()">
+          <option value="">Tous les clients</option>
+          <option *ngFor="let customer of customersListArray" [value]="customer.value">{{customer.label}}</option>
+        </select>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-md-6">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text"
+                 class="form-control"
+                 placeholder="Rechercher par numéro de document, client, pharmacie..."
+                 [(ngModel)]="searchText"
+                 (keyup)="filterDocuments()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading" class="stats-content">
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && filteredDocuments.length === 0" class="empty-state">
+      <i class="fas fa-file-invoice"></i>
+      <h3>Aucun document trouvé</h3>
+      <p>{{ searchText || typeFilter || pharmacyFilter || customerFilter ? 'Aucun document ne correspond à vos critères de recherche.' : 'Aucun document disponible.' }}</p>
+    </div>
+
+    <!-- Documents Table -->
+    <div *ngIf="!isLoading && filteredDocuments.length > 0" class="table-responsive">
+      <table class="table table-hover reviews-table">
+        <thead>
+        <tr>
+          <th>
+            <div class="th-content" (click)="sort('type')">
+              Type
+              <i class="fas" [ngClass]="getSortIcon('type')"></i>
+            </div>
+          </th>
+          <th>
+            <div class="th-content" (click)="sort('documentNumber')">
+              N° Document
+              <i class="fas" [ngClass]="getSortIcon('documentNumber')"></i>
+            </div>
+          </th>
+          <th>
+            <div class="th-content" (click)="sort('order.orderNumber')">
+              N° Commande
+              <i class="fas" [ngClass]="getSortIcon('order.orderNumber')"></i>
+            </div>
+          </th>
+          <th>
+            <div class="th-content" (click)="sort('customer.firstName')">
+              Client
+              <i class="fas" [ngClass]="getSortIcon('customer.firstName')"></i>
+            </div>
+          </th>
+          <th>
+            <div class="th-content" (click)="sort('pharmacy.name')">
+              Pharmacie
+              <i class="fas" [ngClass]="getSortIcon('pharmacy.name')"></i>
+            </div>
+          </th>
+          <th>Notes</th>
+          <th>Générations</th>
+          <th>
+            <div class="th-content" (click)="sort('createdAt')">
+              Date création
+              <i class="fas" [ngClass]="getSortIcon('createdAt')"></i>
+            </div>
+          </th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let document of getPaginatedDocuments()">
+          <td>
+              <span class="badge status-badge" [ngClass]="getDocumentTypeBadgeClass(document.type)">
+                <i class="fas" [ngClass]="document.type === 'invoice' ? 'fa-file-invoice-dollar' : 'fa-receipt'"></i>
+                {{ getDocumentTypeLabel(document.type) }}
+              </span>
+          </td>
+          <td>
+            <div class="document-info">
+                <span class="document-number">
+                  <strong>{{ document.documentNumber }}</strong>
+                </span>
+            </div>
+          </td>
+          <td>
+              <span *ngIf="document.order">
+                <a [routerLink]="['/pharmacy/orders', document.order._id]">{{ document.order.orderNumber }}</a>
+              </span>
+            <span *ngIf="!document.order" class="text-muted">—</span>
+          </td>
+          <td>
+            <div class="customer-info" *ngIf="document.customer">
+              <span class="customer-name">{{ document.customer.getFullName() }}</span>
+              <small class="customer-email text-muted d-block">{{ document.customer.email }}</small>
+            </div>
+            <span *ngIf="!document.customer" class="text-muted">—</span>
+          </td>
+          <td>
+            <span *ngIf="document.pharmacy">{{ document.pharmacy.name }}</span>
+            <span *ngIf="!document.pharmacy" class="text-muted">—</span>
+          </td>
+          <td>
+            <span class="badge bg-info">{{ document.notes?.length || 0 }} note(s)</span>
+          </td>
+          <td>
+            <span class="badge bg-secondary">{{ document.generations?.length || 0 }} génération(s)</span>
+          </td>
+          <td>{{ document.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-outline-primary btn-sm me-1"
+                      (click)="viewDocumentDetails(document)"
+                      title="Voir les détails">
+                <i class="fas fa-eye"></i>
+              </button>
+<!--              <button class="btn btn-outline-success btn-sm me-1"-->
+<!--                      *ngIf="permissions.downloadDocuments && (document.pdfData || document.htmlData)"-->
+<!--                      (click)="downloadDocument(document)"-->
+<!--                      title="Télécharger">-->
+<!--                <i class="fas fa-download"></i>-->
+<!--              </button>-->
+              <button class="btn btn-outline-info btn-sm me-1"
+                      (click)="openAddNoteModal(document)"
+                      title="Ajouter une note">
+                <i class="fas fa-sticky-note"></i>
+              </button>
+              <button class="btn btn-outline-danger btn-sm"
+                      *ngIf="permissions.deleteDocuments"
+                      (click)="deleteDocument(document)"
+                      title="Supprimer">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!isLoading && filteredDocuments.length > 0" class="d-flex justify-content-between align-items-center mt-3 pagination-wrapper">
+      <div class="pagination-info">
+        Affichage de {{paginationStart + 1}} à {{paginationEnd}} sur {{filteredDocuments.length}} documents
+      </div>
+      <nav aria-label="Page navigation">
+        <ul class="pagination">
+          <li class="page-item" [ngClass]="{'disabled': currentPage === 1}">
+            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage - 1)">Précédent</a>
+          </li>
+          <li class="page-item" *ngFor="let page of getPageNumbers()" [ngClass]="{'active': page === currentPage}">
+            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(page)">{{page}}</a>
+          </li>
+          <li class="page-item" [ngClass]="{'disabled': currentPage === totalPages}">
+            <a class="page-link" href="javascript:void(0)" (click)="pageChanged(currentPage + 1)">Suivant</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Document Details Modal -->
+  <ng-template #documentDetailsModal>
+    <div class="modal-header">
+      <h4 class="modal-title">
+        <span class="badge me-2" [ngClass]="getDocumentTypeBadgeClass(selectedDocument?.type || '')">
+          {{ getDocumentTypeLabel(selectedDocument?.type || '') }}
+        </span>
+        {{ selectedDocument?.documentNumber }}
+      </h4>
+      <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-body" *ngIf="selectedDocument">
+      <div class="document-details">
+        <div class="row">
+          <!-- Document Information -->
+          <div class="col-md-6">
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> Informations du document</h6>
+              </div>
+              <div class="card-body">
+                <div class="detail-group">
+                  <label>Type:</label>
+                  <p>
+                    <span class="badge" [ngClass]="getDocumentTypeBadgeClass(selectedDocument.type)">
+                      {{ getDocumentTypeLabel(selectedDocument.type) }}
+                    </span>
+                  </p>
+                </div>
+                <div class="detail-group">
+                  <label>Numéro:</label>
+                  <p><strong>{{ selectedDocument.documentNumber }}</strong></p>
+                </div>
+                <div class="detail-group" *ngIf="selectedDocument.order">
+                  <label>Commande associée:</label>
+                  <p>
+                    <a [routerLink]="['/pharmacy/orders', selectedDocument.order._id]">
+                      {{ selectedDocument.order.orderNumber }}
+                    </a>
+                  </p>
+                </div>
+                <div class="detail-group">
+                  <label>Date de création:</label>
+                  <p>{{ selectedDocument.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Dernière modification:</label>
+                  <p>{{ selectedDocument.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+                </div>
+                <div class="detail-group" *ngIf="selectedDocument.pdfData || selectedDocument.htmlData">
+                  <label>Document disponible:</label>
+                  <p>
+                    <i class="fas fa-check-circle text-success"></i>
+                    {{ selectedDocument.pdfData ? 'PDF' : 'HTML' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer Information -->
+          <div class="col-md-6" *ngIf="selectedDocument.customer">
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6><i class="fas fa-user"></i> Client</h6>
+              </div>
+              <div class="card-body">
+                <div class="detail-group">
+                  <label>Nom:</label>
+                  <p>{{ selectedDocument.customer.getFullName() }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Email:</label>
+                  <p>{{ selectedDocument.customer.email }}</p>
+                </div>
+                <div class="detail-group" *ngIf="selectedDocument.customer.defaultPhone">
+                  <label>Téléphone:</label>
+                  <p>{{ selectedDocument.customer.defaultPhone.digits }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pharmacy Information -->
+          <div class="col-md-6" *ngIf="selectedDocument.pharmacy">
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6><i class="fas fa-clinic-medical"></i> Pharmacie</h6>
+              </div>
+              <div class="card-body">
+                <div class="detail-group">
+                  <label>Nom:</label>
+                  <p>{{ selectedDocument.pharmacy.name }}</p>
+                </div>
+                <div class="detail-group" *ngIf="selectedDocument.pharmacy.address">
+                  <label>Adresse:</label>
+                  <div class="address-info">
+                    <p class="mb-1">{{ selectedDocument.pharmacy.address }}</p>
+                    <p class="mb-0">{{ selectedDocument.pharmacy.city }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes Section -->
+        <div class="row" *ngIf="selectedDocument.notes && selectedDocument.notes.length > 0">
+          <div class="col-12">
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6><i class="fas fa-sticky-note"></i> Notes ({{ selectedDocument.notes.length }})</h6>
+              </div>
+              <div class="card-body">
+                <div class="timeline">
+                  <div *ngFor="let note of selectedDocument.notes" class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                      <p class="timeline-note">{{ note.note }}</p>
+                      <p class="timeline-date">
+                        {{ note.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                        <span *ngIf="note.from" class="text-muted">
+                          - {{ note.from.getFullName() }}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generations History -->
+        <div class="row" *ngIf="selectedDocument.generations && selectedDocument.generations.length > 0">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header">
+                <h6><i class="fas fa-history"></i> Historique des générations ({{ selectedDocument.generations.length }})</h6>
+              </div>
+              <div class="card-body">
+                <div class="timeline">
+                  <div *ngFor="let generation of selectedDocument.generations" class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                      <h6 class="timeline-title">Document généré</h6>
+                      <p class="timeline-date">
+                        {{ generation.generatedAt | date: 'dd/MM/yyyy HH:mm' }}
+                        <span *ngIf="generation.generatedBy" class="text-muted">
+                          - par {{ generation.generatedBy.getFullName() }}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
+<!--      <button type="button" class="btn btn-success"-->
+<!--              *ngIf="permissions.downloadDocuments && selectedDocument && (selectedDocument.pdfData || selectedDocument.htmlData)"-->
+<!--              (click)="downloadDocument(selectedDocument)">-->
+<!--        <i class="fas fa-download"></i> Télécharger-->
+<!--      </button>-->
+      <button type="button" class="btn btn-info"
+              (click)="closeModal(); openAddNoteModal(selectedDocument!)">
+        <i class="fas fa-sticky-note"></i> Ajouter une note
+      </button>
+    </div>
+  </ng-template>
+
+  <!-- Add Note Modal -->
+  <ng-template #addNoteModal>
+    <div class="modal-header">
+      <h4 class="modal-title">Ajouter une note - {{ selectedDocument?.documentNumber }}</h4>
+      <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+    </div>
+    <form [formGroup]="addNoteForm" (ngSubmit)="addNote()">
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          <strong>Document:</strong> {{ getDocumentTypeLabel(selectedDocument?.type || '') }} - {{ selectedDocument?.documentNumber }}
+        </div>
+
+        <div class="mb-3">
+          <label for="note" class="form-label">Note <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="note" rows="4" formControlName="note"
+                    placeholder="Saisissez votre note..."></textarea>
+          <div class="form-text">Cette note sera visible par tous les utilisateurs ayant accès à ce document.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+        <button type="submit" class="btn btn-primary" [disabled]="!addNoteForm.valid || isSubmitting">
+          <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Ajouter la note
+        </button>
+      </div>
+    </form>
+  </ng-template>
+</div>

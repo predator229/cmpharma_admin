@@ -10,6 +10,9 @@ import {GroupCode} from "./models/Group.class";
 import {
   ProductReviewsByProductComponent
 } from "./views/authentifiedusers/pharmacy/general-section/review-product/grouped/reviews-product.component";
+import {
+  PharmacyInvoiceBonFiscalListComponent
+} from "./views/authentifiedusers/pharmacy/products-and-sell-section/fiscales/list/invoice-bonfiscal-list.component";
 
 const routes: Routes = [{
     path: 'admin',
@@ -62,6 +65,8 @@ const routes: Routes = [{
 
       { path: 'orders/list', loadComponent: () =>import('./views/authentifiedusers/pharmacy/products-and-sell-section/orders/list/list.component').then((c) => c.PharmacyOrderListComponent), },
       { path: 'orders/:id', loadComponent: () =>import('./views/authentifiedusers/pharmacy/products-and-sell-section/orders/detail/detail.component').then((c) => c.PharmacyOrderDetailComponent), },
+
+      { path: 'invoices/list', loadComponent: () =>import('./views/authentifiedusers/pharmacy/products-and-sell-section/fiscales/list/invoice-bonfiscal-list.component').then((c) => c.PharmacyInvoiceBonFiscalListComponent), },
 
       { path: 'messaging',  loadComponent: () => import('./views/authentifiedusers/pharmacy/application-section/messagerie/messagerie.component').then((c) => c.PharmacyInternalMessagingComponent), },
       { path: 'support/list',  loadComponent: () => import('./views/authentifiedusers/pharmacy/application-section/support/tickets/list/support.component').then((c) => c.TicketListComponent), },

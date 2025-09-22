@@ -13,10 +13,12 @@ export interface HistoryInfo {
 
 export class BonFiscalClass {
   _id?: string;
-
   bonfiscalNumber: string;
-  bonfiscalNotes: BonFiscaleNote[];
 
+  pdfData?: Buffer;
+  htmlData?: string;
+
+  bonfiscalNotes: BonFiscaleNote[];
   generations: HistoryInfo[];
 
   createdAt: Date;
@@ -26,9 +28,11 @@ export class BonFiscalClass {
     this._id = data._id;
     this.bonfiscalNumber = data.bonfiscalNumber;
 
+    this.pdfData = data.pdfData ?? null;
+    this.htmlData = data.htmlData ?? null;
+
     this.bonfiscalNotes = data.bonfiscalNotes || [];
     this.generations = data.generations || [];
-
     this.createdAt = new Date(data.createdAt);
     this.updatedAt = new Date(data.updatedAt);
   }

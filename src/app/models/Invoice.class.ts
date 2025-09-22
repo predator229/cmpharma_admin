@@ -11,6 +11,9 @@ export interface InvoiceNote {
 export class InvoiceClass {
   _id?: string;
 
+  pdfData?: Buffer;
+  htmlData?: string;
+
   invoiceNumber: string;
   invoiceNotes: InvoiceNote[];
 
@@ -22,6 +25,9 @@ export class InvoiceClass {
   constructor(data: any) {
     this._id = data._id;
     this.invoiceNumber = data.invoiceNumber;
+
+    this.pdfData = data.pdfData ?? null;
+    this.htmlData = data.htmlData ?? null;
 
     this.invoiceNotes = data.invoiceNotes || [];
     this.generations = data.generations || [];
