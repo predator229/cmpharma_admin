@@ -754,5 +754,4 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
   async refreshDashboard(): Promise<void> {
     await this.loadOrders();
   }
-
 }

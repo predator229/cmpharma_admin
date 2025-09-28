@@ -4,7 +4,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, si
 import { app } from '../../firebase.config';
 import { ApiService } from './api.service';
 import { map, catchError } from 'rxjs/operators';
-import { of, BehaviorSubject } from 'rxjs';
+import {of, BehaviorSubject, combineLatest, distinctUntilChanged} from 'rxjs';
 import { HttpHeaders } from '@angular/common/http';
 import { ApiUserDetails } from 'src/app/models/ApiUserDetails';
 import { UserDetails } from 'src/app/models/UserDatails';
@@ -24,6 +24,17 @@ export class AuthService {
   constructor(private apiService: ApiService, private router: Router) {
     this.listenToAuthChanges();
   }
+
+  public authState$ = combineLatest([
+    this.userDetailsLoaded$,
+    this.userDetails$
+  ]).pipe(
+    map(([loaded, details]) => {
+      if (!loaded) return 'loading';
+      return details ? 'authenticated' : 'unauthenticated';
+    }),
+    distinctUntilChanged()
+  );
 
   private listenToAuthChanges() {
     onAuthStateChanged(this.auth, async (user) => {
@@ -170,7 +181,6 @@ export class AuthService {
           } catch (error) {
             this.userDetailsLoaded = false;
             this.userDetailsLoaded$.next(false);
-            console.error('Erreur lors de la transformation de la réponse API', error);
             return null;
           }
         }),
@@ -179,7 +189,6 @@ export class AuthService {
           this.userDetailsLoaded$.next(false);
           this.userDetails = null;
           this.userDetails$.next(null);
-          console.error('Erreur API lors de la récupération des détails utilisateur', error);
           return of(null);
         })
       )

@@ -211,22 +211,16 @@
                       title="Voir les détails">
                 <i class="fas fa-eye"></i>
               </button>
-<!--              <button class="btn btn-outline-success btn-sm me-1"-->
-<!--                      *ngIf="permissions.downloadDocuments && (document.pdfData || document.htmlData)"-->
-<!--                      (click)="downloadDocument(document)"-->
-<!--                      title="Télécharger">-->
-<!--                <i class="fas fa-download"></i>-->
-<!--              </button>-->
+              <button class="btn btn-outline-success btn-sm me-1"
+                      *ngIf="permissions.downloadDocuments && (document.pdfData || document.htmlData)"
+                      (click)="viewDocumentDetails(document, false)"
+                      title="Télécharger">
+                <i class="fas fa-download"></i>
+              </button>
               <button class="btn btn-outline-info btn-sm me-1"
                       (click)="openAddNoteModal(document)"
                       title="Ajouter une note">
                 <i class="fas fa-sticky-note"></i>
-              </button>
-              <button class="btn btn-outline-danger btn-sm"
-                      *ngIf="permissions.deleteDocuments"
-                      (click)="deleteDocument(document)"
-                      title="Supprimer">
-                <i class="fas fa-trash"></i>
               </button>
             </div>
           </td>
@@ -315,10 +309,9 @@
               </div>
             </div>
           </div>
-
-          <!-- Customer Information -->
-          <div class="col-md-6" *ngIf="selectedDocument.customer">
-            <div class="card mb-3">
+          <!-- Customer Information && Pharmacy Information -->
+          <div class="col-md-6">
+            <div class="card mb-3" *ngIf="selectedDocument.customer">
               <div class="card-header">
                 <h6><i class="fas fa-user"></i> Client</h6>
               </div>
@@ -337,11 +330,7 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Pharmacy Information -->
-          <div class="col-md-6" *ngIf="selectedDocument.pharmacy">
-            <div class="card mb-3">
+            <div class="card mb-3" *ngIf="selectedDocument.pharmacy">
               <div class="card-header">
                 <h6><i class="fas fa-clinic-medical"></i> Pharmacie</h6>
               </div>
@@ -360,11 +349,8 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Notes Section -->
-        <div class="row" *ngIf="selectedDocument.notes && selectedDocument.notes.length > 0">
-          <div class="col-12">
+          <!-- Notes Section -->
+          <div class="col-md-12" *ngIf="selectedDocument.notes && selectedDocument.notes.length > 0">
             <div class="card mb-3">
               <div class="card-header">
                 <h6><i class="fas fa-sticky-note"></i> Notes ({{ selectedDocument.notes.length }})</h6>
@@ -387,11 +373,8 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Generations History -->
-        <div class="row" *ngIf="selectedDocument.generations && selectedDocument.generations.length > 0">
-          <div class="col-12">
+          <!-- Generations History -->
+          <div class="col-md-12" *ngIf="selectedDocument.generations && selectedDocument.generations.length > 0">
             <div class="card">
               <div class="card-header">
                 <h6><i class="fas fa-history"></i> Historique des générations ({{ selectedDocument.generations.length }})</h6>
@@ -415,15 +398,32 @@
             </div>
           </div>
         </div>
+
+        <div class="row">
+          <!-- Preview Section -->
+          <div class="col-md-12" *ngIf="blobPreview && currentSafeBlobUrl">
+            <div class="card">
+              <div class="card-header">
+                <h6><i class="fas fa-file-pdf"></i> Aperçu du document</h6>
+              </div>
+              <div class="card-body p-0">
+                <iframe
+                  [src]="currentSafeBlobUrl"
+                  style="width: 100%; height: 600px; border: none;">
+                </iframe>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
-<!--      <button type="button" class="btn btn-success"-->
-<!--              *ngIf="permissions.downloadDocuments && selectedDocument && (selectedDocument.pdfData || selectedDocument.htmlData)"-->
-<!--              (click)="downloadDocument(selectedDocument)">-->
-<!--        <i class="fas fa-download"></i> Télécharger-->
-<!--      </button>-->
+      <button type="button" class="btn btn-success"
+              *ngIf="permissions.downloadDocuments && selectedDocument && (selectedDocument.pdfData || selectedDocument.htmlData)"
+              (click)="viewDocumentDetails(selectedDocument, false)">
+        <i class="fas fa-download"></i> Télécharger
+      </button>
       <button type="button" class="btn btn-info"
               (click)="closeModal(); openAddNoteModal(selectedDocument!)">
         <i class="fas fa-sticky-note"></i> Ajouter une note

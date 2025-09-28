@@ -1030,7 +1030,7 @@
                       </button>
                       <button class="btn btn-sm btn-outline-secondary"
                               *ngIf="order.invoice"
-                              (click)="downloadDocument('invoice')">
+                              (click)="viewDocument('invoice','pdfData', false)">
                         <i class="fas fa-download"></i>
                       </button>
                       <button class="btn btn-sm btn-primary"
@@ -1076,7 +1076,8 @@
                       </button>
                       <button class="btn btn-sm btn-outline-secondary"
                               *ngIf="order.bonfiscal"
-                              (click)="downloadDocument('fiscal_receipt')">
+                              (click)="viewDocument('fiscal_receipt','pdfData', false)">
+
                         <i class="fas fa-download"></i>
                       </button>
                       <button class="btn btn-sm btn-success"

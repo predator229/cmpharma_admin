@@ -19,7 +19,6 @@ export class AuthGuard implements CanActivate {
   canActivate(): Observable<boolean | UrlTree> {
     return this.authService.userDetailsLoaded$.pipe(
       filter(loaded => loaded),
-      take(1),
       takeUntilDestroyed(this.destroyRef),
       map(() => {
         const user = this.authService.getCurrentUser();

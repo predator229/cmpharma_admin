@@ -3,7 +3,7 @@ import { CommonModule } from "@angular/common";
 import { Router, RouterModule } from "@angular/router";
 import { Subject, takeUntil } from 'rxjs';
 import { HttpHeaders } from '@angular/common/http';
-
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import Swal from 'sweetalert2';
 import { FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { LoadingService } from 'src/app/controllers/services/loading.service';
@@ -16,6 +16,9 @@ import {AuthService} from "../../../../../../controllers/services/auth.service";
 import {ApiService} from "../../../../../../controllers/services/api.service";
 import {UserDetails} from "../../../../../../models/UserDatails";
 import {environment} from "../../../../../../../environments/environment";
+import {InvoiceNote} from "../../../../../../models/Invoice.class";
+import {BonFiscaleNote} from "../../../../../../models/BonFiscal.class";
+import {Admin} from "../../../../../../models/Admin.class";
 
 export enum DocumentType {
   INVOICE = 'invoice',
@@ -34,7 +37,7 @@ export interface DocumentItem {
   updatedAt: Date;
   pdfData?: Buffer;
   htmlData?: string;
-  notes?: any[];
+  notes?: InvoiceNote[] | BonFiscaleNote[];
   generations?: any[];
 }
 
@@ -71,10 +74,12 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
   isPeriodDropdownOpen: boolean = false;
   optionsPeriodDatas = [
     { value: '7d', label: '7 derniers jours' },
+    { value: '1d', label: 'Aujourd\'hui' },
     { value: '30d', label: '30 derniers jours' },
     { value: '3m', label: '3 derniers mois' },
     { value: '6m', label: '6 derniers mois' },
-    { value: '1y', label: '1 an' },
+    { value: '1y', label: 'Depuis le debut d\'anee' },
+    { value: '1yfull', label: '1 an' },
     { value: 'all', label: 'Toute la période' }
   ];
 
@@ -96,6 +101,8 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
   private modalService: NgbModal;
 
   isLoading: boolean = false;
+  blobPreview: Blob | null = null;
+  private currentBlobUrl: string | null = null;
 
   @ViewChild('documentDetailsModal') documentDetailsModal: ElementRef | undefined;
   @ViewChild('addNoteModal') addNoteModal: ElementRef | undefined;
@@ -105,9 +112,11 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
   pharmaciesListArray: Array<{value: string, label: string}> = [];
   customersListArray: Array<{value: string, label: string}> = [];
   selectedPeriod: string = '30d';
+  currentSafeBlobUrl?: SafeResourceUrl;
 
   constructor(
     modalService: NgbModal,
+    private sanitizer: DomSanitizer,
     private auth: AuthService,
     private router: Router,
     private apiService: ApiService,
@@ -125,11 +134,11 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
       .pipe(takeUntil(this.destroy$))
       .subscribe(async loaded => {
         this.userDetail = this.auth.getUserDetails();
-        this.permissions.viewDocuments = this.userDetail.hasPermission('documents.view');
-        this.permissions.generateDocuments = this.userDetail.hasPermission('documents.generate');
-        this.permissions.deleteDocuments = this.userDetail.hasPermission('documents.delete');
-        this.permissions.exportDocuments = this.userDetail.hasPermission('documents.export');
-        this.permissions.downloadDocuments = this.userDetail.hasPermission('documents.download');
+        this.permissions.viewDocuments = this.userDetail.hasPermission('commandes.view');
+        this.permissions.generateDocuments = this.userDetail.hasPermission('commandes.assign');
+        this.permissions.deleteDocuments = this.userDetail.hasPermission('commandes.assign');
+        this.permissions.exportDocuments = this.userDetail.hasPermission('commandes.print');
+        this.permissions.downloadDocuments = this.userDetail.hasPermission('commandes.checkout');
 
         if (loaded && this.userDetail) {
           await this.loadDocuments();
@@ -148,6 +157,9 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.currentBlobUrl) {
+      URL.revokeObjectURL(this.currentBlobUrl);
+    }
   }
 
   async loadDocuments(): Promise<void> {
@@ -173,18 +185,29 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
         this.pharmaciesListArray = [];
         this.customersListArray = [];
         this.filterDocuments();
+        this.loadingService.setLoading(false);
         return;
       }
 
-      this.apiService.post('pharmacy-management/documents/list', { uid, period: this.selectedPeriod }, headers)
+      this.apiService.post('pharmacy-management/orders/document/list', { uid, period: this.selectedPeriod }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
             if (response && response.data) {
               this.documents = this.processDocuments(response.data);
               this.filterDocuments();
-              this.pharmaciesListArray = response.pharmaciesList ?? [];
-              this.customersListArray = response.customersList ?? [];
+              this.pharmaciesListArray = response.pharmaciesList.map(pharmacy => {
+                return {
+                  value: pharmacy._id,
+                  label: pharmacy.name
+                }
+              }) ?? [];
+              this.customersListArray = response.customersList.map(customer => {
+                return {
+                  value: customer._id,
+                  label: customer.email
+                }
+              }) ?? [];
             } else {
               this.documents = [];
               this.filterDocuments();
@@ -206,49 +229,44 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
   private processDocuments(data: any): DocumentItem[] {
     const documents: DocumentItem[] = [];
 
-    // Process invoices
-    if (data.invoices && data.invoices.length > 0) {
-      data.invoices.forEach((invoice: any) => {
+    if (Array.isArray(data)) {
+      data.forEach((doc: any) => {
         documents.push({
-          _id: invoice._id,
-          type: DocumentType.INVOICE,
-          documentNumber: invoice.invoiceNumber,
-          order: invoice.order ? new OrderClass(invoice.order) : undefined,
-          customer: invoice.order?.customer ? new CustomerClass(invoice.order.customer) : undefined,
-          pharmacy: invoice.order?.pharmacy ? new PharmacyClass(invoice.order.pharmacy) : undefined,
-          createdAt: new Date(invoice.createdAt),
-          updatedAt: new Date(invoice.updatedAt),
-          pdfData: invoice.pdfData,
-          htmlData: invoice.htmlData,
-          notes: invoice.invoiceNotes || [],
-          generations: invoice.generations || []
-        });
-      });
-    }
-
-    // Process bon fiscaux
-    if (data.bonFiscaux && data.bonFiscaux.length > 0) {
-      data.bonFiscaux.forEach((bonFiscal: any) => {
-        documents.push({
-          _id: bonFiscal._id,
-          type: DocumentType.BON_FISCAL,
-          documentNumber: bonFiscal.bonfiscalNumber,
-          order: bonFiscal.order ? new OrderClass(bonFiscal.order) : undefined,
-          customer: bonFiscal.order?.customer ? new CustomerClass(bonFiscal.order.customer) : undefined,
-          pharmacy: bonFiscal.order?.pharmacy ? new PharmacyClass(bonFiscal.order.pharmacy) : undefined,
-          createdAt: new Date(bonFiscal.createdAt),
-          updatedAt: new Date(bonFiscal.updatedAt),
-          pdfData: bonFiscal.pdfData,
-          htmlData: bonFiscal.htmlData,
-          notes: bonFiscal.bonfiscalNotes || [],
-          generations: bonFiscal.generations || []
+          _id: doc._id,
+          type: doc.type === 'invoice' ? DocumentType.INVOICE : DocumentType.BON_FISCAL,
+          documentNumber: doc.documentNumber,
+          order: doc.orderId ? { _id: doc.orderId, orderNumber: doc.orderNumber } as any : undefined,
+          customer: doc.customer ? new CustomerClass(doc.customer) : undefined,
+          pharmacy: doc.pharmacy ? new PharmacyClass(doc.pharmacy) : undefined,
+          createdAt: new Date(doc.createdAt),
+          updatedAt: new Date(doc.updatedAt),
+          pdfData: doc.pdfData ?? undefined,
+          htmlData: doc.htmlData ?? undefined,
+          notes: doc.type === 'invoice' ? doc.notes.map((note) => {
+            return {
+              note: note.note,
+              createdAt: note.createdAt,
+              updatedAt: note.updatedAt,
+              from: new Admin(note.from),
+            } as InvoiceNote;
+          }) : doc.notes.map((note) => {
+            return{
+              note: note.note,
+              createdAt: note.createdAt,
+              updatedAt: note.updatedAt,
+              from: new Admin(note.from),
+            } as BonFiscaleNote;
+          }),
+          generations: doc.generatedBy ? [{
+            generatedBy: doc.generatedBy,
+            generatedAt: doc.generatedAt
+          }] : []
         });
       });
     }
 
     return documents;
   }
-
   filterDocuments(): void {
     let filtered = [...this.documents];
 
@@ -389,73 +407,6 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
     return `"${value}"`;
   }
 
-  viewDocumentDetails(document: DocumentItem): void {
-    this.modalService.dismissAll('ok');
-    if (document) {
-      this.selectedDocument = document;
-      setTimeout(() => {
-        this.modalService.open(this.documentDetailsModal, {
-          size: 'xl',
-          backdrop: 'static',
-          centered: true
-        });
-      }, 0);
-    }
-  }
-
-  // async downloadDocument(document: DocumentItem): Promise<void> {
-  //   if (!document.pdfData && !document.htmlData) {
-  //     this.handleError('Aucun fichier disponible pour ce document');
-  //     return;
-  //   }
-  //
-  //   try {
-  //     const token = await this.auth.getRealToken();
-  //     const uid = await this.auth.getUid();
-  //
-  //     if (!token) {
-  //       this.handleError('Vous n\'êtes pas autorisé à effectuer cette action');
-  //       return;
-  //     }
-  //
-  //     const headers = new HttpHeaders({
-  //       'Authorization': `Bearer ${token}`,
-  //       'Accept': 'application/json',
-  //       'Content-Type': 'application/json'
-  //     });
-  //
-  //     const endpoint = document.type === DocumentType.INVOICE ?
-  //       'pharmacy-management/invoices/download' :
-  //       'pharmacy-management/bonfiscaux/download';
-  //
-  //     this.apiService.post(endpoint, {
-  //       id: document._id,
-  //       uid,
-  //       format: 'pdf'
-  //     }, headers)
-  //       .pipe(takeUntil(this.destroy$))
-  //       .subscribe({
-  //         next: (response: any) => {
-  //           if (response && response.data) {
-  //             // Create download link
-  //             const blob = new Blob([response.data], { type: 'application/pdf' });
-  //             const url = window.URL.createObjectURL(blob);
-  //             const link = document.createElement('a');
-  //             link.href = url;
-  //             link.download = `${document.documentNumber}.pdf`;
-  //             link.click();
-  //             window.URL.revokeObjectURL(url);
-  //           }
-  //         },
-  //         error: (error) => {
-  //           this.handleError('Erreur lors du téléchargement');
-  //         }
-  //       });
-  //   } catch (error) {
-  //     this.handleError('Une erreur s\'est produite');
-  //   }
-  // }
-
   openAddNoteModal(document: DocumentItem): void {
     this.selectedDocument = document;
     this.addNoteForm = this.createNoteForm();
@@ -492,17 +443,14 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
         'Content-Type': 'application/json'
       });
 
-      const endpoint = this.selectedDocument.type === DocumentType.INVOICE ?
-        'pharmacy-management/invoices/add-note' :
-        'pharmacy-management/bonfiscaux/add-note';
-
       const formData = {
+        type_: this.selectedDocument.type.toLowerCase().replace('_', ''),
         id: this.selectedDocument._id,
         note: this.addNoteForm.value.note,
         uid
       };
 
-      this.apiService.post(endpoint, formData, headers)
+      this.apiService.post('pharmacy-management/orders/document/add-note', formData, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -527,6 +475,12 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
   }
 
   closeModal(): void {
+    if (this.currentBlobUrl) {
+      URL.revokeObjectURL(this.currentBlobUrl);
+      this.currentBlobUrl = null;
+    }
+    this.blobPreview = null;
+    this.selectedDocument = null;
     this.modalService.dismissAll('ok');
   }
 
@@ -701,5 +655,180 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
 
   async refreshDashboard(): Promise<void> {
     await this.loadDocuments();
+  }
+
+  viewDocumentDetails(document: DocumentItem,  isView=true): void {
+    const documentType = document.type;
+
+    if (document.htmlData || document.pdfData ) {
+      if (document.pdfData) {
+        this.blobPreview = this.handlePdfData(document.pdfData);
+        if (this.blobPreview) {
+          if (isView) {
+            this.getBlobPreviewUrl();
+            this.selectedDocument = document;
+            setTimeout(() => {
+              this.modalService.open(this.documentDetailsModal, {
+                size: 'xl',
+                backdrop: 'static',
+                centered: true
+              });
+            }, 0);
+          }else{
+            this.downloadFile();
+          }
+        }
+
+      } else if (document.htmlData) {
+        this.handleHtmlData(document.htmlData, isView);
+      }
+    } else {
+      const htmlData = document.htmlData;
+
+      if (htmlData) {
+        this.handleHtmlData(htmlData,isView);
+      } else {
+        this.showDocumentNotAvailableMessage(documentType);
+      }
+    }
+  }
+
+  private handlePdfData(bufferData: any): Blob | null {
+
+    try {
+      let pdfBuffer: ArrayBuffer;
+
+      if (typeof bufferData === 'string') {
+        const binaryString = atob(bufferData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        pdfBuffer = bytes.buffer;
+      } else if (bufferData?.$binary?.base64) {
+        const base64Data = bufferData.$binary.base64;
+
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        pdfBuffer = bytes.buffer;
+      } else if (bufferData instanceof ArrayBuffer) {
+        pdfBuffer = bufferData;
+      } else {
+        return null;
+      }
+
+      if (pdfBuffer.byteLength === 0) {
+        return null;
+      }
+
+      return new Blob([pdfBuffer], { type: 'application/pdf' });
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private handleHtmlData(htmlData: string, isView?:boolean): void {
+    try {
+      if (!htmlData || htmlData.length === 0) {
+    return;
+  }
+
+  if (!htmlData.includes('<html') && !htmlData.includes('<!DOCTYPE')) {
+  }
+
+  const blob = new Blob([htmlData], { type: 'text/html;charset=utf-8' });
+
+  const url = URL.createObjectURL(blob);
+
+  if (isView){
+    window.open(url, '_blank');
+  }else{
+    this.showHtmlInModal(htmlData);
+  }
+
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 5000);
+
+  } catch (error) {
+  }
+  }
+
+  private downloadFile(): void {
+    if (!this.blobPreview) {
+      return;
+    }
+    const url = URL.createObjectURL(this.blobPreview);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `document_preview_${Date.now().toString().replace(' ', '_')}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  private showHtmlInModal(htmlData: string): void {
+
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    modal.style.zIndex = '9999';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+
+    const content = document.createElement('div');
+    content.style.backgroundColor = 'white';
+    content.style.width = '90%';
+    content.style.height = '90%';
+    content.style.position = 'relative';
+    content.style.overflow = 'auto';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.top = '10px';
+    closeBtn.style.right = '10px';
+    closeBtn.style.fontSize = '24px';
+    closeBtn.style.background = 'none';
+    closeBtn.style.border = 'none';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.onclick = () => document.body.removeChild(modal);
+
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    iframe.srcdoc = htmlData;
+
+    content.appendChild(closeBtn);
+    content.appendChild(iframe);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+  }
+
+  private showDocumentNotAvailableMessage(documentType: string): void {
+    alert(`Document ${documentType} non disponible`);
+  }
+
+  getBlobPreviewUrl(): void {
+    if (this.blobPreview) {
+      if (this.currentBlobUrl) {
+        URL.revokeObjectURL(this.currentBlobUrl);
+      }
+
+      this.currentBlobUrl = URL.createObjectURL(this.blobPreview);
+      this.currentSafeBlobUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.currentBlobUrl);
+    } else {
+      this.currentSafeBlobUrl = undefined;
+    }
   }
 }

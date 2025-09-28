@@ -1454,14 +1454,9 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
   // }
 
   /**
-   * Visualise un document
+   * Visualise ou telecharger un document un document
    */
-  viewDocument(documentType: string, typeDoc = 'pdfData'): void {
-    console.log('=== Debug viewDocument ===');
-    console.log('documentType:', documentType);
-    console.log('typeDoc:', typeDoc);
-    console.log('order:', this.order);
-
+  viewDocument(documentType: string, typeDoc = 'pdfData', isView=true): void {
     const documentData = {
       'invoice': {
         'pdfData': this.order.invoice?.pdfData,
@@ -1473,40 +1468,31 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
       },
     };
 
-    console.log('documentData:', documentData);
-    console.log('documentData[documentType]:', documentData[documentType]);
-
     const bufferData = documentData[documentType]?.[typeDoc];
-    console.log('bufferData:', bufferData);
 
     if (bufferData) {
       if (typeDoc === 'pdfData') {
-        this.handlePdfData(bufferData);
+        this.handlePdfData(bufferData, isView);
       } else if (typeDoc === 'htmlData') {
-        this.handleHtmlData(bufferData);
+        this.handleHtmlData(bufferData, isView);
       }
     } else {
-      // Fallback vers htmlData si pdfData n'est pas disponible
       const htmlData = documentData[documentType]?.['htmlData'];
-      console.log('Fallback htmlData:', htmlData);
 
       if (htmlData) {
-        console.log(`PDF non disponible pour ${documentType}, ouverture de la version HTML`);
         this.handleHtmlData(htmlData);
       } else {
-        console.warn(`Aucun document ${documentType} disponible (ni PDF ni HTML)`);
         this.showDocumentNotAvailableMessage(documentType);
       }
     }
   }
 
-  private handlePdfData(bufferData: any): void {
+  private handlePdfData(bufferData: any, isView?:boolean): void {
 
     try {
       let pdfBuffer: ArrayBuffer;
 
       if (typeof bufferData === 'string') {
-        // Si c'est une string base64, la décoder
         const binaryString = atob(bufferData);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
@@ -1514,7 +1500,6 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
         }
         pdfBuffer = bytes.buffer;
       } else if (bufferData?.$binary?.base64) {
-        // Gérer le format MongoDB avec $binary
         const base64Data = bufferData.$binary.base64;
 
         const binaryString = atob(base64Data);
@@ -1524,63 +1509,47 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
         }
         pdfBuffer = bytes.buffer;
       } else if (bufferData instanceof ArrayBuffer) {
-        console.log('Processing ArrayBuffer');
         pdfBuffer = bufferData;
       } else {
-        console.error('Format de données PDF non reconnu:', bufferData);
         return;
       }
 
-      console.log('PDF buffer size:', pdfBuffer.byteLength);
-
-      // Vérifier que le buffer n'est pas vide
       if (pdfBuffer.byteLength === 0) {
         return;
       }
 
-      // Créer un Blob à partir du buffer
       const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
 
-      // Créer une URL temporaire pour le blob
       const url = URL.createObjectURL(blob);
 
-      // Ouvrir le document dans un nouvel onglet
-      const newWindow = window.open(url, '_blank');
-
-      if (!newWindow) {
+      if (isView){
+       window.open(url, '_blank');
+      }else{
         this.downloadFile(blob, 'document.pdf');
       }
-
-      // Nettoyer l'URL après utilisation
       setTimeout(() => {
         URL.revokeObjectURL(url);
-      }, 5000); // Augmenté à 5 secondes
-
+      }, 5000);
     } catch (error) {
     }
   }
 
-  private handleHtmlData(htmlData: string): void {
+  private handleHtmlData(htmlData: string, isView?:boolean): void {
     try {
       if (!htmlData || htmlData.length === 0) {
         return;
       }
 
-      // Vérifier que c'est bien du HTML
       if (!htmlData.includes('<html') && !htmlData.includes('<!DOCTYPE')) {
       }
 
-      // Créer un Blob avec le contenu HTML
       const blob = new Blob([htmlData], { type: 'text/html;charset=utf-8' });
 
-      // Créer une URL temporaire pour le blob
       const url = URL.createObjectURL(blob);
 
-      // Ouvrir le document HTML dans un nouvel onglet
-      const newWindow = window.open(url, '_blank');
-
-      if (!newWindow) {
-        console.error('Impossible d\'ouvrir une nouvelle fenêtre (popup bloqué?)');
+      if (isView){
+        window.open(url, '_blank');
+      }else{
         this.showHtmlInModal(htmlData);
       }
 
@@ -1649,25 +1618,6 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
 
   private showDocumentNotAvailableMessage(documentType: string): void {
     alert(`Document ${documentType} non disponible`);
-  }
-
-  /**
-   * Télécharge un document
-   */
-  downloadDocument(documentType: string): void {
-    // this.orderService.downloadDocument(this.order._id, documentType).subscribe({
-    //   next: (blob) => {
-    //     const url = window.URL.createObjectURL(blob);
-    //     const a = document.createElement('a');
-    //     a.href = url;
-    //     a.download = `${documentType}_${this.order.orderNumber}.pdf`;
-    //     a.click();
-    //     window.URL.revokeObjectURL(url);
-    //   },
-    //   error: (error) => {
-    //     this.showErrorMessage('Erreur lors du téléchargement du document');
-    //   }
-    // });
   }
 
   /**

@@ -1,6 +1,6 @@
 import {DestroyRef, Injectable} from '@angular/core';
 import { CanActivate, Router, UrlTree } from '@angular/router';
-import { Observable, of, combineLatest } from 'rxjs';
+import {Observable, of, combineLatest, first, switchMap} from 'rxjs';
 import { map, take, timeout, catchError, filter } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { Group, GroupCode } from "../../models/Group.class";
@@ -18,32 +18,16 @@ export class LoginGuard implements CanActivate {
   ) {}
 
   canActivate(): Observable<boolean | UrlTree> {
-    const currentUser = this.authService.getCurrentUser();
-
-    if (!currentUser) {
-      return of(true);
-    }
-
-    return combineLatest([
-      this.authService.userDetailsLoaded$,
-      this.authService.userDetails$
-    ]).pipe(
-      filter(([loaded, userDetails]) => loaded && !!userDetails),
-      timeout(10000),
-      take(1),
-      takeUntilDestroyed(this.destroyRef),
-      map(([loaded, userDetails]) => {
-        if (loaded && userDetails && Array.isArray(userDetails.groups)) {
-          const redirectUrl = this.getRedirectionForUser(userDetails);
-          if (redirectUrl !== true) {
-            return redirectUrl;
-          }
+    return this.authService.authState$.pipe(
+      filter(state => state !== 'loading'),
+      first(),
+      map(state => {
+        if (state === 'unauthenticated') {
+          return true;
         }
-
-        return this.router.createUrlTree(['/dashboard']);
-      }),
-      catchError((error) => {
-        return of(this.router.createUrlTree(['/dashboard']));
+        const userDetails = this.authService.getUserDetails();
+        const redirectUrl = this.getRedirectionForUser(userDetails);
+        return redirectUrl !== true ? redirectUrl : this.router.createUrlTree(['/dashboard']);
       })
     );
   }
@@ -67,11 +51,9 @@ export class LoginGuard implements CanActivate {
 
     if (matchingGroup) {
       const redirectPath = roleRedirectMap[matchingGroup.code];
-      // console.log(`Utilisateur avec rôle ${matchingGroup.code} redirigé vers: ${redirectPath}`);
       return this.router.createUrlTree([redirectPath]);
     }
 
-    // console.warn('Aucun rôle correspondant trouvé pour l\'utilisateur:', userDetails.groups);
     return true;
   }
 }
