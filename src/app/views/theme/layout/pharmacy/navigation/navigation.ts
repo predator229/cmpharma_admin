@@ -126,14 +126,6 @@ export const NavigationItems: NavigationItem[] = [
         icon: 'fa fa-file-invoice',
         permissions: ['factures.view']
       },
-      // {
-      //   id: 'pharmacy-customers',
-      //   title: 'Clients',
-      //   type: 'item',
-      //   url: '/pharmacy/customers/list',
-      //   icon: 'fa fa-users',
-      //   permissions: ['clients.view']
-      // }
     ]
   },
   {
@@ -194,7 +186,7 @@ export const NavigationItems: NavigationItem[] = [
   },
   {
     id: 'pharmacy-settings',
-    title: 'Paramètres et Configuration',
+    title: 'Paramètres de la pharmacie',
     type: 'group',
     icon: 'icon-navigation',
     permissions: [
@@ -206,13 +198,50 @@ export const NavigationItems: NavigationItem[] = [
     ],
     children: [
       {
-        id: 'pharmacy-settings',
-        title: 'Paramètres',
+        id: 'pharmacy-general-settings',
+        title: 'Général',
         type: 'item',
         url: '/pharmacy/settings',
         icon: 'fa fa-cogs',
         permissions: ['parametres.view']
       },
+      {
+        id: 'pharmacy-taxes-settings',
+        title: 'Taxes & Fiscalité',
+        type: 'item',
+        url: '/pharmacy/settings/taxes',
+        icon: 'fa fa-coins',
+        permissions: ['parametres.view']
+      },
+      {
+        id: 'pharmacy-exchange-rate-settings',
+        title: 'Taux de change',
+        type: 'item',
+        url: '/pharmacy/settings',
+        icon: 'fa fa-exchange-alt',
+        permissions: ['parametres.view']
+      },
+      {
+        id: 'pharmacy-notification-settings',
+        title: 'Notifications',
+        type: 'item',
+        url: '/pharmacy/settings',
+        icon: 'fa fa-bell',
+        permissions: ['parametres.view']
+      },
+    ],
+  },
+  {
+    id: 'pharmacy-admin-settings',
+    title: 'Administration système',
+    type: 'group',
+    icon: 'icon-navigation',
+    permissions: [
+      'admin_pharmacy.logs.view',
+      'admin_pharmacy.config.view',
+      'admin_pharmacy.analytics.view'
+    ],
+    children: [
       {
         id: 'pharmacy-admin-logs',
         title: 'Logs système',
@@ -222,13 +251,21 @@ export const NavigationItems: NavigationItem[] = [
         permissions: ['admin_pharmacy.logs.view']
       },
       {
+        id: 'pharmacy-admin-integration',
+        title: 'Intégrations API',
+        type: 'item',
+        url: '/pharmacy/admin/integrations',
+        icon: 'fa fa-plug',
+        permissions: ['admin_pharmacy.config.view']
+      },
+      {
         id: 'pharmacy-admin-config',
-        title: 'Conf avancée',
+        title: 'Configuration avancée',
         type: 'item',
         url: '/pharmacy/admin/config',
         icon: 'fa fa-tools',
         permissions: ['admin_pharmacy.config.view']
       },
-    ]
+    ],
   }
 ];

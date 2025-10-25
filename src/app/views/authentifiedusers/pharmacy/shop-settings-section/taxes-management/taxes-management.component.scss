@@ -1,0 +1,933 @@
+/* =====================================
+   Variables SCSS
+   ===================================== */
+$primary: #d91a72;
+$secondary: #8C99AA;
+$success: #4caf50;
+$info: #2196f3;
+$warning: #ff9800;
+$danger: #f44336;
+$purple: #9c27b0;
+$grey: #666;
+$light-grey: #999;
+$dark: #333;
+$bg-white: #fff;
+$border-color: #E2E6EC;
+$dark-text: #2C3E50;
+$medium-text: #5E6A7A;
+$small-text: #9CA7B7;
+
+$primary-color: #d91a72;
+$primary-hover: #b91560;
+$secondary-color: #8C99AA; // Gris doux
+$accent-color-1: #6DD5ED; // Un bleu ciel clair pour les accents
+$accent-color-2: #E84A5F; // Un rouge corail pour le danger/l'alerte
+$success-color: #2ECC71; // Vert frais pour le succès
+$warning-color: #F39C12; // Jaune orangé pour l'avertissement
+$info-color: #3498DB;   // Bleu moyen pour l'information
+$light-background: #F8F9FB; // Fond très clair
+$card-background: #FFFFFF; // Fond des cartes
+$border-color: #E2E6EC; // Couleur des bordures
+$dark-text: #2C3E50; // Texte foncé pour les titres
+$medium-text: #5E6A7A; // Texte moyen
+$small-text: #9CA7B7; // Texte discret
+$white-bg: #ffffff;
+
+$border-radius: 0.75rem;
+$box-shadow-light: 0 4px 12px rgba(0, 0, 0, 0.08);
+$box-shadow-medium: 0 8px 20px rgba(0, 0, 0, 0.12);
+$box-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+$transition: all 0.3s ease;
+
+/* =====================================
+   Page Header
+   ===================================== */
+.taxe-header {
+  background-color: $card-background;
+  padding: 2rem 2.5rem;
+  border-bottom: 1px solid $border-color;
+  margin-bottom: 2rem;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow-light;
+
+  .taxe-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $dark-text;
+    margin-bottom: 0.5rem;
+
+    i {
+      color: $primary-color;
+      margin-right: 0.75rem;
+    }
+  }
+
+  p {
+    font-size: 1rem;
+    color: $medium-text;
+    line-height: 1.5;
+
+    small {
+      font-size: 0.85rem;
+      color: $small-text;
+      i {
+        color: $medium-text;
+      }
+    }
+  }
+
+  // Styles pour le statut de connexion
+  .badge {
+    padding: 0.6em 1em;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: $border-radius;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &.bg-success {
+      background-color: $success-color !important;
+      color: #fff;
+    }
+    &.bg-danger {
+      background-color: $accent-color-2 !important;
+      color: #fff;
+    }
+  }
+
+  // Styles pour les boutons d'action
+  .btn-outline-primary {
+    border-color: $primary-color;
+    color: $primary-color;
+    padding: 0.6rem 1.2rem;
+    border-radius: $border-radius;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+
+    &:hover {
+      background-color: $primary-color;
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: $box-shadow-sm;
+    }
+
+    &[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  .btn-outline-secondary {
+    border-color: $secondary-color;
+    color: $secondary-color;
+    padding: 0.6rem 1.2rem;
+    border-radius: $border-radius;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+
+    &:hover {
+      background-color: $secondary-color;
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: $box-shadow-sm;
+    }
+  }
+}
+
+/* =====================================
+   Stats Cards
+   ===================================== */
+.stats-card {
+  border: none;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow-light;
+  transition: $transition;
+
+  &:hover {
+    box-shadow: $box-shadow-medium;
+    transform: translateY(-4px);
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  p {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $medium-text;
+  }
+
+  h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $dark-text;
+  }
+
+  .stats-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+
+    &.bg-primary {
+      background: linear-gradient(135deg, $primary-color 0%, darken($primary-color, 10%) 100%);
+    }
+
+    &.bg-success {
+      background: linear-gradient(135deg, $success-color 0%, darken($success-color, 10%) 100%);
+    }
+
+    &.bg-info {
+      background: linear-gradient(135deg, $info-color 0%, darken($info-color, 10%) 100%);
+    }
+
+    &.bg-warning {
+      background: linear-gradient(135deg, $warning-color 0%, darken($warning-color, 10%) 100%);
+    }
+  }
+}
+
+/* =====================================
+   Filters Card
+   ===================================== */
+.card {
+  border: none;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow-light;
+  transition: $transition;
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  .input-group {
+    .input-group-text {
+      background: $light-background;
+      border-color: $border-color;
+      color: $medium-text;
+    }
+
+    .form-control {
+      border-color: $border-color;
+
+      &:focus {
+        border-color: $primary-color;
+        box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.15);
+      }
+    }
+  }
+
+  .form-select {
+    border-color: $border-color;
+    color: $dark-text;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.15);
+    }
+  }
+}
+
+/* =====================================
+   Table Styling
+   ===================================== */
+.table {
+  margin-bottom: 0;
+
+  thead {
+    background: $light-background;
+    border-bottom: 2px solid $border-color;
+
+    th {
+      font-weight: 600;
+      color: $dark-text;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      padding: 1rem;
+      vertical-align: middle;
+
+      &.sortable {
+        cursor: pointer;
+        user-select: none;
+        transition: $transition;
+
+        &:hover {
+          background: darken($light-background, 5%);
+          color: $primary-color;
+        }
+
+        i {
+          opacity: 0.5;
+          transition: opacity 0.2s;
+        }
+
+        &:hover i {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      transition: background-color 0.2s;
+      border-bottom: 1px solid $border-color;
+
+      &:hover {
+        background: lighten($light-background, 2%);
+      }
+
+      td {
+        padding: 1rem;
+        vertical-align: middle;
+      }
+    }
+  }
+
+  .tax-info {
+    h6 {
+      margin-bottom: 0.25rem;
+      color: $dark-text;
+      font-weight: 600;
+    }
+
+    small {
+      color: $medium-text;
+      font-size: 0.875rem;
+    }
+  }
+
+  .badge {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 50px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &.bg-primary {
+      background-color: $primary-color !important;
+    }
+
+    &.bg-success {
+      background-color: $success-color !important;
+    }
+
+    &.bg-info {
+      background-color: $info-color !important;
+    }
+
+    &.bg-warning {
+      background-color: $warning-color !important;
+      color: white;
+    }
+
+    &.bg-secondary {
+      background-color: $secondary-color !important;
+    }
+  }
+
+  .form-check-input {
+    width: 2.5rem;
+    height: 1.25rem;
+    cursor: pointer;
+
+    &:checked {
+      background-color: $success-color;
+      border-color: $success-color;
+    }
+
+    &:focus {
+      box-shadow: 0 0 0 0.2rem rgba($success-color, 0.25);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+
+  .btn-group-sm {
+    .btn {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.875rem;
+      border-radius: $border-radius;
+      transition: $transition;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: $box-shadow-sm;
+      }
+
+      &.btn-primary {
+        background: linear-gradient(135deg, $primary-color 0%, darken($primary-color, 10%) 100%);
+        border: none;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba($primary-color, 0.4);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+      }
+
+      &.btn-secondary {
+        background: $secondary-color;
+        border-color: $secondary-color;
+
+        &:hover {
+          background: darken($secondary-color, 10%);
+          border-color: darken($secondary-color, 10%);
+        }
+      }
+    }
+
+    .spinner-border-sm {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+
+  /* =====================================
+     Card Headers
+     ===================================== */
+  .card-header {
+    background: $light-background;
+    border-bottom: 1px solid $border-color;
+    padding: 1rem 1.5rem;
+
+    h6 {
+      margin: 0;
+      color: $dark-text;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+
+      i {
+        color: $medium-text;
+        margin-right: 0.5rem;
+      }
+    }
+  }
+
+  .card-footer {
+    background: white;
+    border-top: 1px solid $border-color;
+    padding: 1rem 1.5rem;
+  }
+
+  /* =====================================
+     Responsive Design
+     ===================================== */
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 1.5rem 1rem;
+
+      .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .header-actions {
+        width: 100%;
+
+        .btn {
+          flex: 1;
+        }
+      }
+    }
+
+    .stats-card {
+      margin-bottom: 1rem;
+
+      .stats-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+      }
+
+      h3 {
+        font-size: 1.5rem;
+      }
+    }
+
+    .table-responsive {
+      font-size: 0.875rem;
+
+      .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+
+        i {
+          font-size: 0.875rem;
+        }
+      }
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+
+      .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 576px) {
+    .page-header {
+      border-radius: 0;
+      margin-left: -15px;
+      margin-right: -15px;
+    }
+
+    .card {
+      margin-bottom: 1rem;
+    }
+
+    .row.g-3 > [class*="col-"] {
+      margin-bottom: 1rem;
+    }
+
+    .pagination {
+      flex-wrap: wrap;
+
+      .page-item {
+        margin-bottom: 0.5rem;
+      }
+    }
+  }
+
+  /* =====================================
+     Utility Classes
+     ===================================== */
+  .text-primary {
+    color: $primary-color !important;
+  }
+
+  .text-success {
+    color: $success-color !important;
+  }
+
+  .text-danger {
+    color: $accent-color-2 !important;
+  }
+
+  .text-warning {
+    color: $warning-color !important;
+  }
+
+  .text-info {
+    color: $info-color !important;
+  }
+
+  .bg-primary {
+    background-color: $primary-color !important;
+  }
+
+  .bg-success {
+    background-color: $success-color !important;
+  }
+
+  .bg-danger {
+    background-color: $accent-color-2 !important;
+  }
+
+  .bg-warning {
+    background-color: $warning-color !important;
+  }
+
+  .bg-info {
+    background-color: $info-color !important;
+  }
+
+  /* =====================================
+     Animations
+     ===================================== */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  /* =====================================
+     Loading States
+     ===================================== */
+  .spinner-border {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: text-bottom;
+    border: 0.25em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border 0.75s linear infinite;
+  }
+
+  @keyframes spinner-border {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* =====================================
+     Print Styles
+     ===================================== */
+  @media print {
+    .page-header .header-actions,
+    .card-footer,
+    .btn,
+    .form-check,
+    .pagination {
+      display: none !important;
+    }
+
+    .page-header {
+      background: none !important;
+      color: black !important;
+      border: 1px solid #000;
+    }
+
+    .card {
+      border: 1px solid #000;
+      box-shadow: none;
+      page-break-inside: avoid;
+    }
+
+    .badge {
+      border: 1px solid #000;
+    }
+
+    .table {
+      thead {
+        background: #f0f0f0 !important;
+      }
+
+      tbody tr {
+        border: 1px solid #ddd;
+      }
+    }
+  }
+
+  /* =====================================
+     Custom Scrollbar
+     ===================================== */
+  .table-responsive {
+    &::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: $light-background;
+      border-radius: $border-radius;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: $secondary-color;
+      border-radius: $border-radius;
+
+      &:hover {
+        background: darken($secondary-color, 10%);
+      }
+    }
+  }
+
+  /* =====================================
+     Focus States
+     ===================================== */
+  *:focus {
+    outline: none;
+  }
+
+  .btn:focus,
+  .form-control:focus,
+  .form-select:focus,
+  .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+  }
+
+  /* =====================================
+     Tooltips (if using Bootstrap tooltips)
+     ===================================== */
+  .tooltip {
+    .tooltip-inner {
+      background-color: $dark-text;
+      border-radius: $border-radius;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    &.bs-tooltip-top .tooltip-arrow::before {
+      border-top-color: $dark-text;
+    }
+
+    &.bs-tooltip-bottom .tooltip-arrow::before {
+      border-bottom-color: $dark-text;
+    }
+
+    &.bs-tooltip-start .tooltip-arrow::before {
+      border-left-color: $dark-text;
+    }
+
+    &.bs-tooltip-end .tooltip-arrow::before {
+      border-right-color: $dark-text;
+    }
+  }outline-info {
+     color: $info-color;
+     border-color: $info-color;
+
+     &:hover {
+       background: $info-color;
+       color: white;
+     }
+   }
+
+  &.btn-outline-primary {
+    color: $primary-color;
+    border-color: $primary-color;
+
+    &:hover {
+      background: $primary-color;
+      color: white;
+    }
+  }
+
+  &.btn-outline-danger {
+    color: $accent-color-2;
+    border-color: $accent-color-2;
+
+    &:hover {
+      background: $accent-color-2;
+      color: white;
+    }
+  }
+}
+
+
+/* =====================================
+   Empty State
+   ===================================== */
+.text-center {
+  &.py-5 {
+    padding: 3rem 1.5rem;
+
+    i {
+      opacity: 0.4;
+    }
+
+    h5 {
+      color: $dark-text;
+      font-weight: 600;
+      margin-top: 1rem;
+    }
+
+    p {
+      color: $medium-text;
+      margin-bottom: 0;
+    }
+  }
+}
+
+/* =====================================
+   Pagination
+   ===================================== */
+.pagination {
+  margin-top: 1rem;
+
+  .page-item {
+    margin: 0 0.25rem;
+
+    .page-link {
+      border: 1px solid $border-color;
+      color: $medium-text;
+      border-radius: $border-radius;
+      padding: 0.5rem 0.75rem;
+      transition: $transition;
+
+      &:hover {
+        background: $light-background;
+        border-color: $primary-color;
+        color: $primary-color;
+      }
+    }
+
+    &.active .page-link {
+      background: $primary-color;
+      border-color: $primary-color;
+      color: white;
+      font-weight: 600;
+    }
+
+    &.disabled .page-link {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* =====================================
+   Modal Styling
+   ===================================== */
+.modal-header {
+  background: linear-gradient(135deg, $primary-color 0%, lighten($primary-color, 10%) 100%);
+  color: white;
+  border-bottom: none;
+  padding: 1.5rem;
+  border-radius: $border-radius $border-radius 0 0;
+
+  .modal-title {
+    color: white;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+.modal-body {
+  padding: 2rem;
+
+  .form-label {
+    font-weight: 600;
+    color: $dark-text;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: $border-radius;
+    border: 1px solid $border-color;
+    padding: 0.75rem;
+    transition: $transition;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.15);
+    }
+  }
+
+  .input-group-text {
+    background: $light-background;
+    border-color: $border-color;
+    color: $medium-text;
+    font-weight: 600;
+  }
+
+  .form-check {
+    margin-bottom: 1rem;
+
+    .form-check-input {
+      width: 1.25rem;
+      height: 1.25rem;
+      cursor: pointer;
+
+      &:checked {
+        background-color: $primary-color;
+        border-color: $primary-color;
+      }
+
+      &:focus {
+        box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+      }
+    }
+
+    .form-check-label {
+      color: $dark-text;
+      font-weight: 500;
+      margin-left: 0.5rem;
+    }
+  }
+
+  .alert {
+    border-radius: $border-radius;
+    border: none;
+    padding: 1rem;
+
+    &.alert-info {
+      background: lighten($info-color, 40%);
+      color: darken($info-color, 20%);
+    }
+
+    &.alert-primary {
+      background: lighten($primary-color, 40%);
+      color: darken($primary-color, 20%);
+    }
+
+    i {
+      font-size: 1.25rem;
+    }
+  }
+
+  .invalid-feedback {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+}
+
+.modal-footer {
+  padding: 1.5rem 2rem;
+  background: $light-background;
+  border-top: 1px solid $border-color;
+
+  .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: $border-radius;
+    transition: $transition;
+  }
+}

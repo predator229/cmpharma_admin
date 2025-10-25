@@ -1278,9 +1278,6 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
     return stageDetails[stage] || null;
   }
 
-  /**
-   * Exécute une action de l'étape actuelle
-   */
   executeStageAction(actionKey: string): void {
     switch (actionKey) {
       case 'confirm':
@@ -1311,11 +1308,6 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-// ===== MÉTHODES PRESCRIPTIONS =====
-
-  /**
-   * Vérifie si toutes les ordonnances requises sont fournies
-   */
   allPrescriptionsProvided(): boolean {
     if (!this.order.requiresPrescription()) return true;
 
@@ -1323,9 +1315,6 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
     return prescriptionRequiredItems.every(item => item.prescriptionProvided);
   }
 
-  /**
-   * Obtient le statut des ordonnances
-   */
   getPrescriptionStatus(): string {
     if (!this.order.requiresPrescription()) return 'Non requise';
 
@@ -1335,18 +1324,9 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
     return `${totalProvided}/${totalRequired}`;
   }
 
-  /**
-   * Ouvre la modal de gestion des ordonnances
-   */
   manageOrderPrescriptions(): void {
-    // Implémentation pour ouvrir une modal de gestion globale des ordonnances
   }
 
-// ===== MÉTHODES DOCUMENTS =====
-
-  /**
-   * Obtient le nombre de documents générés
-   */
   getGeneratedDocumentsCount(): number {
     let count = 0;
     if (this.order.invoice) count++;
@@ -1355,9 +1335,6 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
     return count;
   }
 
-  /**
-   * Vérifie si la facture peut être générée
-   */
   canGenerateInvoice(): boolean {
     return this.order.status === 'delivered' &&
       this.order.payment.status === 'paid' &&
@@ -1365,93 +1342,15 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
           this.permissions.viewOrder
   }
 
-  /**
-   * Vérifie si le bon fiscal peut être généré
-   */
   canGenerateFiscalReceipt(): boolean {
     return this.order.payment.status === 'paid' && !this.order.bonfiscal && this.permissions.viewOrder;
   }
-
-  /**
-   * Vérifie si le bon de livraison peut être généré
-   */
-  // canGenerateDeliveryNote(): boolean {
-  //   return ['preparing', 'ready_for_pickup', 'out_for_delivery'].includes(this.order.status) &&
-  //     this.order.deliveryInfo.method !== 'pickup' &&
-  //     this.permissions.addNotes //&& !this.order.deliveryNoteGenerated;
-  // }
-
-  /**
-   * Génère la facture
-   */
   generateInvoice(): void {
     if (this.isSubmitting || !this.canGenerateInvoice()) return;
-
-    // this.isSubmitting = true;
-    //
-    // // Appel API pour générer la facture
-    // this.orderService.generateInvoice(this.order._id).subscribe({
-    //   next: (response) => {
-    //     this.order.invoiceGenerated = true;
-    //     this.order.invoiceNumber = response.invoiceNumber;
-    //     this.order.invoiceGeneratedAt = new Date();
-    //
-    //     this.showSuccessMessage('Facture générée avec succès');
-    //     this.isSubmitting = false;
-    //   },
-    //   error: (error) => {
-    //     this.showErrorMessage('Erreur lors de la génération de la facture');
-    //     this.isSubmitting = false;
-    //   }
-    // });
   }
-
-  /**
-   * Génère le bon fiscal
-   */
   generateFiscalReceipt(): void {
-    // if (this.isSubmitting || !this.canGenerateFiscalReceipt()) return;
-    //
-    // this.isSubmitting = true;
-    //
-    // this.orderService.generateFiscalReceipt(this.order._id).subscribe({
-    //   next: (response) => {
-    //     this.order.fiscalReceiptGenerated = true;
-    //     this.order.fiscalReceiptNumber = response.receiptNumber;
-    //     this.order.fiscalReceiptGeneratedAt = new Date();
-    //
-    //     this.showSuccessMessage('Bon fiscal généré avec succès');
-    //     this.isSubmitting = false;
-    //   },
-    //   error: (error) => {
-    //     this.showErrorMessage('Erreur lors de la génération du bon fiscal');
-    //     this.isSubmitting = false;
-    //   }
-    // });
   }
 
-  /**
-   * Génère le bon de livraison
-   */
-  // generateDeliveryNote(): void {
-  //   if (this.isSubmitting || !this.canGenerateDeliveryNote()) return;
-  //   //
-  //   // this.isSubmitting = true;
-  //   //
-  //   // this.orderService.generateDeliveryNote(this.order._id).subscribe({
-  //   //   next: (response) => {
-  //   //     this.order.deliveryNoteGenerated = true;
-  //   //     this.order.deliveryNoteGeneratedAt = new Date();
-  //   //
-  //   //     this.showSuccessMessage('Bon de livraison généré avec succès');
-  //   //     this.isSubmitting = false;
-  //   //   },
-  //   //   error: (error) => {
-  //   //     this.showErrorMessage('Erreur lors de la génération du bon de livraison');
-  //   //     this.isSubmitting = false;
-  //   //   }
-  //   // });
-  // }
 
   /**
    * Visualise ou telecharger un document un document

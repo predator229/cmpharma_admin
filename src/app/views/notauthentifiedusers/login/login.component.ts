@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import {Component, DestroyRef, inject} from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
@@ -9,6 +9,7 @@ import Swal from 'sweetalert2';
 import {Group} from "../../../models/Group.class";
 import {CommonFunctions} from "../../../controllers/comonsfunctions";
 import {waitForAsync} from "@angular/core/testing";
+import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 
 
 @Component({
@@ -23,6 +24,8 @@ import {waitForAsync} from "@angular/core/testing";
   styleUrls: ['./login.component.scss'],
 })
 export default class LoginComponent {
+  private destroyRef = inject(DestroyRef);
+
   public email: string | null = '';
   public password: string | null = '';
   public errorMessage: string | null = '';
@@ -56,31 +59,32 @@ export default class LoginComponent {
 
   private handleAuthSuccess(): void {
     this.authService.userDetailsLoaded$.pipe(
-      filter(loaded => loaded),
-      take(1),
-      map(() => {
-        const user = this.authService.getCurrentUser();
-        const userDetails = this.authService.getUserDetails();
-        if (!user) {
-          this.showError('L\'email n\'est associé à aucun compte.');
-          this.imLoading = false;
-          return false;
-        }
-        if (!userDetails || !Array.isArray(userDetails.groups) || userDetails.groups.length === 0) {
-          this.imLoading = false;
-          return false;
-        }
-        const group = userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g, userDetails) !== null);
-        const redirectUrl = group ? CommonFunctions.getRoleRedirectMap(group, userDetails) : null;
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((loaded) => {
+      if (!loaded) {
+        console.error('User details not loaded yet.');
+        return;
+      }
+      const user = this.authService.getCurrentUser();
+      const userDetails = this.authService.getUserDetails();
+      if (!user) {
+        this.showError('L\'email n\'est associé à aucun compte.');
         this.imLoading = false;
-        if (redirectUrl) {
-          window.location.href = redirectUrl;
-        } else {
-          window.location.href = '/login';
-        }
-        return true;
-      })
-    ).subscribe();
+        return;
+      }
+      if (!userDetails || !Array.isArray(userDetails.groups) || userDetails.groups.length === 0) {
+        this.imLoading = false;
+        return;
+      }
+      const group = userDetails.groups.find((g: Group) => CommonFunctions.getRoleRedirectMap(g, userDetails) !== null);
+      const redirectUrl = group ? CommonFunctions.getRoleRedirectMap(group, userDetails) : null;
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+      } else {
+        window.location.href = '/login';
+      }
+      return;
+    });
   }
 
 

@@ -438,6 +438,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
         expressDelivery: formValue.expressDelivery ?? (this.pharmacy.deliveryServices.expressDelivery ?? false),
         scheduledDelivery: formValue.scheduledDelivery ?? (this.pharmacy.deliveryServices.scheduledDelivery ?? false),
       }
+
     });
   }
   private markFormGroupTouched(formGroup: FormGroup): void {

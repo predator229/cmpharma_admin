@@ -1,6 +1,7 @@
 import {PharmacyClass} from "./Pharmacy.class";
 import {FileClass} from "./File.class";
 import {CommonFunctions} from "../controllers/comonsfunctions";
+import {TaxeModel} from "./Taxe.class";
 
 interface PharmacyRestriction {
   value: string;
@@ -18,7 +19,6 @@ export const getRestrictionsByCategory = (): any[] => {
     return groups;
   }, {} as { [key: string]: PharmacyRestriction[] });
 
-  // Convertir au format Select2 avec optgroups
   return Object.keys(groups).map(category => ({
     text: category,
     children: groups[category].map(restriction => ({
@@ -112,7 +112,7 @@ export class Category {
   specialCategory: 'otc' | 'prescription' | 'homeopathy' | 'medical_device' | 'supplement' | 'cosmetic';
 
   pharmaciesList: PharmacyClass[];
-
+  taxesApplicable: TaxeModel[];
   createdAt: Date;
   updatedAt: Date;
 
@@ -140,6 +140,7 @@ export class Category {
     pharmaciesList: Object[];
     createdAt: Date;
     updatedAt: Date;
+    taxesApplicable?: TaxeModel[];
   }) {
     this._id = data._id || '';
     this.name = data.name || '';
@@ -169,6 +170,7 @@ export class Category {
     this.specialCategory = data.specialCategory || 'otc';
 
     this.pharmaciesList = data.pharmaciesList.map((item: any) => CommonFunctions.mapToPharmacy(item));
+    this.taxesApplicable = this.taxesApplicable?.map((taxe: any) => new TaxeModel(taxe)) ?? [];
 
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;

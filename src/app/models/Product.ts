@@ -2,6 +2,7 @@ import { FileClass } from './File.class';
 import { PharmacyClass } from './Pharmacy.class';
 import { CommonFunctions } from '../controllers/comonsfunctions';
 import {Category} from "./Category.class";
+import {TaxeModel} from "./Taxe.class";
 
 export class Product {
   _id?: string;
@@ -23,6 +24,7 @@ export class Product {
   originalPrice?: number;
   discountPercentage?: number;
   cost?: number;
+  taxes: TaxeModel[];
 
   status: 'active' | 'inactive' | 'deleted' | 'out_of_stock' | 'discontinued';
   isVisible: boolean;
@@ -127,6 +129,7 @@ export class Product {
     this.originalPrice = data.originalPrice;
     this.discountPercentage = data.discountPercentage;
     this.cost = data.cost;
+    this.taxes = data.taxes?.map((taxe) => new TaxeModel(taxe)) ?? [];
 
     this.status = data.status || 'active';
     this.isVisible = data.isVisible ?? true;

@@ -61,6 +61,7 @@ export class CommonFunctions {
       country: data.country || null,
       deliveryZone: data.deliveryZone || null,
       deliveryServices: data.deliveryServices || null,
+      defaultsTaxes: data.defaultsTaxes || null,
     });
   }
 
@@ -87,6 +88,6 @@ export class CommonFunctions {
    * @returns Un ID unique sous forme de chaîne
    */
   static generateUniqueId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return 'new-'+Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 }

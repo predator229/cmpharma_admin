@@ -1,0 +1,692 @@
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+  <div>
+    <h2 class="taxe-title">
+      <i class="fas fa-coins me-2"></i>
+      Gestion des taxes
+    </h2>
+    <p class="text-muted mb-0">
+      Gérez les taxes applicables à vos produits
+
+      <small class="ms-2">
+        <i class="fas fa-clock me-1"></i>
+      </small>
+    </p>
+  </div>
+
+<!--  <div class="d-flex align-items-center flex-wrap gap-2">-->
+<!--    <div class="custom-dropdown" [class.open]="isPeriodDropdownOpen" #statusDropdown>-->
+<!--      <button type="button"-->
+<!--              class="btn btn-dropdown"-->
+<!--              (click)="toggleStatusDropdown()">-->
+<!--                <span class="status-badge">-->
+<!--                  <i class="fas fa-calendar-alt me-1"></i>-->
+<!--                  {{ getPeriodLabel(selectedPeriod) }}-->
+<!--                </span>-->
+<!--        <i class="fas fa-chevron-down" [class.rotated]="isPeriodDropdownOpen"></i>-->
+<!--      </button>-->
+<!--      <ul class="dropdown-menu custom-dropdown-menu"-->
+<!--          [class.show]="isPeriodDropdownOpen">-->
+<!--        <li *ngFor="let option of optionsPeriodDatas">-->
+<!--          <button class="dropdown-item"-->
+<!--                  type="button"-->
+<!--                  [class.active]="selectedPeriod === option.value"-->
+<!--                  (click)="setDateIntervalFromPeriod(option.value); closeDropdown(statusDropdown)">-->
+<!--              <span class="status-badge" [ngClass]="'status-' + option.value">-->
+<!--                {{ option.label }}-->
+<!--              </span>-->
+<!--          </button>-->
+<!--        </li>-->
+<!--      </ul>-->
+<!--    </div>-->
+<!--    &lt;!&ndash; Statut de connexion &ndash;&gt;-->
+<!--    <span class="badge" [ngClass]="isConnected ? 'bg-success' : 'bg-danger'">-->
+<!--      <i class="fas" [ngClass]="isConnected ? 'fa-wifi' : 'fa-wifi-slash'"></i>-->
+<!--      {{ isConnected ? 'Connecté' : 'Déconnecté' }}-->
+<!--    </span>-->
+<!--    &lt;!&ndash; Boutons d'action &ndash;&gt;-->
+<!--    <button class="btn btn-outline-primary btn-sm" (click)="refreshDashboard()" [disabled]="isLoading">-->
+<!--      <i class="fas fa-sync-alt" [ngClass]="{'fa-spin': isLoading}"></i>-->
+<!--      Actualiser-->
+<!--    </button>-->
+<!--    <button class="btn btn-outline-secondary btn-sm" (click)="exportDashboard()">-->
+<!--      <i class="fas fa-download"></i>-->
+<!--      Exporter-->
+<!--    </button>-->
+<!--  </div>-->
+</div>
+
+
+<!-- Filters and Search -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <!-- Search -->
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="fas fa-search"></i>
+          </span>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Rechercher une taxe..."
+            [(ngModel)]="filters.search"
+            (ngModelChange)="onFilterChange()">
+        </div>
+      </div>
+
+      <!-- Type filter -->
+      <div class="col-md-2">
+        <select
+          class="form-select"
+          [(ngModel)]="filters.type"
+          (ngModelChange)="onFilterChange()">
+          <option value="all">Tous les types</option>
+          <option *ngFor="let type of TAX_TYPES" [value]="type.value">
+            {{ type.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Jurisdiction filter -->
+      <div class="col-md-2">
+        <select
+          class="form-select"
+          [(ngModel)]="filters.jurisdiction"
+          (ngModelChange)="onFilterChange()">
+          <option value="all">Toutes juridictions</option>
+          <option *ngFor="let jurisdiction of JURISDICTIONS" [value]="jurisdiction.value">
+            {{ jurisdiction.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Active filter -->
+      <div class="col-md-2">
+        <select
+          class="form-select"
+          [(ngModel)]="filters.isActive"
+          (ngModelChange)="onFilterChange()">
+          <option value="all">Tous les statuts</option>
+          <option value="active">Actives</option>
+          <option value="inactive">Inactives</option>
+        </select>
+      </div>
+
+      <!-- Custom/System filter -->
+      <div class="col-md-2">
+        <select
+          class="form-select"
+          [(ngModel)]="filters.isCustom"
+          (ngModelChange)="onFilterChange()">
+          <option value="all">Tous types</option>
+          <option value="custom">Locales</option>
+          <option value="system">Système</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Total des taxes</p>
+            <h3 class="mb-0">{{ totalItems }}</h3>
+          </div>
+          <div class="stats-icon bg-primary">
+            <i class="fas fa-receipt"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Taxes actives</p>
+            <h3 class="mb-0">{{ getTaxesActives() }}</h3>
+          </div>
+          <div class="stats-icon bg-success">
+            <i class="fas fa-check-circle"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Taxes locales</p>
+            <h3 class="mb-0">{{ getTaxesCustom() }}</h3>
+          </div>
+          <div class="stats-icon bg-info">
+            <i class="fas fa-store"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Taxes système</p>
+            <h3 class="mb-0">{{ getTaxesSystem() }}</h3>
+          </div>
+          <div class="stats-icon bg-warning">
+            <i class="fas fa-globe"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Taxes Table -->
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+        <tr>
+          <th (click)="onSort('name')" class="sortable">
+            Nom
+            <i class="fas fa-sort ms-1"></i>
+          </th>
+          <th>Type</th>
+          <th>Taux actuel</th>
+          <th (click)="onSort('jurisdiction')" class="sortable">
+            Juridiction
+            <i class="fas fa-sort ms-1"></i>
+          </th>
+          <th>Applicable sur</th>
+          <th>Source</th>
+          <th (click)="onSort('is_active')" class="sortable">
+            Statut
+            <i class="fas fa-sort ms-1"></i>
+          </th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let tax of filteredTaxes">
+          <!-- Name -->
+          <td>
+            <div class="tax-info">
+              <h6 class="mb-1">{{ tax.name }}</h6>
+              <small class="text-muted" *ngIf="tax.description">
+                {{ tax.description }}
+              </small>
+            </div>
+          </td>
+
+          <!-- Type -->
+          <td>
+              <span class="badge" [ngClass]="{
+                'bg-primary': tax.type === 'percentage',
+                'bg-info': tax.type === 'fixed'
+              }">
+                {{ getTaxTypeLabel(tax.type) }}
+              </span>
+          </td>
+
+          <!-- Current Rate -->
+          <td>
+            <strong class="text-primary">{{ formatRate(tax) }}</strong>
+            <button
+              *ngIf="permissions.manageTaxRates && tax.is_custom"
+              class="btn btn-link btn-sm p-0 ms-2"
+              (click)="openRateHistoryModal(tax)"
+              title="Historique des taux">
+              <i class="fas fa-history"></i>
+            </button>
+          </td>
+
+          <!-- Jurisdiction -->
+          <td>
+              <span class="badge bg-secondary">
+                {{ getJurisdictionLabel(tax.jurisdiction) }}
+              </span>
+          </td>
+
+          <!-- Applicable On -->
+          <td>
+            <small class="text-muted">
+              {{ getApplicableOnLabel(tax.applicable_on) }}
+            </small>
+          </td>
+
+          <!-- Source -->
+          <td>
+              <span class="badge" [ngClass]="{
+                'bg-success': tax.is_custom,
+                'bg-warning': !tax.is_custom
+              }">
+                <i class="fas" [ngClass]="{
+                  'fa-store': tax.is_custom,
+                  'fa-globe': !tax.is_custom
+                }"></i>
+                {{ tax.is_custom ? 'Locale' : 'Système' }}
+              </span>
+          </td>
+
+          <!-- Status -->
+          <td>
+            <div class="form-check form-switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                [checked]="tax.is_active"
+                [disabled]="!permissions.editTax || !tax.is_custom"
+                (change)="toggleTaxStatus(tax)">
+            </div>
+          </td>
+
+          <!-- Actions -->
+          <td>
+            <div class="btn-group btn-group-sm">
+              <button
+                *ngIf="permissions.manageTaxRates && tax.is_custom"
+                class="btn btn-outline-info"
+                (click)="openRateHistoryModal(tax)"
+                title="Historique des taux">
+                <i class="fas fa-history"></i>
+              </button>
+              <button
+                *ngIf="permissions.editTax && tax.is_custom"
+                class="btn btn-outline-primary"
+                (click)="openEditModal(tax)"
+                title="Modifier">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button
+                *ngIf="permissions.deleteTax && tax.is_custom"
+                class="btn btn-outline-danger"
+                (click)="deleteTax(tax)"
+                title="Supprimer">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="filteredTaxes.length === 0" class="text-center py-5">
+      <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+      <h5>Aucune taxe trouvée</h5>
+      <p class="text-muted">
+        {{ filters.search || filters.type !== 'all' ? 'Essayez de modifier vos filtres' : 'Commencez par créer votre première taxe' }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="card-footer" *ngIf="totalItems > itemsPerPage">
+    <nav>
+      <ul class="pagination justify-content-center mb-0">
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="onPageChange(currentPage - 1)">
+            <i class="fas fa-chevron-left"></i>
+          </a>
+        </li>
+
+        <li
+          *ngFor="let page of [].constructor(Math.ceil(totalItems / itemsPerPage)); let i = index"
+          class="page-item"
+          [class.active]="currentPage === i + 1">
+          <a class="page-link" (click)="onPageChange(i + 1)">{{ i + 1 }}</a>
+        </li>
+
+        <li class="page-item" [class.disabled]="currentPage === Math.ceil(totalItems / itemsPerPage)">
+          <a class="page-link" (click)="onPageChange(currentPage + 1)">
+            <i class="fas fa-chevron-right"></i>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<!-- Create/Edit Tax Modal -->
+<ng-template #taxModal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-receipt me-2"></i>
+      {{ selectedTax ? 'Modifier la taxe' : 'Nouvelle taxe' }}
+    </h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+
+  <div class="modal-body">
+    <form [formGroup]="taxForm">
+      <!-- Name -->
+      <div class="mb-3">
+        <label for="taxName" class="form-label">
+          Nom de la taxe *
+        </label>
+        <input
+          type="text"
+          id="taxName"
+          class="form-control"
+          formControlName="name"
+          placeholder="Ex: TVA, Taxe sanitaire...">
+        <div *ngIf="taxForm.get('name')?.invalid && taxForm.get('name')?.touched" class="invalid-feedback d-block">
+          Le nom est requis (minimum 3 caractères)
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="mb-3">
+        <label for="taxDescription" class="form-label">
+          Description
+        </label>
+        <textarea
+          id="taxDescription"
+          class="form-control"
+          rows="3"
+          formControlName="description"
+          placeholder="Description de la taxe..."></textarea>
+      </div>
+
+      <div class="row">
+        <!-- Type -->
+        <div class="col-md-6 mb-3">
+          <label for="taxType" class="form-label">
+            Type de taxe *
+          </label>
+          <select id="taxType" class="form-select" formControlName="type">
+            <option *ngFor="let type of TAX_TYPES" [value]="type.value">
+              {{ type.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Initial Rate -->
+        <div class="col-md-6 mb-3">
+          <label for="initialRate" class="form-label">
+            Taux initial *
+          </label>
+          <div class="input-group">
+            <input
+              type="number"
+              id="initialRate"
+              class="form-control"
+              formControlName="initial_rate"
+              step="0.01"
+              min="0">
+            <span class="input-group-text">
+              {{ taxForm.get('type')?.value === 'percentage' ? '%' : 'XOF' }}
+            </span>
+          </div>
+          <div *ngIf="taxForm.get('initial_rate')?.invalid && taxForm.get('initial_rate')?.touched" class="invalid-feedback d-block">
+            Le taux est requis et doit être positif
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Jurisdiction -->
+        <div class="col-md-6 mb-3">
+          <label for="jurisdiction" class="form-label">
+            Juridiction *
+          </label>
+          <select id="jurisdiction" class="form-select" formControlName="jurisdiction">
+            <option *ngFor="let jurisdiction of JURISDICTIONS" [value]="jurisdiction.value">
+              {{ jurisdiction.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Applicable On -->
+        <div class="col-md-6 mb-3">
+          <label for="applicableOn" class="form-label">
+            Applicable sur *
+          </label>
+          <select id="applicableOn" class="form-select" formControlName="applicable_on">
+            <option *ngFor="let applicable of APPLICABLE_ON" [value]="applicable.value">
+              {{ applicable.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Effective From -->
+        <div class="col-md-6 mb-3">
+          <label for="effectiveFrom" class="form-label">
+            Date de début *
+          </label>
+          <input
+            type="date"
+            id="effectiveFrom"
+            class="form-control"
+            formControlName="effective_from">
+        </div>
+
+        <!-- Effective To -->
+        <div class="col-md-6 mb-3">
+          <label for="effectiveTo" class="form-label">
+            Date de fin
+          </label>
+          <input
+            type="date"
+            id="effectiveTo"
+            class="form-control"
+            formControlName="effective_to">
+          <small class="text-muted">Laisser vide pour une durée illimitée</small>
+        </div>
+      </div>
+
+      <!-- Checkboxes -->
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="isActive"
+              formControlName="is_active">
+            <label class="form-check-label" for="isActive">
+              Taxe active
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="isExemptible"
+              formControlName="is_exemptible">
+            <label class="form-check-label" for="isExemptible">
+              Exemptible
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Alert -->
+      <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Information :</strong>
+        Les taxes créées ici sont spécifiques à votre pharmacie.
+        Les taxes système ne peuvent pas être modifiées.
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">
+      Annuler
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="taxForm.invalid || isSubmitting"
+      (click)="saveTax()">
+      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+      {{ selectedTax ? 'Mettre à jour' : 'Créer la taxe' }}
+    </button>
+  </div>
+</ng-template>
+
+<!-- Rate History Modal -->
+<ng-template #rateHistoryModal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-history me-2"></i>
+      Historique des taux - {{ selectedTax?.name }}
+    </h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+
+  <div class="modal-body">
+    <!-- Current Rate Info -->
+    <div class="alert alert-primary d-flex align-items-center">
+      <i class="fas fa-info-circle fa-2x me-3"></i>
+      <div>
+        <strong>Taux actuel :</strong> {{ formatRate(selectedTax!) }}
+        <br>
+        <small class="text-muted">
+          Actif depuis le {{ formatDate(selectedTax?.getCurrentRate()?.effective_from) }}
+        </small>
+      </div>
+    </div>
+
+    <!-- Add New Rate Form -->
+    <div class="card mb-4" *ngIf="permissions.manageTaxRates">
+      <div class="card-header">
+        <h6 class="mb-0">
+          <i class="fas fa-plus me-2"></i>
+          Ajouter un nouveau taux
+        </h6>
+      </div>
+      <div class="card-body">
+        <form [formGroup]="rateForm">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="rateValue" class="form-label">
+                Nouveau taux *
+              </label>
+              <div class="input-group">
+                <input
+                  type="number"
+                  id="rateValue"
+                  class="form-control"
+                  formControlName="value"
+                  step="0.01"
+                  min="0">
+                <span class="input-group-text">
+                  {{ selectedTax?.type === 'percentage' ? '%' : 'XOF' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label for="rateEffectiveFrom" class="form-label">
+                Date de début *
+              </label>
+              <input
+                type="date"
+                id="rateEffectiveFrom"
+                class="form-control"
+                formControlName="effective_from">
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label for="rateEffectiveTo" class="form-label">
+                Date de fin
+              </label>
+              <input
+                type="date"
+                id="rateEffectiveTo"
+                class="form-control"
+                formControlName="effective_to">
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="rateForm.invalid || isSubmitting"
+            (click)="addRate()">
+            <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+            <i class="fas fa-plus me-2" *ngIf="!isSubmitting"></i>
+            Ajouter le taux
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Rates History Table -->
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0">
+          <i class="fas fa-list me-2"></i>
+          Historique complet
+        </h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+            <tr>
+              <th>Taux</th>
+              <th>Date de début</th>
+              <th>Date de fin</th>
+              <th>Statut</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let rate of selectedTax?.rates" [class.table-active]="rate.is_active">
+              <td>
+                <strong>
+                  {{ rate.value }}{{ selectedTax?.type === 'percentage' ? '%' : ' XOF' }}
+                </strong>
+              </td>
+              <td>{{ formatDate(rate.effective_from) }}</td>
+              <td>{{ formatDate(rate.effective_to) || 'Illimité' }}</td>
+              <td>
+                  <span class="badge" [ngClass]="{
+                    'bg-success': rate.is_active,
+                    'bg-secondary': !rate.is_active
+                  }">
+                    {{ rate.is_active ? 'Actif' : 'Inactif' }}
+                  </span>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="!selectedTax?.rates || selectedTax?.rates.length === 0" class="text-center py-4">
+          <i class="fas fa-history fa-2x text-muted mb-2"></i>
+          <p class="text-muted mb-0">Aucun historique de taux</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">
+      Fermer
+    </button>
+  </div>
+</ng-template>

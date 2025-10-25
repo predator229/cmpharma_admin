@@ -1,7 +1,7 @@
 import {DestroyRef, Injectable} from '@angular/core';
 import { CanActivate, Router, UrlTree } from '@angular/router';
-import {Observable, of, combineLatest, first, switchMap} from 'rxjs';
-import { map, take, timeout, catchError, filter } from 'rxjs/operators';
+import {Observable} from 'rxjs';
+import { map } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { Group, GroupCode } from "../../models/Group.class";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
@@ -19,12 +19,13 @@ export class LoginGuard implements CanActivate {
 
   canActivate(): Observable<boolean | UrlTree> {
     return this.authService.authState$.pipe(
-      filter(state => state !== 'loading'),
-      first(),
-      map(state => {
-        if (state === 'unauthenticated') {
+      takeUntilDestroyed(this.destroyRef),
+      map((state) => {
+        if (['unauthenticated','loading'].includes(state)) {
           return true;
         }
+
+        console.log('je rentre ici')
         const userDetails = this.authService.getUserDetails();
         const redirectUrl = this.getRedirectionForUser(userDetails);
         return redirectUrl !== true ? redirectUrl : this.router.createUrlTree(['/dashboard']);

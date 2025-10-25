@@ -6,6 +6,7 @@ import {FileClass} from "./File.class";
 import {Country} from "./Country.class";
 import {DeliveryZoneClass} from "./DeliveryZone.class";
 import {ZoneCoordinates} from "./ZoneCoordinates.class";
+import {TaxeModel} from "./Taxe.class";
 
 export interface FileDocument {
   name: string;
@@ -24,7 +25,7 @@ export interface DeliveryServices {
   pickupInStore: boolean,
   expressDelivery: boolean,
   scheduledDelivery: boolean
-};
+}
 
 export class PharmacyClass {
   id: string;
@@ -60,6 +61,8 @@ export class PharmacyClass {
   cityBounds?: ZoneCoordinates | null;
   deliveryServices?: DeliveryServices | null;
 
+  defaultsTaxes?: TaxeModel[];
+
   constructor(data: {
     id: string;
     name: string;
@@ -89,6 +92,7 @@ export class PharmacyClass {
     deliveryZone?: DeliveryZoneClass | null;
     cityBounds?: ZoneCoordinates | null;
     deliveryServices?: DeliveryServices | null;
+    defaultsTaxes?: TaxeModel[] | null;
   }) {
     this.id = data.id;
     this.name = data.name;
@@ -121,5 +125,7 @@ export class PharmacyClass {
     this.deliveryZone = data.deliveryZone ?? null;
     this.cityBounds = data.cityBounds ?? null;
     this.deliveryServices = data.deliveryServices ?? null;
+
+    this.defaultsTaxes = data.defaultsTaxes?.map(taxe => new TaxeModel(taxe)) ?? [];
   }
 }
