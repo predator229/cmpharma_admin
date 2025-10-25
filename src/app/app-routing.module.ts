@@ -7,12 +7,6 @@ import { AuthGuard } from './controllers/guards/auth.guard';
 import { GroupGuard } from './controllers/guards/group.guard';
 import { LoginGuard } from './controllers/guards/login.guard';
 import {GroupCode} from "./models/Group.class";
-import {
-  ProductReviewsByProductComponent
-} from "./views/authentifiedusers/pharmacy/general-section/review-product/grouped/reviews-product.component";
-import {
-  PharmacyInvoiceBonFiscalListComponent
-} from "./views/authentifiedusers/pharmacy/products-and-sell-section/fiscales/list/invoice-bonfiscal-list.component";
 
 const routes: Routes = [{
     path: 'admin',
@@ -68,7 +62,8 @@ const routes: Routes = [{
       /// pharmacies settings section
       // { path: 'pharmacies/list', loadComponent: () =>import('./views/authentifiedusers/pharmacy/products-and-sell-section/pharmacies/list/list.component').then((c) => c.PharmacyListComponentPharmacie), },
       { path: 'settings',  loadComponent: () => import('./views/authentifiedusers/pharmacy/shop-settings-section/pharmacies/details/details.component').then((c) => c.PharmacyDetailComponentPharmacie), },
-      { path: 'settings/taxes',  loadComponent: () => import('./views/authentifiedusers/pharmacy/shop-settings-section/taxes-management/taxes-management.component').then((c) => c.PharmacyTaxManagementComponent), },
+      { path: 'taxes/settings',  loadComponent: () => import('./views/authentifiedusers/pharmacy/shop-settings-section/taxes-management/list/taxes-management.component').then((c) => c.PharmacyTaxesManagementComponent), },
+      { path: 'taxes/settings/:id',  loadComponent: () => import('./views/authentifiedusers/pharmacy/shop-settings-section/taxes-management/detail/tax-detail.component').then((c) => c.PharmacyTaxDetailComponent), },
 
       /// more configuration section
       { path: 'admin/logs',  loadComponent: () => import('./views/authentifiedusers/pharmacy/administration-settings-section/logs/logs.component').then((c) => c.PharmacyLogsComponent), },

@@ -1,0 +1,1691 @@
+<div class="tax-detail-container">
+  <!-- Header Section -->
+  <div class="detail-header">
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+      <div class="header-content flex-grow-1">
+        <div class="d-flex align-items-center mb-2">
+          <button
+            class="btn btn-outline-secondary btn-sm me-3"
+            (click)="goBack()"
+            title="Retour">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+
+          <div>
+            <h2 class="detail-title mb-1">
+              <i class="fas fa-coins me-2"></i>
+              {{ tax?.name || 'Chargement...' }}
+            </h2>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              <span class="badge" [ngClass]="{
+                'bg-success': tax?.is_active,
+                'bg-secondary': !tax?.is_active
+              }">
+                <i class="fas" [ngClass]="{
+                  'fa-check-circle': tax?.is_active,
+                  'fa-times-circle': !tax?.is_active
+                }"></i>
+                {{ tax?.is_active ? 'Active' : 'Inactive' }}
+              </span>
+
+              <span class="badge" [ngClass]="{
+                'bg-primary': tax?.is_custom,
+                'bg-warning': !tax?.is_custom
+              }">
+                <i class="fas" [ngClass]="{
+                  'fa-store': tax?.is_custom,
+                  'fa-globe': !tax?.is_custom
+                }"></i>
+                {{ tax?.is_custom ? 'Locale' : 'Système' }}
+              </span>
+
+              <span class="badge" [ngClass]="{
+                'bg-info': tax?.type === 'percentage',
+                'bg-secondary': tax?.type === 'fixed'
+              }">
+                <i class="fas" [ngClass]="{
+                  'fa-percentage': tax?.type === 'percentage',
+                  'fa-coins': tax?.type === 'fixed'
+                }"></i>
+                {{ getTaxTypeLabel(tax?.type!) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-muted mb-0" *ngIf="tax?.description">
+          {{ tax.description }}
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="header-actions d-flex flex-wrap gap-2">
+        <button
+          class="btn btn-outline-info btn-sm"
+          (click)="openImpactAnalysisModal()"
+          [disabled]="isLoading || !tax"
+          title="Analyse d'impact">
+          <i class="fas fa-chart-line me-2"></i>
+          Analyse
+        </button>
+
+        <button
+          class="btn btn-outline-success btn-sm"
+          (click)="exportStatistics()"
+          [disabled]="isLoading || !tax"
+          title="Exporter les statistiques">
+          <i class="fas fa-file-export me-2"></i>
+          Exporter
+        </button>
+
+        <button
+          class="btn btn-outline-primary btn-sm"
+          (click)="printDetails()"
+          [disabled]="isLoading || !tax"
+          title="Imprimer">
+          <i class="fas fa-print me-2"></i>
+          Imprimer
+        </button>
+
+        <button
+          *ngIf="permissions.manageTaxRates && tax?.is_custom"
+          class="btn btn-primary btn-sm"
+          (click)="openAddRateModal()"
+          [disabled]="isLoading">
+          <i class="fas fa-plus me-2"></i>
+          Nouveau taux
+        </button>
+
+        <div class="btn-group" role="group">
+          <button
+            *ngIf="permissions.editTax && tax?.is_custom"
+            class="btn btn-outline-primary btn-sm"
+            (click)="openEditModal()"
+            [disabled]="isLoading"
+            title="Modifier">
+            <i class="fas fa-edit"></i>
+          </button>
+
+          <button
+            *ngIf="permissions.editTax && tax?.is_custom"
+            class="btn btn-sm"
+            [ngClass]="tax?.is_active ? 'btn-outline-warning' : 'btn-outline-success'"
+            (click)="toggleTaxStatus()"
+            [disabled]="isLoading"
+            [title]="tax?.is_active ? 'Désactiver' : 'Activer'">
+            <i class="fas" [ngClass]="tax?.is_active ? 'fa-toggle-off' : 'fa-toggle-on'"></i>
+          </button>
+
+          <button
+            *ngIf="permissions.deleteTax && tax?.is_custom"
+            class="btn btn-outline-danger btn-sm"
+            (click)="deleteTax()"
+            [disabled]="isLoading"
+            title="Supprimer">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+          <div class="stat-icon bg-primary">
+            <i class="fas fa-percentage"></i>
+          </div>
+          <div class="stat-content">
+            <small class="text-muted">Taux actuel</small>
+            <h4 class="mb-0">{{ formatRate(tax!) }}</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+          <div class="stat-icon bg-success">
+            <i class="fas fa-box"></i>
+          </div>
+          <div class="stat-content">
+            <small class="text-muted">Produits affectés</small>
+            <h4 class="mb-0">{{ statistics.totalProducts }}</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+          <div class="stat-icon bg-info">
+            <i class="fas fa-coins"></i>
+          </div>
+          <div class="stat-content">
+            <small class="text-muted">Taxe mensuelle estimée</small>
+            <h4 class="mb-0">{{ formatCurrency(statistics.estimatedMonthlyTaxAmount) }}</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+          <div class="stat-icon bg-warning">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="stat-content">
+            <small class="text-muted">Âge de la taxe</small>
+            <h4 class="mb-0">{{ taxAge }}</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button
+        class="nav-link"
+        [class.active]="activeTab === 'overview'"
+        (click)="activeTab = 'overview'"
+        type="button">
+        <i class="fas fa-info-circle me-2"></i>
+        Vue d'ensemble
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button
+        class="nav-link"
+        [class.active]="activeTab === 'products'"
+        (click)="activeTab = 'products'"
+        type="button">
+        <i class="fas fa-box me-2"></i>
+        Produits
+        <span class="badge bg-primary ms-2">{{ statistics.totalProducts }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button
+        class="nav-link"
+        [class.active]="activeTab === 'categories'"
+        (click)="activeTab = 'categories'"
+        type="button">
+        <i class="fas fa-tags me-2"></i>
+        Catégories
+        <span class="badge bg-primary ms-2">{{ statistics.totalCategories }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button
+        class="nav-link"
+        [class.active]="activeTab === 'statistics'"
+        (click)="activeTab = 'statistics'"
+        type="button">
+        <i class="fas fa-chart-bar me-2"></i>
+        Statistiques
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button
+        class="nav-link"
+        [class.active]="activeTab === 'history'"
+        (click)="activeTab = 'history'"
+        type="button">
+        <i class="fas fa-history me-2"></i>
+        Historique
+        <span class="badge bg-primary ms-2">{{ totalRateChanges }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button
+        class="nav-link"
+        [class.active]="activeTab === 'settings'"
+        (click)="activeTab = 'settings'"
+        type="button">
+        <i class="fas fa-cog me-2"></i>
+        Paramètres
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+    <!-- Overview Tab -->
+    <div *ngIf="activeTab === 'overview'" class="tab-pane fade show active">
+      <div class="row g-4">
+        <!-- Tax Information Card -->
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                Informations générales
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="info-grid">
+                <div class="info-item">
+                  <label>Nom</label>
+                  <div>{{ tax?.name }}</div>
+                </div>
+
+                <div class="info-item">
+                  <label>Type</label>
+                  <div>
+                    <span class="badge" [ngClass]="{
+                      'bg-primary': tax?.type === 'percentage',
+                      'bg-info': tax?.type === 'fixed'
+                    }">
+                      {{ getTaxTypeLabel(tax?.type!) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <label>Juridiction</label>
+                  <div>
+                    <span class="badge bg-secondary">
+                      {{ getJurisdictionLabel(tax?.jurisdiction!) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <label>Applicable sur</label>
+                  <div>{{ getApplicableOnLabel(tax?.applicable_on!) }}</div>
+                </div>
+
+                <div class="info-item">
+                  <label>Taux actuel</label>
+                  <div class="text-primary fw-bold">{{ formatRate(tax!) }}</div>
+                </div>
+
+                <div class="info-item">
+                  <label>Taux actif depuis</label>
+                  <div>{{ activeRateAge }}</div>
+                </div>
+
+                <div class="info-item">
+                  <label>Exemptible</label>
+                  <div>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': tax?.is_exemptible,
+                      'bg-secondary': !tax?.is_exemptible
+                    }">
+                      {{ tax?.is_exemptible ? 'Oui' : 'Non' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <label>Statut</label>
+                  <div>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': tax?.is_active,
+                      'bg-secondary': !tax?.is_active
+                    }">
+                      {{ tax?.is_active ? 'Active' : 'Inactive' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <label>Date de début</label>
+                  <div>{{ formatDate(tax?.effective_from) }}</div>
+                </div>
+
+                <div class="info-item">
+                  <label>Date de fin</label>
+                  <div>{{ formatDate(tax?.effective_to) || 'Illimité' }}</div>
+                </div>
+
+                <div class="info-item">
+                  <label>Date de création</label>
+                  <div>{{ formatDate(tax?.createdAt) }}</div>
+                </div>
+
+                <div class="info-item">
+                  <label>Dernière modification</label>
+                  <div>{{ formatDate(tax?.updatedAt) }}</div>
+                </div>
+              </div>
+
+              <div class="mt-3" *ngIf="tax?.description">
+                <label>Description</label>
+                <p class="text-muted mb-0">{{ tax.description }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Financial Overview Card -->
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-chart-line me-2"></i>
+                Aperçu financier
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="financial-metric">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted">Revenu mensuel estimé</span>
+                  <i class="fas fa-info-circle text-muted" title="Basé sur les ventes moyennes"></i>
+                </div>
+                <h3 class="text-primary mb-3">{{ formatCurrency(statistics.estimatedMonthlyRevenue) }}</h3>
+
+                <div class="progress mb-3" style="height: 8px;">
+                  <div
+                    class="progress-bar bg-primary"
+                    role="progressbar"
+                    [style.width.%]="100"
+                    aria-valuenow="100"
+                    aria-valuemin="0"
+                    aria-valuemax="100"></div>
+                </div>
+              </div>
+
+              <div class="financial-metric">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted">Taxe mensuelle collectée</span>
+                  <span class="badge bg-success">
+                    {{ ((statistics.estimatedMonthlyTaxAmount / statistics.estimatedMonthlyRevenue) * 100).toFixed(2) }}%
+                  </span>
+                </div>
+                <h3 class="text-success mb-3">{{ formatCurrency(statistics.estimatedMonthlyTaxAmount) }}</h3>
+
+                <div class="progress mb-3" style="height: 8px;">
+                  <div
+                    class="progress-bar bg-success"
+                    role="progressbar"
+                    [style.width.%]="(statistics.estimatedMonthlyTaxAmount / statistics.estimatedMonthlyRevenue) * 100"
+                    [attr.aria-valuenow]="(statistics.estimatedMonthlyTaxAmount / statistics.estimatedMonthlyRevenue) * 100"
+                    aria-valuemin="0"
+                    aria-valuemax="100"></div>
+                </div>
+              </div>
+
+              <div class="financial-metric">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted">Taxe annuelle estimée</span>
+                  <i class="fas fa-calendar-alt text-muted"></i>
+                </div>
+                <h3 class="text-info mb-0">{{ formatCurrency(estimatedAnnualTax) }}</h3>
+              </div>
+
+              <hr class="my-3">
+
+              <div class="row text-center">
+                <div class="col-6">
+                  <small class="text-muted d-block">Prix moyen produit</small>
+                  <strong>{{ formatCurrency(statistics.averageProductPrice) }}</strong>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block">Efficacité taxe</small>
+                  <strong>{{ taxEfficiency.toFixed(1) }}%</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions Card -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-bolt me-2"></i>
+                Actions rapides
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="d-grid gap-2">
+                <button
+                  *ngIf="permissions.manageTaxRates && tax?.is_custom"
+                  class="btn btn-outline-primary"
+                  (click)="openAddRateModal()">
+                  <i class="fas fa-plus me-2"></i>
+                  Ajouter un nouveau taux
+                </button>
+
+                <button
+                  *ngIf="permissions.editTax && tax?.is_custom"
+                  class="btn btn-outline-info"
+                  (click)="openEditModal()">
+                  <i class="fas fa-edit me-2"></i>
+                  Modifier la taxe
+                </button>
+
+                <button
+                  class="btn btn-outline-success"
+                  (click)="openImpactAnalysisModal()">
+                  <i class="fas fa-chart-line me-2"></i>
+                  Analyser l'impact
+                </button>
+
+                <button
+                  class="btn btn-outline-secondary"
+                  (click)="exportStatistics()">
+                  <i class="fas fa-download me-2"></i>
+                  Télécharger le rapport
+                </button>
+              </div>
+
+              <div class="alert alert-info mt-3 mb-0" *ngIf="!tax?.is_custom">
+                <i class="fas fa-lock me-2"></i>
+                <small>Cette taxe système ne peut pas être modifiée.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products Tab -->
+    <div *ngIf="activeTab === 'products'" class="tab-pane fade show active">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="fas fa-box me-2"></i>
+              Produits affectés
+              <span class="badge bg-primary ms-2">{{ filteredProducts.length }}</span>
+            </h5>
+
+            <div class="d-flex gap-2">
+              <div class="input-group" style="width: 300px;">
+                <span class="input-group-text">
+                  <i class="fas fa-search"></i>
+                </span>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Rechercher un produit..."
+                  [(ngModel)]="productSearchTerm"
+                  (ngModelChange)="onProductFilterChange()">
+              </div>
+
+              <select
+                class="form-select"
+                style="width: 150px;"
+                [(ngModel)]="productStatusFilter"
+                (ngModelChange)="onProductFilterChange()">
+                <option value="all">Tous</option>
+                <option value="active">Actifs</option>
+                <option value="inactive">Inactifs</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" *ngIf="filteredProducts.length > 0">
+              <thead class="table-light">
+              <tr>
+                <th>Produit</th>
+                <th>SKU</th>
+                <th>Prix HT</th>
+                <th>Taxe</th>
+                <th>Prix TTC</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let product of paginatedProducts">
+                <td>
+                  <div class="d-flex align-items-center">
+                    <img
+                      [src]="product.getMainImageUrl() || 'assets/images/placeholder.png'"
+                      alt="{{ product.name }}"
+                      class="product-thumb me-2">
+                    <div>
+                      <div class="fw-bold">{{ product.name }}</div>
+                      <small class="text-muted">{{ product.marque }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <code>{{ product.sku }}</code>
+                </td>
+                <td>
+                  <strong>{{ formatCurrency(product.price) }}</strong>
+                </td>
+                <td>
+                    <span class="text-primary">
+                      {{ tax?.type === 'percentage'
+                      ? formatCurrency((product.price * currentRate) / 100)
+                      : formatCurrency(currentRate) }}
+                    </span>
+                </td>
+                <td>
+                  <strong class="text-success">
+                    {{ tax?.type === 'percentage'
+                    ? formatCurrency(product.price + (product.price * currentRate) / 100)
+                    : formatCurrency(product.price + currentRate) }}
+                  </strong>
+                </td>
+                <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': product.status === 'active',
+                      'bg-secondary': product.status !== 'active'
+                    }">
+                      {{ product.status }}
+                    </span>
+                </td>
+                <td>
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    title="Voir le produit">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+
+            <div *ngIf="filteredProducts.length === 0" class="text-center py-5">
+              <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+              <h5>Aucun produit trouvé</h5>
+              <p class="text-muted">
+                {{ productSearchTerm
+                ? 'Aucun produit ne correspond à votre recherche'
+                : 'Cette taxe n\'est appliquée à aucun produit' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer" *ngIf="totalProductPages > 1">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">
+              Affichage de {{ (productsPage - 1) * productsPerPage + 1 }} à
+              {{ Math.min(productsPage * productsPerPage, filteredProducts.length) }}
+              sur {{ filteredProducts.length }} produits
+            </div>
+            <nav>
+              <ul class="pagination justify-content-center mb-0">
+                <li class="page-item" [class.disabled]="productsPage === 1">
+                  <a class="page-link" (click)="productsPage = productsPage - 1; applyProductFilters()">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                </li>
+
+                <li
+                  *ngFor="let page of [].constructor(totalProductPages); let i = index"
+                  class="page-item"
+                  [class.active]="productsPage === i + 1">
+                  <a class="page-link" (click)="productsPage = i + 1; applyProductFilters()">
+                    {{ i + 1 }}
+                  </a>
+                </li>
+
+                <li class="page-item" [class.disabled]="productsPage === totalProductPages">
+                  <a class="page-link" (click)="productsPage = productsPage + 1; applyProductFilters()">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Categories Tab -->
+    <div *ngIf="activeTab === 'categories'" class="tab-pane fade show active">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="fas fa-tags me-2"></i>
+              Catégories affectées
+              <span class="badge bg-primary ms-2">{{ filteredCategories.length }}</span>
+            </h5>
+
+            <div class="input-group" style="width: 300px;">
+              <span class="input-group-text">
+                <i class="fas fa-search"></i>
+              </span>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Rechercher une catégorie..."
+                [(ngModel)]="categorySearchTerm"
+                (ngModelChange)="onCategoryFilterChange()">
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" *ngIf="filteredCategories.length > 0">
+              <thead class="table-light">
+              <tr>
+                <th>Catégorie</th>
+                <th>Niveau</th>
+                <th>Nombre de produits</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let category of paginatedCategories">
+                <td>
+                  <div class="d-flex align-items-center">
+                    <img
+                      *ngIf="category.imageUrl"
+                      [src]="category.imageUrl.url"
+                      alt="{{ category.name }}"
+                      class="category-thumb me-2">
+                    <div>
+                      <div class="fw-bold">{{ category.name }}</div>
+                      <small class="text-muted" *ngIf="category.description">
+                        {{ category.description }}
+                      </small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge bg-info">Niveau {{ category.level }}</span>
+                </td>
+                <td>
+                  <strong>{{ category.productCount }}</strong> produit(s)
+                </td>
+                <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': category.status === 'active',
+                      'bg-secondary': category.status !== 'active'
+                    }">
+                      {{ category.status }}
+                    </span>
+                </td>
+                <td>
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    title="Voir la catégorie">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+
+            <div *ngIf="filteredCategories.length === 0" class="text-center py-5">
+              <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+              <h5>Aucune catégorie trouvée</h5>
+              <p class="text-muted">
+                {{ categorySearchTerm
+                ? 'Aucune catégorie ne correspond à votre recherche'
+                : 'Cette taxe n\'est appliquée à aucune catégorie' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer" *ngIf="totalCategoryPages > 1">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">
+              Affichage de {{ (categoriesPage - 1) * categoriesPerPage + 1 }} à
+              {{ Math.min(categoriesPage * categoriesPerPage, filteredCategories.length) }}
+              sur {{ filteredCategories.length }} catégories
+            </div>
+            <nav>
+              <ul class="pagination justify-content-center mb-0">
+                <li class="page-item" [class.disabled]="categoriesPage === 1">
+                  <a class="page-link" (click)="categoriesPage = categoriesPage - 1; applyCategoryFilters()">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                </li>
+
+                <li
+                  *ngFor="let page of [].constructor(totalCategoryPages); let i = index"
+                  class="page-item"
+                  [class.active]="categoriesPage === i + 1">
+                  <a class="page-link" (click)="categoriesPage = i + 1; applyCategoryFilters()">
+                    {{ i + 1 }}
+                  </a>
+                </li>
+
+                <li class="page-item" [class.disabled]="categoriesPage === totalCategoryPages">
+                  <a class="page-link" (click)="categoriesPage = categoriesPage + 1; applyCategoryFilters()">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Tab -->
+    <div *ngIf="activeTab === 'statistics'" class="tab-pane fade show active">
+      <div class="row g-4">
+        <!-- Products Statistics -->
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-chart-pie me-2"></i>
+                Statistiques des produits
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-box text-primary me-2"></i>
+                  Total des produits
+                </div>
+                <div class="stat-value">{{ statistics.totalProducts }}</div>
+              </div>
+
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-check-circle text-success me-2"></i>
+                  Produits actifs
+                </div>
+                <div class="stat-value text-success">{{ statistics.activeProducts }}</div>
+              </div>
+
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-times-circle text-danger me-2"></i>
+                  Produits inactifs
+                </div>
+                <div class="stat-value text-danger">{{ statistics.inactiveProducts }}</div>
+              </div>
+
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-layer-group text-info me-2"></i>
+                  Produits avec plusieurs taxes
+                </div>
+                <div class="stat-value text-info">{{ statistics.productsWithMultipleTaxes }}</div>
+              </div>
+
+              <hr>
+
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-dollar-sign text-warning me-2"></i>
+                  Prix moyen des produits
+                </div>
+                <div class="stat-value text-warning">{{ formatCurrency(statistics.averageProductPrice) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Financial Statistics -->
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-coins me-2"></i>
+                Statistiques financières
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-chart-line text-primary me-2"></i>
+                  Revenu mensuel estimé
+                </div>
+                <div class="stat-value text-primary">{{ formatCurrency(statistics.estimatedMonthlyRevenue) }}</div>
+              </div>
+
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-receipt text-success me-2"></i>
+                  Taxe mensuelle estimée
+                </div>
+                <div class="stat-value text-success">{{ formatCurrency(statistics.estimatedMonthlyTaxAmount) }}</div>
+              </div>
+
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-calendar-alt text-info me-2"></i>
+                  Taxe annuelle estimée
+                </div>
+                <div class="stat-value text-info">{{ formatCurrency(estimatedAnnualTax) }}</div>
+              </div>
+
+              <hr>
+
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-percentage text-warning me-2"></i>
+                  Taux de taxation effectif
+                </div>
+                <div class="stat-value text-warning">
+                  {{ ((statistics.estimatedMonthlyTaxAmount / statistics.estimatedMonthlyRevenue) * 100).toFixed(2) }}%
+                </div>
+              </div>
+
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-chart-bar text-purple me-2"></i>
+                  Efficacité de la taxe
+                </div>
+                <div class="stat-value text-purple">{{ taxEfficiency.toFixed(1) }}%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Revenue Breakdown Chart Placeholder -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-chart-area me-2"></i>
+                Répartition des revenus
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="revenue-chart-container">
+                <div class="chart-bar">
+                  <div class="chart-segment bg-primary"
+                       [style.width.%]="((statistics.estimatedMonthlyRevenue - statistics.estimatedMonthlyTaxAmount) / statistics.estimatedMonthlyRevenue) * 100"
+                       title="Revenu HT">
+                  </div>
+                  <div class="chart-segment bg-success"
+                       [style.width.%]="(statistics.estimatedMonthlyTaxAmount / statistics.estimatedMonthlyRevenue) * 100"
+                       title="Taxe collectée">
+                  </div>
+                </div>
+
+                <div class="chart-legend mt-3">
+                  <div class="legend-item">
+                    <span class="legend-color bg-primary"></span>
+                    <span>Revenu HT: {{ formatCurrency(statistics.estimatedMonthlyRevenue - statistics.estimatedMonthlyTaxAmount) }}</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-color bg-success"></span>
+                    <span>Taxe collectée: {{ formatCurrency(statistics.estimatedMonthlyTaxAmount) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories Statistics -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-tags me-2"></i>
+                Statistiques des catégories
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="row text-center">
+                <div class="col-md-4">
+                  <div class="stat-box">
+                    <i class="fas fa-tags fa-2x text-primary mb-2"></i>
+                    <h3>{{ statistics.totalCategories }}</h3>
+                    <small class="text-muted">Catégories affectées</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="stat-box">
+                    <i class="fas fa-boxes fa-2x text-success mb-2"></i>
+                    <h3>{{ statistics.totalProducts }}</h3>
+                    <small class="text-muted">Produits concernés</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="stat-box">
+                    <i class="fas fa-percent fa-2x text-info mb-2"></i>
+                    <h3>{{ formatRate(tax!) }}</h3>
+                    <small class="text-muted">Taux appliqué</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Tab -->
+    <div *ngIf="activeTab === 'history'" class="tab-pane fade show active">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="fas fa-history me-2"></i>
+              Historique des taux
+              <span class="badge bg-primary ms-2">{{ tax?.rates?.length || 0 }}</span>
+            </h5>
+
+            <button
+              *ngIf="permissions.manageTaxRates && tax?.is_custom"
+              class="btn btn-primary btn-sm"
+              (click)="openAddRateModal()">
+              <i class="fas fa-plus me-2"></i>
+              Ajouter un taux
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body p-0">
+          <div class="timeline">
+            <div *ngFor="let rate of tax?.rates; let i = index"
+                 class="timeline-item"
+                 [class.active]="rate.is_active">
+              <div class="timeline-marker" [class.active]="rate.is_active">
+                <i class="fas" [ngClass]="rate.is_active ? 'fa-star' : 'fa-circle'"></i>
+              </div>
+
+              <div class="timeline-content">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <h6 class="mb-1">
+                      <strong class="text-primary">
+                        {{ rate.value }}{{ tax?.type === 'percentage' ? '%' : ' XOF' }}
+                      </strong>
+                      <span *ngIf="rate.is_active" class="badge bg-success ms-2">
+                        <i class="fas fa-star"></i> Taux actuel
+                      </span>
+                    </h6>
+                    <div class="text-muted small">
+                      <i class="fas fa-calendar-plus me-1"></i>
+                      Du {{ formatDate(rate.effective_from) }}
+                      <span *ngIf="rate.effective_to">
+                        <i class="fas fa-arrow-right mx-2"></i>
+                        <i class="fas fa-calendar-times me-1"></i>
+                        au {{ formatDate(rate.effective_to) }}
+                      </span>
+                      <span *ngIf="!rate.effective_to" class="text-info">
+                        <i class="fas fa-infinity ms-2"></i> Illimité
+                      </span>
+                    </div>
+                  </div>
+
+                  <span class="badge" [ngClass]="{
+                    'bg-success': rate.is_active,
+                    'bg-secondary': !rate.is_active
+                  }">
+                    {{ rate.is_active ? 'Actif' : 'Inactif' }}
+                  </span>
+                </div>
+
+                <div class="rate-details">
+                  <small class="text-muted">
+                    <i class="fas fa-clock me-1"></i>
+                    Durée: {{ rate.is_active ? activeRateAge : 'Terminé' }}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!tax?.rates || tax?.rates.length === 0" class="text-center py-5">
+            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+            <h5>Aucun historique</h5>
+            <p class="text-muted">Cette taxe n'a pas encore d'historique de taux.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rate Changes Summary -->
+      <div class="card mt-4" *ngIf="tax?.rates && tax.rates.length > 0">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-chart-line me-2"></i>
+            Résumé des changements
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-md-4">
+              <div class="summary-box">
+                <h3 class="text-primary">{{ totalRateChanges }}</h3>
+                <small class="text-muted">Total des changements</small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="summary-box">
+                <h3 class="text-success">{{ formatRate(tax!) }}</h3>
+                <small class="text-muted">Taux actuel</small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="summary-box">
+                <h3 class="text-info">{{ activeRateAge }}</h3>
+                <small class="text-muted">Depuis</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div *ngIf="activeTab === 'settings'" class="tab-pane fade show active">
+      <div class="row g-4">
+        <!-- General Settings -->
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-cog me-2"></i>
+                Paramètres généraux
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="setting-item">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>Statut de la taxe</strong>
+                    <small class="d-block text-muted">Activer ou désactiver cette taxe</small>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      [checked]="tax?.is_active"
+                      [disabled]="!permissions.editTax || !tax?.is_custom"
+                      (change)="toggleTaxStatus()">
+                  </div>
+                </div>
+              </div>
+
+              <hr>
+
+              <div class="setting-item">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>Type de taxe</strong>
+                    <small class="d-block text-muted">{{ getTaxTypeLabel(tax?.type!) }}</small>
+                  </div>
+                  <span class="badge" [ngClass]="{
+                    'bg-primary': tax?.type === 'percentage',
+                    'bg-info': tax?.type === 'fixed'
+                  }">
+                    {{ tax?.type }}
+                  </span>
+                </div>
+              </div>
+
+              <hr>
+
+              <div class="setting-item">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>Exemptible</strong>
+                    <small class="d-block text-muted">
+                      {{ tax?.is_exemptible ? 'Peut être exemptée pour certains clients' : 'Non exemptible' }}
+                    </small>
+                  </div>
+                  <span class="badge" [ngClass]="{
+                    'bg-success': tax?.is_exemptible,
+                    'bg-secondary': !tax?.is_exemptible
+                  }">
+                    {{ tax?.is_exemptible ? 'Oui' : 'Non' }}
+                  </span>
+                </div>
+              </div>
+
+              <hr>
+
+              <div class="setting-item">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>Source</strong>
+                    <small class="d-block text-muted">
+                      {{ tax?.is_custom ? 'Taxe locale créée par la pharmacie' : 'Taxe système' }}
+                    </small>
+                  </div>
+                  <span class="badge" [ngClass]="{
+                    'bg-primary': tax?.is_custom,
+                    'bg-warning': !tax?.is_custom
+                  }">
+                    {{ tax?.is_custom ? 'Locale' : 'Système' }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="alert alert-warning mt-3" *ngIf="!tax?.is_custom">
+                <i class="fas fa-lock me-2"></i>
+                <small>
+                  <strong>Note:</strong> Les taxes système ne peuvent pas être modifiées directement.
+                  Contactez l'administrateur système pour toute modification.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-tools me-2"></i>
+                Actions
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="d-grid gap-3">
+                <button
+                  *ngIf="permissions.editTax && tax?.is_custom"
+                  class="btn btn-outline-primary"
+                  (click)="openEditModal()">
+                  <i class="fas fa-edit me-2"></i>
+                  Modifier les informations
+                </button>
+
+                <button
+                  *ngIf="permissions.manageTaxRates && tax?.is_custom"
+                  class="btn btn-outline-info"
+                  (click)="openAddRateModal()">
+                  <i class="fas fa-plus me-2"></i>
+                  Ajouter un nouveau taux
+                </button>
+
+                <button
+                  class="btn btn-outline-success"
+                  (click)="exportStatistics()">
+                  <i class="fas fa-download me-2"></i>
+                  Exporter les statistiques
+                </button>
+
+                <button
+                  class="btn btn-outline-secondary"
+                  (click)="printDetails()">
+                  <i class="fas fa-print me-2"></i>
+                  Imprimer les détails
+                </button>
+
+                <hr>
+
+                <button
+                  *ngIf="permissions.editTax && tax?.is_custom"
+                  class="btn"
+                  [ngClass]="tax?.is_active ? 'btn-outline-warning' : 'btn-outline-success'"
+                  (click)="toggleTaxStatus()">
+                  <i class="fas" [ngClass]="tax?.is_active ? 'fa-toggle-off' : 'fa-toggle-on'" class="me-2"></i>
+                  {{ tax?.is_active ? 'Désactiver' : 'Activer' }} la taxe
+                </button>
+
+                <button
+                  *ngIf="permissions.deleteTax && tax?.is_custom"
+                  class="btn btn-outline-danger"
+                  (click)="deleteTax()">
+                  <i class="fas fa-trash me-2"></i>
+                  Supprimer cette taxe
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="card border-danger mt-4" *ngIf="permissions.deleteTax && tax?.is_custom">
+            <div class="card-header bg-danger text-white">
+              <h6 class="mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Zone dangereuse
+              </h6>
+            </div>
+            <div class="card-body">
+              <p class="text-muted mb-3">
+                La suppression de cette taxe est irréversible. Assurez-vous qu'elle n'est plus utilisée
+                par aucun produit ou catégorie avant de procéder.
+              </p>
+              <button
+                class="btn btn-danger w-100"
+                (click)="deleteTax()">
+                <i class="fas fa-trash me-2"></i>
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-3">Chargement des détails...</p>
+  </div>
+</div>
+
+<!-- Add Rate Modal -->
+<ng-template #rateModal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-plus me-2"></i>
+      Ajouter un nouveau taux
+    </h4>
+    <button type="button" class="btn-close" (click)="closeModal()" [disabled]="isSubmitting"></button>
+  </div>
+
+  <div class="modal-body">
+    <form [formGroup]="rateForm">
+      <div class="mb-3">
+        <label for="rateValue" class="form-label">
+          Valeur du taux *
+        </label>
+        <div class="input-group">
+          <input
+            type="number"
+            id="rateValue"
+            class="form-control"
+            [class.is-invalid]="rateForm.get('value')?.invalid && rateForm.get('value')?.touched"
+            formControlName="value"
+            step="0.01"
+            min="0"
+            [max]="tax?.type === 'percentage' ? 100 : null">
+          <span class="input-group-text">
+            {{ tax?.type === 'percentage' ? '%' : 'XOF' }}
+          </span>
+        </div>
+        <div *ngIf="rateForm.get('value')?.invalid && rateForm.get('value')?.touched" class="invalid-feedback d-block">
+          <span *ngIf="rateForm.get('value')?.errors?.['required']">La valeur est requise</span>
+          <span *ngIf="rateForm.get('value')?.errors?.['min']">La valeur doit être positive</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="rateFrom" class="form-label">
+            Date de début *
+          </label>
+          <input
+            type="date"
+            id="rateFrom"
+            class="form-control"
+            [class.is-invalid]="rateForm.get('effective_from')?.invalid && rateForm.get('effective_from')?.touched"
+            formControlName="effective_from">
+          <div *ngIf="rateForm.get('effective_from')?.invalid && rateForm.get('effective_from')?.touched" class="invalid-feedback">
+            La date de début est requise
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label for="rateTo" class="form-label">
+            Date de fin
+          </label>
+          <input
+            type="date"
+            id="rateTo"
+            class="form-control"
+            [class.is-invalid]="rateForm.get('effective_to')?.errors?.['invalidRange']"
+            formControlName="effective_to">
+          <small class="text-muted">Laisser vide pour une durée illimitée</small>
+          <div *ngIf="rateForm.get('effective_to')?.errors?.['invalidRange']" class="invalid-feedback d-block">
+            La date de fin doit être postérieure à la date de début
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Note:</strong> L'ajout d'un nouveau taux désactivera automatiquement le taux actuel.
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer">
+    <button
+      type="button"
+      class="btn btn-secondary"
+      (click)="closeModal()"
+      [disabled]="isSubmitting">
+      <i class="fas fa-times me-2"></i>
+      Annuler
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="rateForm.invalid || isSubmitting"
+      (click)="addRate()">
+      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+      <i *ngIf="!isSubmitting" class="fas fa-plus me-2"></i>
+      Ajouter le taux
+    </button>
+  </div>
+</ng-template>
+
+<!-- Edit Tax Modal -->
+<ng-template #editTaxModal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-edit me-2"></i>
+      Modifier la taxe
+    </h4>
+    <button type="button" class="btn-close" (click)="closeModal()" [disabled]="isSubmitting"></button>
+  </div>
+
+  <div class="modal-body">
+    <form [formGroup]="taxEditForm">
+      <!-- Nom -->
+      <div class="mb-3">
+        <label for="editTaxName" class="form-label">
+          Nom de la taxe *
+        </label>
+        <input
+          type="text"
+          id="editTaxName"
+          class="form-control"
+          [class.is-invalid]="taxEditForm.get('name')?.invalid && taxEditForm.get('name')?.touched"
+          formControlName="name">
+        <div *ngIf="taxEditForm.get('name')?.invalid && taxEditForm.get('name')?.touched" class="invalid-feedback">
+          Le nom est requis (3-100 caractères)
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="mb-3">
+        <label for="editTaxDescription" class="form-label">
+          Description
+        </label>
+        <textarea
+          id="editTaxDescription"
+          class="form-control"
+          rows="3"
+          formControlName="description"
+          maxlength="500"></textarea>
+        <small class="text-muted">{{ taxEditForm.get('description')?.value?.length || 0 }}/500 caractères</small>
+      </div>
+
+      <div class="row">
+        <!-- Type -->
+        <div class="col-md-6 mb-3">
+          <label for="editTaxType" class="form-label">
+            Type de taxe *
+          </label>
+          <select
+            id="editTaxType"
+            class="form-select"
+            formControlName="type">
+            <option *ngFor="let type of TAX_TYPES" [value]="type.value">
+              {{ type.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Taux -->
+        <div class="col-md-6 mb-3">
+          <label for="editInitialRate" class="form-label">
+            Taux initial *
+          </label>
+          <div class="input-group">
+            <input
+              type="number"
+              id="editInitialRate"
+              class="form-control"
+              [class.is-invalid]="taxEditForm.get('initial_rate')?.invalid && taxEditForm.get('initial_rate')?.touched"
+              formControlName="initial_rate"
+              step="0.01"
+              min="0">
+            <span class="input-group-text">
+              {{ taxEditForm.get('type')?.value === 'percentage' ? '%' : 'XOF' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Juridiction -->
+        <div class="col-md-6 mb-3">
+          <label for="editJurisdiction" class="form-label">
+            Juridiction *
+          </label>
+          <select
+            id="editJurisdiction"
+            class="form-select"
+            formControlName="jurisdiction">
+            <option *ngFor="let jurisdiction of JURISDICTIONS" [value]="jurisdiction.value">
+              {{ jurisdiction.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Applicable sur -->
+        <div class="col-md-6 mb-3">
+          <label for="editApplicableOn" class="form-label">
+            Applicable sur *
+          </label>
+          <select
+            id="editApplicableOn"
+            class="form-select"
+            formControlName="applicable_on">
+            <option *ngFor="let applicable of APPLICABLE_ON" [value]="applicable.value">
+              {{ applicable.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Date de début -->
+        <div class="col-md-6 mb-3">
+          <label for="editEffectiveFrom" class="form-label">
+            Date de début *
+          </label>
+          <input
+            type="date"
+            id="editEffectiveFrom"
+            class="form-control"
+            formControlName="effective_from">
+        </div>
+
+        <!-- Date de fin -->
+        <div class="col-md-6 mb-3">
+          <label for="editEffectiveTo" class="form-label">
+            Date de fin
+          </label>
+          <input
+            type="date"
+            id="editEffectiveTo"
+            class="form-control"
+            formControlName="effective_to">
+        </div>
+      </div>
+
+      <!-- Checkboxes -->
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="editIsActive"
+              formControlName="is_active">
+            <label class="form-check-label" for="editIsActive">
+              Taxe active
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="editIsExemptible"
+              formControlName="is_exemptible">
+            <label class="form-check-label" for="editIsExemptible">
+              Exemptible
+            </label>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer">
+    <button
+      type="button"
+      class="btn btn-secondary"
+      (click)="closeModal()"
+      [disabled]="isSubmitting">
+      <i class="fas fa-times me-2"></i>
+      Annuler
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="taxEditForm.invalid || isSubmitting"
+      (click)="saveTaxEdit()">
+      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+      <i *ngIf="!isSubmitting" class="fas fa-save me-2"></i>
+      Enregistrer les modifications
+    </button>
+  </div>
+</ng-template>
+
+<!-- Impact Analysis Modal -->
+<ng-template #impactAnalysisModal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-chart-line me-2"></i>
+      Analyse d'impact de la taxe
+    </h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="alert alert-info mb-4">
+      <i class="fas fa-info-circle me-2"></i>
+      <strong>Analyse basée sur le taux actuel:</strong> {{ formatRate(tax!) }}
+    </div>
+
+    <!-- Impact Table -->
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead class="table-light">
+        <tr>
+          <th>Prix HT</th>
+          <th>Montant de la taxe</th>
+          <th>Prix TTC</th>
+          <th>Taux effectif</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let analysis of impactAnalysis">
+          <td>
+            <strong>{{ formatCurrency(analysis.beforeTax) }}</strong>
+          </td>
+          <td class="text-primary">
+            <strong>{{ formatCurrency(analysis.taxAmount) }}</strong>
+          </td>
+          <td class="text-success">
+            <strong>{{ formatCurrency(analysis.afterTax) }}</strong>
+          </td>
+          <td>
+              <span class="badge bg-info">
+                {{ analysis.effectiveRate.toFixed(2) }}%
+              </span>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Visual Impact -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h6 class="mb-0">
+          <i class="fas fa-chart-bar me-2"></i>
+          Impact visuel
+        </h6>
+      </div>
+      <div class="card-body">
+        <div *ngFor="let analysis of impactAnalysis" class="mb-3">
+          <div class="d-flex justify-content-between mb-1">
+            <small class="text-muted">{{ formatCurrency(analysis.beforeTax) }}</small>
+            <small class="text-success fw-bold">{{ formatCurrency(analysis.afterTax) }}</small>
+          </div>
+          <div class="progress" style="height: 20px;">
+            <div
+              class="progress-bar bg-primary"
+              role="progressbar"
+              [style.width.%]="(analysis.beforeTax / analysis.afterTax) * 100"
+              [title]="'Prix HT: ' + formatCurrency(analysis.beforeTax)">
+              HT
+            </div>
+            <div
+              class="progress-bar bg-success"
+              role="progressbar"
+              [style.width.%]="(analysis.taxAmount / analysis.afterTax) * 100"
+              [title]="'Taxe: ' + formatCurrency(analysis.taxAmount)">
+              Taxe
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h6 class="mb-0">
+          <i class="fas fa-calculator me-2"></i>
+          Résumé de l'impact
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-md-4">
+            <div class="impact-stat">
+              <i class="fas fa-coins fa-2x text-primary mb-2"></i>
+              <h5>{{ formatRate(tax!) }}</h5>
+              <small class="text-muted">Taux appliqué</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="impact-stat">
+              <i class="fas fa-arrow-up fa-2x text-success mb-2"></i>
+              <h5>
+                {{ tax?.type === 'percentage'
+                ? '+' + currentRate + '%'
+                : '+' + formatCurrency(currentRate) }}
+              </h5>
+              <small class="text-muted">Augmentation moyenne</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="impact-stat">
+              <i class="fas fa-boxes fa-2x text-info mb-2"></i>
+              <h5>{{ statistics.totalProducts }}</h5>
+              <small class="text-muted">Produits concernés</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Impact Notes -->
+    <div class="alert alert-warning mt-4">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <strong>Note:</strong> Ces calculs sont des estimations basées sur les prix actuels des produits.
+      L'impact réel peut varier en fonction des promotions, remises et autres facteurs.
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button
+      type="button"
+      class="btn btn-secondary"
+      (click)="closeModal()">
+      <i class="fas fa-times me-2"></i>
+      Fermer
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="exportStatistics(); closeModal()">
+      <i class="fas fa-download me-2"></i>
+      Exporter l'analyse
+    </button>
+  </div>
+</ng-template>

@@ -1,18 +1,19 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import {Component, OnInit, ViewChild, TemplateRef, inject, DestroyRef} from '@angular/core';
 import { CommonModule, Location } from "@angular/common";
-import { Router, RouterModule, ActivatedRoute } from "@angular/router";
-import { Subject, takeUntil } from 'rxjs';
+import {Router, RouterModule} from "@angular/router";
 import { HttpHeaders } from '@angular/common/http';
 import Swal from 'sweetalert2';
-import { FormBuilder, FormGroup, FormsModule, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, Validators, ReactiveFormsModule } from '@angular/forms';
 import { LoadingService } from 'src/app/controllers/services/loading.service';
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { SharedModule } from 'src/app/views/theme/shared/shared.module';
 import {ApplicableOn, Jurisdiction, TaxeModel, TaxType} from 'src/app/models/Taxe.class';
-import {UserDetails} from "../../../../../models/UserDatails";
-import {environment} from "../../../../../../environments/environment";
-import {AuthService} from "../../../../../controllers/services/auth.service";
-import {ApiService} from "../../../../../controllers/services/api.service";
+import {UserDetails} from "../../../../../../models/UserDatails";
+import {environment} from "../../../../../../../environments/environment";
+import {AuthService} from "../../../../../../controllers/services/auth.service";
+import {ApiService} from "../../../../../../controllers/services/api.service";
+import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
+import {take} from "rxjs/operators";
 
 interface TaxFilter {
   search: string;
@@ -23,26 +24,23 @@ interface TaxFilter {
 }
 
 @Component({
-  selector: 'app-pharmacy-tax-management',
+  selector: 'app-pharmacy-taxes-management',
   standalone: true,
   imports: [CommonModule, SharedModule, RouterModule, FormsModule, ReactiveFormsModule],
   templateUrl: './taxes-management.component.html',
   styleUrls: ['./taxes-management.component.scss']
 })
-export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
-  // Data
+export class PharmacyTaxesManagementComponent implements OnInit {
+  private router = inject(Router);
   taxes: TaxeModel[] = [];
   filteredTaxes: TaxeModel[] = [];
   selectedTax: TaxeModel | null = null;
 
-  // Loading states
   isLoading = false;
   isSubmitting = false;
 
-  // Active tab
   activeTab: 'overview' | 'history' = 'overview';
 
-  // Forms
   taxForm: FormGroup;
   rateForm: FormGroup;
 
@@ -93,81 +91,116 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
   ];
 
   // Modal references
-  @ViewChild('taxModal') taxModal: ElementRef | undefined;
-  @ViewChild('rateHistoryModal') rateHistoryModal: ElementRef | undefined;
-  @ViewChild('deleteModal') deleteModal: ElementRef | undefined;
+  @ViewChild('taxModal') taxModal!: TemplateRef<any>;
+  @ViewChild('rateHistoryModal') rateHistoryModal!: TemplateRef<any>;
 
-  userDetail: UserDetails;
+  userDetail!: UserDetails;
   baseUrl = environment.baseUrl;
 
-  private destroy$ = new Subject<void>();
+  private destroy$ = inject(DestroyRef);
   private modalService: NgbModal;
 
   constructor(
     modalService: NgbModal,
     private location: Location,
     private auth: AuthService,
-    private router: Router,
-    private route: ActivatedRoute,
     private apiService: ApiService,
     private loadingService: LoadingService,
     private fb: FormBuilder
   ) {
     this.modalService = modalService;
+    this.taxForm = this.fb.group({});
+    this.rateForm = this.fb.group({});
     this.initializeForms();
   }
 
   ngOnInit(): void {
     this.auth.userDetailsLoaded$
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntilDestroyed(this.destroy$))
       .subscribe(async loaded => {
         this.userDetail = this.auth.getUserDetails();
         this.setPermissions();
 
         if (loaded && this.userDetail) {
-          this.loadTaxes();
+          await this.loadTaxes();
         }
       });
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
   private setPermissions(): void {
-    this.permissions.viewTaxes = this.userDetail.hasPermission('taxes.view');
-    this.permissions.createTax = this.userDetail.hasPermission('taxes.create');
-    this.permissions.editTax = this.userDetail.hasPermission('taxes.edit');
-    this.permissions.deleteTax = this.userDetail.hasPermission('taxes.delete');
-    this.permissions.manageTaxRates = this.userDetail.hasPermission('taxes.manage_rates');
+    this.permissions.viewTaxes = this.userDetail.hasPermission('parametres.view');
+    this.permissions.createTax = this.userDetail.hasPermission('parametres.import');
+    this.permissions.editTax = this.userDetail.hasPermission('parametres.update');
+    this.permissions.deleteTax = this.userDetail.hasPermission('parametres.update');
+    this.permissions.manageTaxRates = this.userDetail.hasPermission('parametres.update');
   }
 
   private initializeForms(): void {
     this.taxForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      description: [''],
+      name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+      description: ['', [Validators.maxLength(500)]],
       type: ['percentage', [Validators.required]],
       jurisdiction: ['national', [Validators.required]],
       applicable_on: ['all', [Validators.required]],
       is_active: [true],
       is_exemptible: [false],
-      effective_from: [new Date(), [Validators.required]],
+      effective_from: [this.formatDateForInput(new Date()), [Validators.required]],
       effective_to: [null],
       initial_rate: ['', [Validators.required, Validators.min(0)]]
     });
 
+    // Ajouter validation conditionnelle pour le taux
+    this.taxForm.get('type')?.valueChanges.subscribe(type => {
+      const rateControl = this.taxForm.get('initial_rate');
+      if (type === 'percentage') {
+        rateControl?.setValidators([Validators.required, Validators.min(0), Validators.max(100)]);
+      } else {
+        rateControl?.setValidators([Validators.required, Validators.min(0)]);
+      }
+      rateControl?.updateValueAndValidity();
+    });
+
     this.rateForm = this.fb.group({
       value: ['', [Validators.required, Validators.min(0)]],
-      effective_from: [new Date(), [Validators.required]],
+      effective_from: [this.formatDateForInput(new Date()), [Validators.required]],
       effective_to: [null]
+    });
+
+    // Validation des dates
+    this.taxForm.get('effective_to')?.valueChanges.subscribe(() => {
+      this.validateDateRange(this.taxForm);
+    });
+
+    this.rateForm.get('effective_to')?.valueChanges.subscribe(() => {
+      this.validateDateRange(this.rateForm);
     });
   }
 
-  async loadTaxes(): Promise<void> {
-    if (!this.permissions.viewTaxes) return;
+  private validateDateRange(form: FormGroup): void {
+    const from = form.get('effective_from')?.value;
+    const to = form.get('effective_to')?.value;
 
+    if (from && to && new Date(to) <= new Date(from)) {
+      form.get('effective_to')?.setErrors({ invalidRange: true });
+    }
+  }
+
+  private formatDateForInput(date: Date): string {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  async loadTaxes(): Promise<void> {
+    if (!this.permissions.viewTaxes){
+      return;
+    }
+
+    this.isLoading = true;
     this.loadingService.setLoading(true);
+
     try {
       const token = await this.auth.getRealToken();
       const uid = await this.auth.getUid();
@@ -184,22 +217,27 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
       });
 
       this.apiService.post('pharmacy-management/taxes/list', { uid }, headers)
-        .pipe(takeUntil(this.destroy$))
+        .pipe(take(1))
         .subscribe({
           next: (response: any) => {
             if (response && !response.error && response.data) {
               this.taxes = response.data.map((t: any) => new TaxeModel(t));
               this.applyFilters();
+            } else {
+              this.handleError(response?.errorMessage || 'Erreur lors du chargement des taxes');
             }
+            this.isLoading = false;
             this.loadingService.setLoading(false);
           },
-          error: () => {
+          error: (error) => {
             this.handleError('Erreur lors du chargement des taxes');
+            this.isLoading = false;
             this.loadingService.setLoading(false);
           }
         });
     } catch (error) {
       this.handleError('Une erreur s\'est produite');
+      this.isLoading = false;
       this.loadingService.setLoading(false);
     }
   }
@@ -266,6 +304,17 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
     this.applyFilters();
   }
 
+  resetFilters(): void {
+    this.filters = {
+      search: '',
+      type: 'all',
+      jurisdiction: 'all',
+      isActive: 'all',
+      isCustom: 'all'
+    };
+    this.onFilterChange();
+  }
+
   onSort(column: string): void {
     if (this.sortColumn === column) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
@@ -277,12 +326,18 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
   }
 
   onPageChange(page: number): void {
+    if (page < 1 || page > Math.ceil(this.totalItems / this.itemsPerPage)) {
+      return;
+    }
     this.currentPage = page;
     this.applyFilters();
   }
 
   openCreateModal(): void {
-    if (!this.permissions.createTax) return;
+    if (!this.permissions.createTax) {
+      this.handleError('Vous n\'avez pas la permission de créer des taxes');
+      return;
+    }
 
     this.selectedTax = null;
     this.taxForm.reset({
@@ -291,7 +346,7 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
       applicable_on: 'all',
       is_active: true,
       is_exemptible: false,
-      effective_from: new Date()
+      effective_from: this.formatDateForInput(new Date())
     });
 
     this.modalService.open(this.taxModal, {
@@ -302,7 +357,15 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
   }
 
   openEditModal(tax: TaxeModel): void {
-    if (!this.permissions.editTax || !tax.is_custom) return;
+    if (!this.permissions.editTax) {
+      this.handleError('Vous n\'avez pas la permission de modifier des taxes');
+      return;
+    }
+
+    if (!tax.is_custom) {
+      this.handleError('Les taxes système ne peuvent pas être modifiées');
+      return;
+    }
 
     this.selectedTax = tax;
     const currentRate = tax.getCurrentRateFees();
@@ -315,8 +378,8 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
       applicable_on: tax.applicable_on,
       is_active: tax.is_active,
       is_exemptible: tax.is_exemptible,
-      effective_from: tax.effective_from,
-      effective_to: tax.effective_to,
+      effective_from: this.formatDateForInput(new Date(tax.effective_from)),
+      effective_to: tax.effective_to ? this.formatDateForInput(new Date(tax.effective_to)) : null,
       initial_rate: currentRate
     });
 
@@ -328,7 +391,11 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
   }
 
   async saveTax(): Promise<void> {
-    if (!this.taxForm.valid) return;
+    if (!this.taxForm.valid) {
+      this.markFormGroupTouched(this.taxForm);
+      this.handleError('Veuillez remplir tous les champs obligatoires correctement');
+      return;
+    }
 
     this.isSubmitting = true;
     try {
@@ -352,7 +419,7 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
         : 'pharmacy-management/taxes/create';
 
       this.apiService.post(endpoint, formData, headers)
-        .pipe(takeUntil(this.destroy$))
+        .pipe(take(1))
         .subscribe({
           next: (response: any) => {
             if (response && !response.error) {
@@ -368,7 +435,7 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
             }
             this.isSubmitting = false;
           },
-          error: () => {
+          error: (error) => {
             this.handleError('Erreur lors de la communication avec le serveur');
             this.isSubmitting = false;
           }
@@ -380,9 +447,19 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
   }
 
   openRateHistoryModal(tax: TaxeModel): void {
+    if (!this.permissions.manageTaxRates) {
+      this.handleError('Vous n\'avez pas la permission de gérer les taux');
+      return;
+    }
+
+    if (!tax.is_custom) {
+      this.handleError('Les taux des taxes système ne peuvent pas être modifiés');
+      return;
+    }
+
     this.selectedTax = tax;
     this.rateForm.reset({
-      effective_from: new Date()
+      effective_from: this.formatDateForInput(new Date())
     });
 
     this.modalService.open(this.rateHistoryModal, {
@@ -393,7 +470,13 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
   }
 
   async addRate(): Promise<void> {
-    if (!this.rateForm.valid || !this.selectedTax) return;
+    if (!this.rateForm.valid) {
+      this.markFormGroupTouched(this.rateForm);
+      this.handleError('Veuillez remplir tous les champs obligatoires correctement');
+      return;
+    }
+
+    if (!this.selectedTax) return;
 
     this.isSubmitting = true;
     try {
@@ -413,19 +496,24 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
       };
 
       this.apiService.post('pharmacy-management/taxes/add-rate', rateData, headers)
-        .pipe(takeUntil(this.destroy$))
+        .pipe(take(1))
         .subscribe({
           next: (response: any) => {
             if (response && !response.error) {
               this.showSuccess('Taux ajouté avec succès');
-              this.rateForm.reset({ effective_from: new Date() });
+              this.rateForm.reset({ effective_from: this.formatDateForInput(new Date()) });
               this.loadTaxes();
+
+              // Mettre à jour la taxe sélectionnée
+              if (response.data) {
+                this.selectedTax = new TaxeModel(response.data);
+              }
             } else {
               this.handleError(response.errorMessage ?? 'Erreur lors de l\'ajout du taux');
             }
             this.isSubmitting = false;
           },
-          error: () => {
+          error: (error) => {
             this.handleError('Erreur lors de la communication avec le serveur');
             this.isSubmitting = false;
           }
@@ -437,7 +525,15 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
   }
 
   async toggleTaxStatus(tax: TaxeModel): Promise<void> {
-    if (!this.permissions.editTax || !tax.is_custom) return;
+    if (!this.permissions.editTax) {
+      this.handleError('Vous n\'avez pas la permission de modifier le statut des taxes');
+      return;
+    }
+
+    if (!tax.is_custom) {
+      this.handleError('Les taxes système ne peuvent pas être modifiées');
+      return;
+    }
 
     const confirmed = await this.showConfirmation(
       tax.is_active ? 'Désactiver la taxe' : 'Activer la taxe',
@@ -461,7 +557,7 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
         taxId: tax._id,
         uid
       }, headers)
-        .pipe(takeUntil(this.destroy$))
+        .pipe(take(1))
         .subscribe({
           next: (response: any) => {
             if (response && !response.error) {
@@ -471,7 +567,7 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
               this.handleError(response.errorMessage ?? 'Erreur lors de la mise à jour');
             }
           },
-          error: () => {
+          error: (error) => {
             this.handleError('Erreur lors de la communication avec le serveur');
           }
         });
@@ -481,12 +577,21 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
   }
 
   async deleteTax(tax: TaxeModel): Promise<void> {
-    if (!this.permissions.deleteTax || !tax.is_custom) return;
+    if (!this.permissions.deleteTax) {
+      this.handleError('Vous n\'avez pas la permission de supprimer des taxes');
+      return;
+    }
+
+    if (!tax.is_custom) {
+      this.handleError('Les taxes système ne peuvent pas être supprimées');
+      return;
+    }
 
     const confirmed = await this.showConfirmation(
       'Supprimer la taxe',
       `Êtes-vous sûr de vouloir supprimer la taxe "${tax.name}" ? Cette action est irréversible.`,
-      'Supprimer'
+      'Supprimer',
+      true
     );
 
     if (!confirmed) return;
@@ -505,7 +610,7 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
         taxId: tax._id,
         uid
       }, headers)
-        .pipe(takeUntil(this.destroy$))
+        .pipe(take(1))
         .subscribe({
           next: (response: any) => {
             if (response && !response.error) {
@@ -515,7 +620,7 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
               this.handleError(response.errorMessage ?? 'Erreur lors de la suppression');
             }
           },
-          error: () => {
+          error: (error) => {
             this.handleError('Erreur lors de la communication avec le serveur');
           }
         });
@@ -524,6 +629,48 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Export functionalities
+  exportToCSV(): void {
+    const csvData = this.prepareCsvData();
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `taxes_${new Date().getTime()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.showSuccess('Export CSV réussi');
+  }
+
+  private prepareCsvData(): string {
+    const headers = ['Nom', 'Type', 'Taux actuel', 'Juridiction', 'Applicable sur', 'Actif', 'Source'];
+    const rows = this.taxes.map(tax => [
+      tax.name,
+      this.getTaxTypeLabel(tax.type),
+      this.formatRate(tax),
+      this.getJurisdictionLabel(tax.jurisdiction),
+      this.getApplicableOnLabel(tax.applicable_on),
+      tax.is_active ? 'Oui' : 'Non',
+      tax.is_custom ? 'Locale' : 'Système'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    return csvContent;
+  }
+
+  printTable(): void {
+    window.print();
+  }
+
+  // Helper methods
   getTaxTypeLabel(type: TaxType): string {
     return this.TAX_TYPES.find(t => t.value === type)?.label || type;
   }
@@ -557,13 +704,26 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
 
   closeModal(): void {
     this.modalService.dismissAll();
+    this.selectedTax = null;
+  }
+
+  private markFormGroupTouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      control?.markAsTouched();
+
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
   }
 
   private handleError(message: string): void {
     Swal.fire({
       icon: 'error',
       title: 'Erreur',
-      text: message
+      text: message,
+      confirmButtonColor: '#d91a72'
     });
   }
 
@@ -577,14 +737,21 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  private async showConfirmation(title: string, text: string, confirmButtonText: string): Promise<boolean> {
+  private async showConfirmation(
+    title: string,
+    text: string,
+    confirmButtonText: string,
+    isDanger: boolean = false
+  ): Promise<boolean> {
     const result = await Swal.fire({
       title,
       text,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText,
-      cancelButtonText: 'Annuler'
+      cancelButtonText: 'Annuler',
+      confirmButtonColor: isDanger ? '#f44336' : '#d91a72',
+      cancelButtonColor: '#8C99AA'
     });
 
     return result.isConfirmed;
@@ -594,25 +761,30 @@ export class PharmacyTaxManagementComponent implements OnInit, OnDestroy {
     this.location.back();
   }
 
+  // Stats methods
+  getTaxesSystem(): number {
+    return this.taxes.filter(t => !t.is_custom).length;
+  }
+
+  getTaxesCustom(): number {
+    return this.taxes.filter(t => t.is_custom).length;
+  }
+
+  getTaxesActives(): number {
+    return this.taxes.filter(t => t.is_active).length;
+  }
+
+  getTaxesInactives(): number {
+    return this.taxes.filter(t => !t.is_active).length;
+  }
+
   protected readonly Math = Math;
 
-  getTaxesSystem() {
-    return this.getTaxesCustomOrSystem(false);
+  reseteffectiveFormRateForm() {
+    this.rateForm.reset({ effective_from: this.formatDateForInput(new Date()) })
   }
 
-  getTaxesCustom() {
-    return this.getTaxesCustomOrSystem(true);
-  }
-
-  private getTaxesCustomOrSystem(custom?: boolean) {
-    return custom === undefined ? this.taxes.filter(t => t.is_custom === custom)?.length : this.taxes.length;
-  }
-
-  getTaxesActives() {
-    return this.taxes.filter(t => t.is_active)?.length;
-  }
-
-  getTaxesInactives() {
-    return this.taxes.filter(t => !t.is_active)?.length;
+  goToTax(tax: TaxeModel) {
+    this.router.navigate(['pharmacy/taxes/settings/', tax._id]);
   }
 }

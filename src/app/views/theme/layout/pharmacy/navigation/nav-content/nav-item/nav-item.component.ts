@@ -66,7 +66,21 @@ export class NavItemComponent implements OnInit {
     }
   }
 
-  isCurrentItem() {
-    return this.router.url === this.item.url;
+  isCurrentItem(): boolean {
+    if (!this.item?.url) return false;
+
+    const currentUrl = this.router.url.split(/[?#]/)[0].replace(/\/$/, '');
+    const itemUrl = this.item.url.replace(/\/$/, '');
+
+    const baseUrl = itemUrl.replace(/\/list$/, '');
+
+    const regexString =
+      '^' +
+      baseUrl.replace(/:\w+/g, '[^/]+') +
+      '(?:/[^/]+)*$';
+
+    const regex = new RegExp(regexString);
+
+    return regex.test(currentUrl);
   }
 }

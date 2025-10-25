@@ -1,0 +1,909 @@
+import { Component, OnInit, ViewChild, TemplateRef, inject, DestroyRef } from '@angular/core';
+import { CommonModule, Location } from "@angular/common";
+import { ActivatedRoute, RouterModule } from "@angular/router";
+import { HttpHeaders } from '@angular/common/http';
+import Swal from 'sweetalert2';
+import { FormBuilder, FormGroup, FormsModule, Validators, ReactiveFormsModule } from '@angular/forms';
+import { LoadingService } from 'src/app/controllers/services/loading.service';
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { SharedModule } from 'src/app/views/theme/shared/shared.module';
+import { ApplicableOn, Jurisdiction, TaxeModel, TaxType } from 'src/app/models/Taxe.class';
+import { UserDetails } from "../../../../../../models/UserDatails";
+import { environment } from "../../../../../../../environments/environment";
+import { AuthService } from "../../../../../../controllers/services/auth.service";
+import { ApiService } from "../../../../../../controllers/services/api.service";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { take } from "rxjs/operators";
+import { Category } from 'src/app/models/Category.class';
+import {Product} from "../../../../../../models/Product";
+
+interface TaxStatistics {
+  totalProducts: number;
+  totalCategories: number;
+  activeProducts: number;
+  inactiveProducts: number;
+  estimatedMonthlyRevenue: number;
+  estimatedMonthlyTaxAmount: number;
+  averageProductPrice: number;
+  productsWithMultipleTaxes: number;
+}
+
+interface TaxImpactAnalysis {
+  beforeTax: number;
+  taxAmount: number;
+  afterTax: number;
+  effectiveRate: number;
+}
+
+interface RelatedEntity {
+  id: string;
+  name: string;
+  type: 'product' | 'category';
+  price?: number;
+  status?: string;
+  productCount?: number;
+}
+
+@Component({
+  selector: 'app-pharmacy-tax-detail',
+  standalone: true,
+  imports: [CommonModule, SharedModule, RouterModule, FormsModule, ReactiveFormsModule],
+  templateUrl: './tax-detail.component.html',
+  styleUrls: ['./tax-detail.component.scss']
+})
+export class PharmacyTaxDetailComponent implements OnInit {
+  tax: TaxeModel | null = null;
+  taxId: string = '';
+
+  isLoading = false;
+  isSubmitting = false;
+
+  // Tabs
+  activeTab: 'overview' | 'products' | 'categories' | 'statistics' | 'history' | 'settings' = 'overview';
+
+  // Related entities
+  affectedProducts: Product[] = [];
+  affectedCategories: Category[] = [];
+  filteredProducts: Product[] = [];
+  filteredCategories: Category[] = [];
+
+  // Statistics
+  statistics: TaxStatistics = {
+    totalProducts: 0,
+    totalCategories: 0,
+    activeProducts: 0,
+    inactiveProducts: 0,
+    estimatedMonthlyRevenue: 0,
+    estimatedMonthlyTaxAmount: 0,
+    averageProductPrice: 0,
+    productsWithMultipleTaxes: 0
+  };
+
+  // Search and filters
+  productSearchTerm = '';
+  categorySearchTerm = '';
+  productStatusFilter: 'all' | 'active' | 'inactive' = 'all';
+
+  // Pagination
+  productsPage = 1;
+  productsPerPage = 10;
+  categoriesPage = 1;
+  categoriesPerPage = 10;
+
+  // Forms
+  rateForm: FormGroup;
+  taxEditForm: FormGroup;
+
+  // Permissions
+  permissions = {
+    viewTax: false,
+    editTax: false,
+    deleteTax: false,
+    manageTaxRates: false,
+    viewProducts: false,
+    viewStatistics: false
+  };
+
+  // Constants
+  TAX_TYPES: { value: TaxType; label: string }[] = [
+    { value: 'percentage', label: 'Pourcentage' },
+    { value: 'fixed', label: 'Montant fixe' }
+  ];
+
+  JURISDICTIONS: { value: Jurisdiction; label: string }[] = [
+    { value: 'national', label: 'National' },
+    { value: 'regional', label: 'Régional' },
+    { value: 'municipal', label: 'Municipal' }
+  ];
+
+  APPLICABLE_ON: { value: ApplicableOn; label: string }[] = [
+    { value: 'all', label: 'Tous les produits' },
+    { value: 'category', label: 'Par catégorie' },
+    { value: 'product', label: 'Par produit' },
+    { value: 'pharmacy', label: 'Par pharmacie' }
+  ];
+
+  // Modal references
+  @ViewChild('rateModal') rateModal!: TemplateRef<any>;
+  @ViewChild('editTaxModal') editTaxModal!: TemplateRef<any>;
+  @ViewChild('deleteConfirmModal') deleteConfirmModal!: TemplateRef<any>;
+  @ViewChild('impactAnalysisModal') impactAnalysisModal!: TemplateRef<any>;
+
+  userDetail!: UserDetails;
+  baseUrl = environment.baseUrl;
+
+  private destroy$ = inject(DestroyRef);
+  private modalService: NgbModal;
+
+  // Sample data for impact analysis
+  samplePrices = [1000, 2500, 5000, 10000, 25000, 50000];
+  impactAnalysis: TaxImpactAnalysis[] = [];
+
+  constructor(
+    modalService: NgbModal,
+    private location: Location,
+    private route: ActivatedRoute,
+    private auth: AuthService,
+    private apiService: ApiService,
+    private loadingService: LoadingService,
+    private fb: FormBuilder
+  ) {
+    this.modalService = modalService;
+    this.rateForm = this.fb.group({});
+    this.taxEditForm = this.fb.group({});
+    this.initializeForms();
+  }
+
+  ngOnInit(): void {
+    this.route.params
+      .pipe(takeUntilDestroyed(this.destroy$))
+      .subscribe(params => {
+        this.taxId = params['id'];
+      });
+
+    this.auth.userDetailsLoaded$
+      .pipe(takeUntilDestroyed(this.destroy$))
+      .subscribe(async loaded => {
+        this.userDetail = this.auth.getUserDetails();
+        this.setPermissions();
+
+        if (loaded && this.userDetail && this.taxId) {
+          await this.loadTaxDetails();
+          await this.loadRelatedData();
+        }
+      });
+  }
+
+  private setPermissions(): void {
+    this.permissions.viewTax = this.userDetail.hasPermission('parametres.view');
+    this.permissions.editTax = this.userDetail.hasPermission('parametres.update');
+    this.permissions.deleteTax = this.userDetail.hasPermission('parametres.update');
+    this.permissions.manageTaxRates = this.userDetail.hasPermission('parametres.update');
+    this.permissions.viewProducts = this.userDetail.hasPermission('parametres.view');
+    this.permissions.viewStatistics = this.userDetail.hasPermission('parametres.view');
+  }
+
+  private initializeForms(): void {
+    this.rateForm = this.fb.group({
+      value: ['', [Validators.required, Validators.min(0)]],
+      effective_from: [this.formatDateForInput(new Date()), [Validators.required]],
+      effective_to: [null]
+    });
+
+    this.taxEditForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+      description: ['', [Validators.maxLength(500)]],
+      type: ['percentage', [Validators.required]],
+      jurisdiction: ['national', [Validators.required]],
+      applicable_on: ['all', [Validators.required]],
+      is_active: [true],
+      is_exemptible: [false],
+      effective_from: [this.formatDateForInput(new Date()), [Validators.required]],
+      effective_to: [null],
+      initial_rate: ['', [Validators.required, Validators.min(0)]]
+    });
+
+    // Validation conditionnelle pour le taux
+    this.taxEditForm.get('type')?.valueChanges.subscribe(type => {
+      const rateControl = this.taxEditForm.get('initial_rate');
+      if (type === 'percentage') {
+        rateControl?.setValidators([Validators.required, Validators.min(0), Validators.max(100)]);
+      } else {
+        rateControl?.setValidators([Validators.required, Validators.min(0)]);
+      }
+      rateControl?.updateValueAndValidity();
+    });
+
+    // Validation des dates
+    this.rateForm.get('effective_to')?.valueChanges.subscribe(() => {
+      this.validateDateRange(this.rateForm);
+    });
+
+    this.taxEditForm.get('effective_to')?.valueChanges.subscribe(() => {
+      this.validateDateRange(this.taxEditForm);
+    });
+  }
+
+  private validateDateRange(form: FormGroup): void {
+    const from = form.get('effective_from')?.value;
+    const to = form.get('effective_to')?.value;
+
+    if (from && to && new Date(to) <= new Date(from)) {
+      form.get('effective_to')?.setErrors({ invalidRange: true });
+    }
+  }
+
+  private formatDateForInput(date: Date): string {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  async loadTaxDetails(): Promise<void> {
+    if (!this.permissions.viewTax) {
+      this.handleError('Vous n\'avez pas la permission de voir les détails des taxes');
+      return;
+    }
+
+    this.isLoading = true;
+    this.loadingService.setLoading(true);
+
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      if (!token) {
+        this.handleError('Vous n\'êtes pas autorisé à accéder à cette ressource');
+        return;
+      }
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('pharmacy-management/taxes/list', { uid }, headers)
+        .pipe(take(1))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error && response.data) {
+              const taxes = response.data.map((t: any) => new TaxeModel(t));
+              this.tax = taxes.find((t: TaxeModel) => t._id === this.taxId) || null;
+
+              if (!this.tax) {
+                this.handleError('Taxe non trouvée');
+                this.goBack();
+              } else {
+                this.populateEditForm();
+                this.calculateImpactAnalysis();
+              }
+            } else {
+              this.handleError(response?.errorMessage || 'Erreur lors du chargement de la taxe');
+            }
+            this.isLoading = false;
+            this.loadingService.setLoading(false);
+          },
+          error: (error) => {
+            this.handleError('Erreur lors du chargement de la taxe');
+            this.isLoading = false;
+            this.loadingService.setLoading(false);
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.isLoading = false;
+      this.loadingService.setLoading(false);
+    }
+  }
+
+  private populateEditForm(): void {
+    if (!this.tax) return;
+
+    const currentRate = this.tax.getCurrentRateFees();
+
+    this.taxEditForm.patchValue({
+      name: this.tax.name,
+      description: this.tax.description,
+      type: this.tax.type,
+      jurisdiction: this.tax.jurisdiction,
+      applicable_on: this.tax.applicable_on,
+      is_active: this.tax.is_active,
+      is_exemptible: this.tax.is_exemptible,
+      effective_from: this.formatDateForInput(new Date(this.tax.effective_from)),
+      effective_to: this.tax.effective_to ? this.formatDateForInput(new Date(this.tax.effective_to)) : null,
+      initial_rate: currentRate
+    });
+  }
+
+  private async loadRelatedData(): Promise<void> {
+    // Simuler le chargement des données (remplacer par des vraies requêtes API)
+    await this.loadAffectedProducts();
+    await this.loadAffectedCategories();
+    this.calculateStatistics();
+  }
+
+  private async loadAffectedProducts(): Promise<void> {
+    // TODO: Remplacer par une vraie requête API
+    // Pour l'instant, on simule avec des données vides
+    this.affectedProducts = [];
+    this.applyProductFilters();
+  }
+
+  private async loadAffectedCategories(): Promise<void> {
+    // TODO: Remplacer par une vraie requête API
+    this.affectedCategories = [];
+    this.applyCategoryFilters();
+  }
+
+  private calculateStatistics(): void {
+    if (!this.tax) return;
+
+    this.statistics = {
+      totalProducts: this.affectedProducts.length,
+      totalCategories: this.affectedCategories.length,
+      activeProducts: this.affectedProducts.filter(p => p.status === 'active').length,
+      inactiveProducts: this.affectedProducts.filter(p => p.status !== 'active').length,
+      estimatedMonthlyRevenue: this.calculateEstimatedRevenue(),
+      estimatedMonthlyTaxAmount: this.calculateEstimatedTaxAmount(),
+      averageProductPrice: this.calculateAveragePrice(),
+      productsWithMultipleTaxes: this.affectedProducts.filter(p => p.taxes?.length > 1).length
+    };
+  }
+
+  private calculateEstimatedRevenue(): number {
+    // Simulation basée sur les prix des produits
+    return this.affectedProducts.reduce((sum, p) => sum + (p.price * 10), 0); // * 10 pour simuler les ventes mensuelles
+  }
+
+  private calculateEstimatedTaxAmount(): number {
+    if (!this.tax) return 0;
+
+    const currentRate = this.tax.getCurrentRateFees() || 0;
+    const revenue = this.calculateEstimatedRevenue();
+
+    if (this.tax.type === 'percentage') {
+      return (revenue * currentRate) / 100;
+    } else {
+      return currentRate * this.affectedProducts.length * 10; // * 10 pour simuler les ventes mensuelles
+    }
+  }
+
+  private calculateAveragePrice(): number {
+    if (this.affectedProducts.length === 0) return 0;
+    const total = this.affectedProducts.reduce((sum, p) => sum + p.price, 0);
+    return total / this.affectedProducts.length;
+  }
+
+  private calculateImpactAnalysis(): void {
+    if (!this.tax) return;
+
+    const currentRate = this.tax.getCurrentRateFees() || 0;
+
+    this.impactAnalysis = this.samplePrices.map(price => {
+      let taxAmount = 0;
+
+      if (this.tax!.type === 'percentage') {
+        taxAmount = (price * currentRate) / 100;
+      } else {
+        taxAmount = currentRate;
+      }
+
+      return {
+        beforeTax: price,
+        taxAmount: taxAmount,
+        afterTax: price + taxAmount,
+        effectiveRate: (taxAmount / price) * 100
+      };
+    });
+  }
+
+  // Filter methods
+  applyProductFilters(): void {
+    let filtered = [...this.affectedProducts];
+
+    if (this.productSearchTerm) {
+      const search = this.productSearchTerm.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(search) ||
+        p.sku?.toLowerCase().includes(search)
+      );
+    }
+
+    if (this.productStatusFilter !== 'all') {
+      filtered = filtered.filter(p =>
+        this.productStatusFilter === 'active'
+          ? p.status === 'active'
+          : p.status !== 'active'
+      );
+    }
+
+    this.filteredProducts = filtered;
+  }
+
+  applyCategoryFilters(): void {
+    let filtered = [...this.affectedCategories];
+
+    if (this.categorySearchTerm) {
+      const search = this.categorySearchTerm.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.name.toLowerCase().includes(search)
+      );
+    }
+
+    this.filteredCategories = filtered;
+  }
+
+  onProductFilterChange(): void {
+    this.productsPage = 1;
+    this.applyProductFilters();
+  }
+
+  onCategoryFilterChange(): void {
+    this.categoriesPage = 1;
+    this.applyCategoryFilters();
+  }
+
+  // Pagination
+  get paginatedProducts(): Product[] {
+    const start = (this.productsPage - 1) * this.productsPerPage;
+    const end = start + this.productsPerPage;
+    return this.filteredProducts.slice(start, end);
+  }
+
+  get paginatedCategories(): Category[] {
+    const start = (this.categoriesPage - 1) * this.categoriesPerPage;
+    const end = start + this.categoriesPerPage;
+    return this.filteredCategories.slice(start, end);
+  }
+
+  get totalProductPages(): number {
+    return Math.ceil(this.filteredProducts.length / this.productsPerPage);
+  }
+
+  get totalCategoryPages(): number {
+    return Math.ceil(this.filteredCategories.length / this.categoriesPerPage);
+  }
+
+  // Actions
+  openEditModal(): void {
+    if (!this.permissions.editTax) {
+      this.handleError('Vous n\'avez pas la permission de modifier cette taxe');
+      return;
+    }
+
+    if (!this.tax?.is_custom) {
+      this.handleError('Les taxes système ne peuvent pas être modifiées');
+      return;
+    }
+
+    this.populateEditForm();
+    this.modalService.open(this.editTaxModal, {
+      size: 'lg',
+      backdrop: 'static',
+      centered: true
+    });
+  }
+
+  async saveTaxEdit(): Promise<void> {
+    if (!this.taxEditForm.valid || !this.tax) {
+      this.markFormGroupTouched(this.taxEditForm);
+      this.handleError('Veuillez remplir tous les champs obligatoires correctement');
+      return;
+    }
+
+    this.isSubmitting = true;
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      const formData = {
+        ...this.taxEditForm.value,
+        uid,
+        taxId: this.tax._id
+      };
+
+      this.apiService.post('pharmacy-management/taxes/update', formData, headers)
+        .pipe(take(1))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error) {
+              this.showSuccess('Taxe mise à jour avec succès');
+              this.closeModal();
+              this.loadTaxDetails();
+            } else {
+              this.handleError(response.errorMessage ?? 'Erreur lors de la mise à jour');
+            }
+            this.isSubmitting = false;
+          },
+          error: (error) => {
+            this.handleError('Erreur lors de la communication avec le serveur');
+            this.isSubmitting = false;
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.isSubmitting = false;
+    }
+  }
+
+  openAddRateModal(): void {
+    if (!this.permissions.manageTaxRates) {
+      this.handleError('Vous n\'avez pas la permission de gérer les taux');
+      return;
+    }
+
+    if (!this.tax?.is_custom) {
+      this.handleError('Les taux des taxes système ne peuvent pas être modifiés');
+      return;
+    }
+
+    this.rateForm.reset({
+      effective_from: this.formatDateForInput(new Date())
+    });
+
+    this.modalService.open(this.rateModal, {
+      size: 'md',
+      backdrop: 'static',
+      centered: true
+    });
+  }
+
+  async addRate(): Promise<void> {
+    if (!this.rateForm.valid || !this.tax) {
+      this.markFormGroupTouched(this.rateForm);
+      this.handleError('Veuillez remplir tous les champs obligatoires correctement');
+      return;
+    }
+
+    this.isSubmitting = true;
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      const rateData = {
+        taxId: this.tax._id,
+        ...this.rateForm.value,
+        uid
+      };
+
+      this.apiService.post('pharmacy-management/taxes/add-rate', rateData, headers)
+        .pipe(take(1))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error) {
+              this.showSuccess('Taux ajouté avec succès');
+              this.closeModal();
+              this.loadTaxDetails();
+              this.calculateImpactAnalysis();
+            } else {
+              this.handleError(response.errorMessage ?? 'Erreur lors de l\'ajout du taux');
+            }
+            this.isSubmitting = false;
+          },
+          error: (error) => {
+            this.handleError('Erreur lors de la communication avec le serveur');
+            this.isSubmitting = false;
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.isSubmitting = false;
+    }
+  }
+
+  async toggleTaxStatus(): Promise<void> {
+    if (!this.permissions.editTax || !this.tax) {
+      this.handleError('Vous n\'avez pas la permission de modifier le statut');
+      return;
+    }
+
+    if (!this.tax.is_custom) {
+      this.handleError('Les taxes système ne peuvent pas être modifiées');
+      return;
+    }
+
+    const confirmed = await this.showConfirmation(
+      this.tax.is_active ? 'Désactiver la taxe' : 'Activer la taxe',
+      `Êtes-vous sûr de vouloir ${this.tax.is_active ? 'désactiver' : 'activer'} cette taxe ?`,
+      'Confirmer'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('pharmacy-management/taxes/toggle-status', {
+        taxId: this.tax._id,
+        uid
+      }, headers)
+        .pipe(take(1))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error) {
+              this.showSuccess('Statut de la taxe mis à jour');
+              this.loadTaxDetails();
+            } else {
+              this.handleError(response.errorMessage ?? 'Erreur lors de la mise à jour');
+            }
+          },
+          error: (error) => {
+            this.handleError('Erreur lors de la communication avec le serveur');
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+    }
+  }
+
+  async deleteTax(): Promise<void> {
+    if (!this.permissions.deleteTax || !this.tax) {
+      this.handleError('Vous n\'avez pas la permission de supprimer cette taxe');
+      return;
+    }
+
+    if (!this.tax.is_custom) {
+      this.handleError('Les taxes système ne peuvent pas être supprimées');
+      return;
+    }
+
+    const confirmed = await this.showConfirmation(
+      'Supprimer la taxe',
+      `Êtes-vous sûr de vouloir supprimer la taxe "${this.tax.name}" ? Cette action est irréversible.`,
+      'Supprimer',
+      true
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('pharmacy-management/taxes/delete', {
+        taxId: this.tax._id,
+        uid
+      }, headers)
+        .pipe(take(1))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error) {
+              this.showSuccess('Taxe supprimée avec succès');
+              this.goBack();
+            } else {
+              this.handleError(response.errorMessage ?? 'Erreur lors de la suppression');
+            }
+          },
+          error: (error) => {
+            this.handleError('Erreur lors de la communication avec le serveur');
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+    }
+  }
+
+  openImpactAnalysisModal(): void {
+    this.modalService.open(this.impactAnalysisModal, {
+      size: 'lg',
+      centered: true
+    });
+  }
+
+  // Export functions
+  exportStatistics(): void {
+    if (!this.tax) return;
+
+    const csvData = this.prepareStatisticsCsvData();
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `taxe_${this.tax.name}_statistiques_${new Date().getTime()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.showSuccess('Export CSV réussi');
+  }
+
+  private prepareStatisticsCsvData(): string {
+    if (!this.tax) return '';
+
+    const headers = ['Métrique', 'Valeur'];
+    const rows = [
+      ['Nom de la taxe', this.tax.name],
+      ['Type', this.getTaxTypeLabel(this.tax.type)],
+      ['Taux actuel', this.formatRate(this.tax)],
+      ['Produits affectés', this.statistics.totalProducts.toString()],
+      ['Catégories affectées', this.statistics.totalCategories.toString()],
+      ['Produits actifs', this.statistics.activeProducts.toString()],
+      ['Revenu mensuel estimé', `${this.statistics.estimatedMonthlyRevenue.toFixed(2)} XOF`],
+      ['Taxe mensuelle estimée', `${this.statistics.estimatedMonthlyTaxAmount.toFixed(2)} XOF`],
+      ['Prix moyen des produits', `${this.statistics.averageProductPrice.toFixed(2)} XOF`]
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    return csvContent;
+  }
+
+  printDetails(): void {
+    window.print();
+  }
+
+  // Helper methods
+  getTaxTypeLabel(type: TaxType): string {
+    return this.TAX_TYPES.find(t => t.value === type)?.label || type;
+  }
+
+  getJurisdictionLabel(jurisdiction: Jurisdiction): string {
+    return this.JURISDICTIONS.find(j => j.value === jurisdiction)?.label || jurisdiction;
+  }
+
+  getApplicableOnLabel(applicableOn: ApplicableOn): string {
+    return this.APPLICABLE_ON.find(a => a.value === applicableOn)?.label || applicableOn;
+  }
+
+  formatDate(date: Date | string | undefined | null): string {
+    if (!date) return '-';
+
+    const d = new Date(date);
+    return d.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  formatRate(tax: TaxeModel): string {
+    const rate = tax.getCurrentRateFees();
+    if (rate === null || rate === undefined) return 'N/A';
+
+    const suffix = tax.type === 'percentage' ? '%' : ' XOF';
+    return `${rate}${suffix}`;
+  }
+
+  formatCurrency(amount: number): string {
+    return `${amount.toFixed(2)} XOF`;
+  }
+
+  closeModal(): void {
+    this.modalService.dismissAll();
+  }
+
+  private markFormGroupTouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      control?.markAsTouched();
+
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
+  }
+
+  private handleError(message: string): void {
+    Swal.fire({
+      icon: 'error',
+      title: 'Erreur',
+      text: message,
+      confirmButtonColor: '#d91a72'
+    });
+  }
+
+  private showSuccess(message: string): void {
+    Swal.fire({
+      icon: 'success',
+      title: 'Succès',
+      text: message,
+      timer: 2000,
+      showConfirmButton: false
+    });
+  }
+
+  private async showConfirmation(
+    title: string,
+    text: string,
+    confirmButtonText: string,
+    isDanger: boolean = false
+  ): Promise<boolean> {
+    const result = await Swal.fire({
+      title,
+      text,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText,
+      cancelButtonText: 'Annuler',
+      confirmButtonColor: isDanger ? '#f44336' : '#d91a72',
+      cancelButtonColor: '#8C99AA'
+    });
+
+    return result.isConfirmed;
+  }
+
+  goBack(): void {
+    this.location.back();
+  }
+
+  // Getters for template
+  get currentRate(): number {
+    return this.tax?.getCurrentRateFees() || 0;
+  }
+
+  get taxAge(): string {
+    if (!this.tax?.createdAt) return 'N/A';
+
+    const created = new Date(this.tax.createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - created.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 30) return `${diffDays} jour(s)`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} mois`;
+    return `${Math.floor(diffDays / 365)} an(s)`;
+  }
+
+  get activeRateAge(): string {
+    const activeRate = this.tax?.getCurrentRate();
+    if (!activeRate?.effective_from) return 'N/A';
+
+    const from = new Date(activeRate.effective_from);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - from.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 30) return `${diffDays} jour(s)`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} mois`;
+    return `${Math.floor(diffDays / 365)} an(s)`;
+  }
+
+  get totalRateChanges(): number {
+    return this.tax?.rates?.length || 0;
+  }
+
+  get estimatedAnnualTax(): number {
+    return this.statistics.estimatedMonthlyTaxAmount * 12;
+  }
+
+  get taxEfficiency(): number {
+    // Pourcentage de produits actifs sur total
+    if (this.statistics.totalProducts === 0) return 0;
+    return (this.statistics.activeProducts / this.statistics.totalProducts) * 100;
+  }
+
+  protected readonly Math = Math;
+}

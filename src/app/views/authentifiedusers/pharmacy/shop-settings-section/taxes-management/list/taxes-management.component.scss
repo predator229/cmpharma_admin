@@ -39,10 +39,8 @@ $box-shadow-medium: 0 8px 20px rgba(0, 0, 0, 0.12);
 $box-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
 $transition: all 0.3s ease;
 
-/* =====================================
-   Page Header
-   ===================================== */
-.taxe-header {
+
+.dashboard-header {
   background-color: $card-background;
   padding: 2rem 2.5rem;
   border-bottom: 1px solid $border-color;
@@ -50,7 +48,7 @@ $transition: all 0.3s ease;
   border-radius: $border-radius;
   box-shadow: $box-shadow-light;
 
-  .taxe-title {
+  .dashboard-title {
     font-size: 2rem;
     font-weight: 700;
     color: $dark-text;
@@ -138,9 +136,6 @@ $transition: all 0.3s ease;
   }
 }
 
-/* =====================================
-   Stats Cards
-   ===================================== */
 .stats-card {
   border: none;
   border-radius: $border-radius;

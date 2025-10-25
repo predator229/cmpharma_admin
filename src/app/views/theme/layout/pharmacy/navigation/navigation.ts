@@ -209,7 +209,7 @@ export const NavigationItems: NavigationItem[] = [
         id: 'pharmacy-taxes-settings',
         title: 'Taxes & Fiscalité',
         type: 'item',
-        url: '/pharmacy/settings/taxes',
+        url: '/pharmacy/taxes/settings',
         icon: 'fa fa-coins',
         permissions: ['parametres.view']
       },
@@ -217,7 +217,7 @@ export const NavigationItems: NavigationItem[] = [
         id: 'pharmacy-exchange-rate-settings',
         title: 'Taux de change',
         type: 'item',
-        url: '/pharmacy/settings',
+        url: '/pharmacy/exchange-rate/settings',
         icon: 'fa fa-exchange-alt',
         permissions: ['parametres.view']
       },
@@ -225,7 +225,7 @@ export const NavigationItems: NavigationItem[] = [
         id: 'pharmacy-notification-settings',
         title: 'Notifications',
         type: 'item',
-        url: '/pharmacy/settings',
+        url: '/pharmacy/notification/settings',
         icon: 'fa fa-bell',
         permissions: ['parametres.view']
       },
