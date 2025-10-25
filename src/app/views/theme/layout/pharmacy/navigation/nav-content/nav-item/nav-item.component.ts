@@ -1,9 +1,7 @@
-// Angular import
-import {Component, Input, Renderer2} from '@angular/core';
+import {Component, inject, Input, OnChanges, OnInit, Renderer2} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {Router, RouterModule} from '@angular/router';
 
-// Project import
 import { NavigationItem } from '../../navigation';
 import {UserDetails} from "../../../../../../../models/UserDatails";
 import {AuthService} from "../../../../../../../controllers/services/auth.service";
@@ -16,12 +14,13 @@ import {LoadingService} from "../../../../../../../controllers/services/loading.
   templateUrl: './nav-item.component.html',
   styleUrl: './nav-item.component.scss'
 })
-export class NavItemComponent {
+export class NavItemComponent implements OnInit {
+  private router = inject(Router)
   @Input() item!: NavigationItem;
   @Input() userDetails!: UserDetails;
   isLoading = false;
 
-  constructor(private renderer: Renderer2, private authService: AuthService, private router: Router, private loadingService: LoadingService) {
+  constructor(private renderer: Renderer2, private authService: AuthService, private loadingService: LoadingService) {
     this.loadingService.isLoading$.subscribe((loading) => {
       this.isLoading = loading;
     });
@@ -66,11 +65,8 @@ export class NavItemComponent {
       (document.querySelector('app-navigation.coded-navbar') as HTMLDivElement).classList.remove('mob-open');
     }
   }
-  getCurrentUrlWithoutBase(): string {
-    const currentUrl = this.router.url;
-    const baseUrl = document.querySelector('base')?.getAttribute('href') || '/';
-    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
-    return currentUrl.replace(cleanBaseUrl, '');
-  }
 
+  isCurrentItem() {
+    return this.router.url === this.item.url;
+  }
 }

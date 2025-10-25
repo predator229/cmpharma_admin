@@ -1,14 +1,12 @@
-// Angular import
 import { Component, Input, OnInit, inject } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
-
-// project import
+import { CommonModule } from '@angular/common';
 import { NavigationItem } from '../../navigation';
 
 import { NavCollapseComponent } from '../nav-collapse/nav-collapse.component';
 import { NavItemComponent } from '../nav-item/nav-item.component';
 import {UserDetails} from "../../../../../../../models/UserDatails";
 import {AuthService} from "../../../../../../../controllers/services/auth.service";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-nav-group',
@@ -18,9 +16,8 @@ import {AuthService} from "../../../../../../../controllers/services/auth.servic
   styleUrl: './nav-group.component.scss'
 })
 export class NavGroupComponent implements OnInit {
-  private location = inject(Location);
+  private router = inject(Router);
 
-  // public props
   @Input() item!: NavigationItem;
   isLoading: boolean = false;
   @Input() public url!: String;
@@ -30,30 +27,15 @@ export class NavGroupComponent implements OnInit {
   logout() {
     this.authService.logout();
   }
-  current_url!: string;
 
   ngOnInit() {
-    this.current_url = this.location.path();
-    //eslint-disable-next-line
-    //@ts-ignore
-    const baseHref = this.location['_baseHref'] || '';
-    this.current_url = baseHref + this.current_url;
+    this.item.classes = this.isActiveGroup() ? 'active' : '';
+    this.userDetails = this.userDetails ? this.userDetails : this.authService.getUserDetails();
+  }
 
-    // Use a more reliable way to find and update the active group
-    setTimeout(() => {
-      const links = document.querySelectorAll('a.nav-link') as NodeListOf<HTMLAnchorElement>;
-      links.forEach((link: HTMLAnchorElement) => {
-        if (link.getAttribute('href') === this.current_url || link.getAttribute('href') == this.location.path()) {
-          let parent = link.parentElement;
-          while (parent && parent.classList) {
-            if (parent.classList.contains('coded-hasmenu')) {
-              parent.classList.add('coded-trigger');
-              parent.classList.add('active');
-            }
-            parent = parent.parentElement;
-          }
-        }
-      });
-    }, 0);
+  isActiveGroup() {
+    return this.item.children?.some((child) => {
+      return child.url === this.router.url
+    });
   }
 }

@@ -1,19 +1,14 @@
-// Angular import
 import {Component, OnInit, output, inject, Input, Renderer2} from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import {Router, RouterModule} from '@angular/router';
 
-//theme version
 import { environment } from 'src/environments/environment';
-
-// project import
 import { NavigationItem, NavigationItems } from '../navigation';
 
 import { NavCollapseComponent } from './nav-collapse/nav-collapse.component';
 import { NavGroupComponent } from './nav-group/nav-group.component';
 import { NavItemComponent } from './nav-item/nav-item.component';
 
-// NgScrollbarModule
 import { SharedModule } from 'src/app/views/theme/shared/shared.module';
 import {UserDetails} from "../../../../../../models/UserDatails";
 import {AuthService} from "../../../../../../controllers/services/auth.service";
