@@ -87,8 +87,14 @@ export class PharmacyTaxesManagementComponent implements OnInit {
     { value: 'all', label: 'Tous les produits' },
     { value: 'category', label: 'Par catégorie' },
     { value: 'product', label: 'Par produit' },
-    { value: 'pharmacy', label: 'Par pharmacie' }
+    // { value: 'pharmacy', label: 'Par pharmacie' }
   ];
+
+  informationsLabels = {
+    'all' : `"Tous les produits" ajoutent automatiquement cette taxe par défaut`,
+    'category': `Tous les produits des categories associe ajoutent automatiquement cette taxe par défaut`,
+    'product': `Taxe associe uniquement au produit individuellement`
+  }
 
   // Modal references
   @ViewChild('taxModal') taxModal!: TemplateRef<any>;
@@ -143,6 +149,7 @@ export class PharmacyTaxesManagementComponent implements OnInit {
       jurisdiction: ['national', [Validators.required]],
       applicable_on: ['all', [Validators.required]],
       is_active: [true],
+      applies_to_elemnents: [false],
       is_exemptible: [false],
       effective_from: [this.formatDateForInput(new Date()), [Validators.required]],
       effective_to: [null],
@@ -345,6 +352,7 @@ export class PharmacyTaxesManagementComponent implements OnInit {
       jurisdiction: 'national',
       applicable_on: 'all',
       is_active: true,
+      applies_to_elemnents: false,
       is_exemptible: false,
       effective_from: this.formatDateForInput(new Date())
     });
@@ -786,5 +794,9 @@ export class PharmacyTaxesManagementComponent implements OnInit {
 
   goToTax(tax: TaxeModel) {
     this.router.navigate(['pharmacy/taxes/settings/', tax._id]);
+  }
+
+  applicableOnTooltip() {
+    return this.informationsLabels[this.taxForm.get('applicable_on').value];
   }
 }

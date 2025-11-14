@@ -600,7 +600,7 @@
           </select>
           <small class="text-muted">
             <i class="fas fa-info-circle me-1"></i>
-            "Tous les produits" ajoute automatiquement cette taxe par défaut
+            {{ applicableOnTooltip() }}
           </small>
         </div>
       </div>
@@ -669,6 +669,21 @@
               Exemptible
             </label>
             <small class="d-block text-muted ms-4">Permet les exemptions pour certains clients</small>
+          </div>
+        </div>
+
+        <div class="col-md-12 mb-3" *ngIf="!selectedTax">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="applies_to_elemnents"
+              formControlName="applies_to_elemnents">
+            <label class="form-check-label" for="applies_to_elemnents">
+              <i class="fas fa-check-circle me-1"></i>
+              Automatiquement applique la taxe retroactivement au produits ?
+            </label>
+            <small class="d-block text-muted ms-4">La taxe sera automatiquement applique a tous les produits concernes apres la creation de la taxe</small>
           </div>
         </div>
       </div>
