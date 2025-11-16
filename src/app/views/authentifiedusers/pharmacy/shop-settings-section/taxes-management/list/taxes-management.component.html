@@ -16,14 +16,6 @@
 
     <!-- Action Buttons -->
     <div class="d-flex align-items-center flex-wrap gap-2">
-<!--      <button-->
-<!--        class="btn btn-outline-secondary btn-sm"-->
-<!--        (click)="goBack()"-->
-<!--        title="Retour">-->
-<!--        <i class="fas fa-arrow-left me-2"></i>-->
-<!--        Retour-->
-<!--      </button>-->
-
       <button
         class="btn btn-outline-info btn-sm"
         (click)="resetFilters()"
@@ -34,7 +26,7 @@
       </button>
 
       <button
-        class="btn btn-outline-success btn-sm"
+        class="btn btn-outline-secondary btn-sm"
         (click)="exportToCSV()"
         [disabled]="isLoading || taxes.length === 0"
         title="Exporter en CSV">
@@ -43,7 +35,7 @@
       </button>
 
       <button
-        class="btn btn-outline-primary btn-sm"
+        class="btn btn-outline-info btn-sm"
         (click)="printTable()"
         [disabled]="isLoading || taxes.length === 0"
         title="Imprimer">
@@ -61,10 +53,10 @@
 
       <button
         *ngIf="permissions.createTax"
-        class="btn btn-primary btn-sm"
+        class="btn btn-outline-success btn-sm"
         (click)="openCreateModal()"
         [disabled]="isLoading">
-        <i class="fas fa-plus me-2"></i>
+        <i class="fas fa-plus-circle me-2"></i>
         Nouvelle taxe
       </button>
     </div>
@@ -492,14 +484,12 @@
           type="text"
           id="taxName"
           class="form-control"
-          [class.is-invalid]="taxForm.get('name')?.invalid && taxForm.get('name')?.touched"
+          [class.is-invalid]="isFieldInvalid('name')"
           [class.is-valid]="taxForm.get('name')?.valid && taxForm.get('name')?.touched"
           formControlName="name"
           placeholder="Ex: TVA, Taxe sanitaire...">
-        <div *ngIf="taxForm.get('name')?.invalid && taxForm.get('name')?.touched" class="invalid-feedback">
-          <span *ngIf="taxForm.get('name')?.errors?.['required']">Le nom est requis</span>
-          <span *ngIf="taxForm.get('name')?.errors?.['minlength']">Minimum 3 caractères</span>
-          <span *ngIf="taxForm.get('name')?.errors?.['maxlength']">Maximum 100 caractères</span>
+        <div *ngIf="isFieldInvalid('name')" class="invalid-feedback">
+          {{ getFieldError('name') }}
         </div>
       </div>
 
@@ -511,7 +501,7 @@
         <textarea
           id="taxDescription"
           class="form-control"
-          [class.is-invalid]="taxForm.get('description')?.invalid && taxForm.get('description')?.touched"
+          [class.is-invalid]="isFieldInvalid('description')"
           rows="3"
           formControlName="description"
           placeholder="Description de la taxe..."
@@ -531,7 +521,7 @@
           <select
             id="taxType"
             class="form-select"
-            [class.is-invalid]="taxForm.get('type')?.invalid && taxForm.get('type')?.touched"
+            [class.is-invalid]="isFieldInvalid('type')"
             formControlName="type">
             <option *ngFor="let type of TAX_TYPES" [value]="type.value">
               {{ type.label }}
@@ -549,7 +539,7 @@
               type="number"
               id="initialRate"
               class="form-control"
-              [class.is-invalid]="taxForm.get('initial_rate')?.invalid && taxForm.get('initial_rate')?.touched"
+              [class.is-invalid]="isFieldInvalid('initial_rate')"
               [class.is-valid]="taxForm.get('initial_rate')?.valid && taxForm.get('initial_rate')?.touched"
               formControlName="initial_rate"
               step="0.01"
@@ -559,11 +549,13 @@
               {{ taxForm.get('type')?.value === 'percentage' ? '%' : 'XOF' }}
             </span>
           </div>
-          <div *ngIf="taxForm.get('initial_rate')?.invalid && taxForm.get('initial_rate')?.touched" class="invalid-feedback d-block">
-            <span *ngIf="taxForm.get('initial_rate')?.errors?.['required']">Le taux est requis</span>
-            <span *ngIf="taxForm.get('initial_rate')?.errors?.['min']">Le taux doit être positif</span>
-            <span *ngIf="taxForm.get('initial_rate')?.errors?.['max']">Le pourcentage ne peut pas dépasser 100%</span>
-          </div>
+<!--          <div *ngIf="taxForm.get('initial_rate')?.invalid && taxForm.get('initial_rate')?.touched" class="invalid-feedback d-block">-->
+<!--            <span *ngIf="taxForm.get('initial_rate')?.errors?.['required']">Le taux est requis</span>-->
+<!--            <span *ngIf="taxForm.get('initial_rate')?.errors?.['min']">Le taux doit être positif</span>-->
+<!--            <span *ngIf="taxForm.get('initial_rate')?.errors?.['max']">Le pourcentage ne peut pas dépasser 100%</span>-->
+<!--          </div>-->
+          <div class="invalid-feedback d-block" *ngIf="isFieldInvalid('initial_rate')">{{ getFieldError('initial_rate') }}</div>
+
         </div>
       </div>
 
@@ -576,7 +568,7 @@
           <select
             id="jurisdiction"
             class="form-select"
-            [class.is-invalid]="taxForm.get('jurisdiction')?.invalid && taxForm.get('jurisdiction')?.touched"
+            [class.is-invalid]="isFieldInvalid('jurisdiction')"
             formControlName="jurisdiction">
             <option *ngFor="let jurisdiction of JURISDICTIONS" [value]="jurisdiction.value">
               {{ jurisdiction.label }}
@@ -592,7 +584,8 @@
           <select
             id="applicableOn"
             class="form-select"
-            [class.is-invalid]="taxForm.get('applicable_on')?.invalid && taxForm.get('applicable_on')?.touched"
+            (change)="loadApplicableDefaultList()"
+            [class.is-invalid]="isFieldInvalid('applicable_on')"
             formControlName="applicable_on">
             <option *ngFor="let applicable of APPLICABLE_ON" [value]="applicable.value">
               {{ applicable.label }}
@@ -615,7 +608,7 @@
             type="date"
             id="effectiveFrom"
             class="form-control"
-            [class.is-invalid]="taxForm.get('effective_from')?.invalid && taxForm.get('effective_from')?.touched"
+            [class.is-invalid]="isFieldInvalid('effective_from')"
             formControlName="effective_from">
           <div *ngIf="taxForm.get('effective_from')?.invalid && taxForm.get('effective_from')?.touched" class="invalid-feedback">
             La date de début est requise
@@ -678,12 +671,26 @@
               class="form-check-input"
               type="checkbox"
               id="applies_to_elemnents"
+              (change)="loadApplicableDefaultList()"
               formControlName="applies_to_elemnents">
             <label class="form-check-label" for="applies_to_elemnents">
               <i class="fas fa-check-circle me-1"></i>
               Automatiquement applique la taxe retroactivement au produits ?
             </label>
             <small class="d-block text-muted ms-4">La taxe sera automatiquement applique a tous les produits concernes apres la creation de la taxe</small>
+          </div>
+
+          <div class="mb-3" *ngIf="taxForm.get('applies_to_elemnents')?.value === true">
+            <label for="default_retro_applicable_on" class="form-label">{{ getListName() }}
+              <span class="text-danger">*</span></label>
+            <select2
+              multiple="multiple"
+              class="form-control"
+              id="default_retro_applicable_on"
+              formControlName="default_retro_applicable_on"
+              [data]="defaultApplicableOnList"
+            >
+            </select2>
           </div>
         </div>
       </div>

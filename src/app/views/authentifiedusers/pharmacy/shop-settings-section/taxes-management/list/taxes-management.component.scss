@@ -119,6 +119,52 @@ $transition: all 0.3s ease;
     }
   }
 
+  .btn-outline-info {
+    border-color: $info-color;
+    color: $info-color;
+    padding: 0.6rem 1.2rem;
+    border-radius: $border-radius;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+
+    &:hover {
+      background-color: $info-color;
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: $box-shadow-sm;
+    }
+
+    &[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  .btn-outline-success {
+    border-color: $success-color;
+    color: $success-color;
+    padding: 0.6rem 1.2rem;
+    border-radius: $border-radius;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+
+    &:hover {
+      background-color: $success-color;
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: $box-shadow-sm;
+    }
+
+    &[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
   .btn-outline-secondary {
     border-color: $secondary-color;
     color: $secondary-color;
@@ -814,7 +860,6 @@ $transition: all 0.3s ease;
   color: white;
   border-bottom: none;
   padding: 1.5rem;
-  border-radius: $border-radius $border-radius 0 0;
 
   .modal-title {
     color: white;

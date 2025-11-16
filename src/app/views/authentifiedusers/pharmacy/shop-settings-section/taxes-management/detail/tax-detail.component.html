@@ -410,7 +410,7 @@
                   <span class="text-muted">Taxe annuelle estimée</span>
                   <i class="fas fa-calendar-alt text-muted"></i>
                 </div>
-                <h3 class="text-info mb-0">{{ formatCurrency(estimatedAnnualTax) }}</h3>
+                <h3 class="text-info mb-0">{{ formatCurrency(estimatedAnnualTax()) }}</h3>
               </div>
 
               <hr class="my-3">
@@ -847,7 +847,7 @@
                   <i class="fas fa-calendar-alt text-info me-2"></i>
                   Taxe annuelle estimée
                 </div>
-                <div class="stat-value text-info">{{ formatCurrency(estimatedAnnualTax) }}</div>
+                <div class="stat-value text-info">{{ formatCurrency(estimatedAnnualTax()) }}</div>
               </div>
 
               <hr>

@@ -14,6 +14,8 @@ import {AuthService} from "../../../../../../controllers/services/auth.service";
 import {ApiService} from "../../../../../../controllers/services/api.service";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {take} from "rxjs/operators";
+import {Select2} from "ng-select2-component";
+import {Subject} from "rxjs";
 
 interface TaxFilter {
   search: string;
@@ -26,7 +28,7 @@ interface TaxFilter {
 @Component({
   selector: 'app-pharmacy-taxes-management',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, SharedModule, RouterModule, FormsModule, ReactiveFormsModule, Select2],
   templateUrl: './taxes-management.component.html',
   styleUrls: ['./taxes-management.component.scss']
 })
@@ -43,6 +45,7 @@ export class PharmacyTaxesManagementComponent implements OnInit {
 
   taxForm: FormGroup;
   rateForm: FormGroup;
+  defaultApplicableOnList: Array<{value: string, label: string}> = [];
 
   // Filters
   filters: TaxFilter = {
@@ -84,10 +87,8 @@ export class PharmacyTaxesManagementComponent implements OnInit {
   ];
 
   APPLICABLE_ON: { value: ApplicableOn; label: string }[] = [
-    { value: 'all', label: 'Tous les produits' },
     { value: 'category', label: 'Par catégorie' },
     { value: 'product', label: 'Par produit' },
-    // { value: 'pharmacy', label: 'Par pharmacie' }
   ];
 
   informationsLabels = {
@@ -153,7 +154,8 @@ export class PharmacyTaxesManagementComponent implements OnInit {
       is_exemptible: [false],
       effective_from: [this.formatDateForInput(new Date()), [Validators.required]],
       effective_to: [null],
-      initial_rate: ['', [Validators.required, Validators.min(0)]]
+      initial_rate: ['', [Validators.required, Validators.min(0)]],
+      default_retro_applicable_on: [[]]
     });
 
     // Ajouter validation conditionnelle pour le taux
@@ -402,6 +404,11 @@ export class PharmacyTaxesManagementComponent implements OnInit {
     if (!this.taxForm.valid) {
       this.markFormGroupTouched(this.taxForm);
       this.handleError('Veuillez remplir tous les champs obligatoires correctement');
+      return;
+    }
+
+    if (this.taxForm.get('applies_to_elemnents')?.value === true && !(this.taxForm.get('default_retro_applicable_on')?.value as string[])?.length) {
+      this.handleError('Vous devez selectionner les elements applicables par la retroaction');
       return;
     }
 
@@ -799,4 +806,72 @@ export class PharmacyTaxesManagementComponent implements OnInit {
   applicableOnTooltip() {
     return this.informationsLabels[this.taxForm.get('applicable_on').value];
   }
+
+  isFieldInvalid(fieldName: string): boolean {
+    const control = this.taxForm.get(fieldName);
+    return control ? control.invalid && control.touched : false;
+  }
+
+  getFieldError(fieldName: string): string {
+    const control = this.taxForm.get(fieldName);
+    if (control && control.errors && control.touched) {
+      if (control.errors['required']) return 'Ce champ est obligatoire';
+      if (control.errors['minlength']) return `Minimum ${control.errors['minlength'].requiredLength} caractères`;
+      if (control.errors['maxlength']) return `Maximum ${control.errors['maxlength'].requiredLength} caractères`;
+      if (control.errors['pattern']) return 'Format invalide (lettres, chiffres et tirets uniquement)';
+      if (control.errors['min']) return `Valeur minimale: ${control.errors['min'].min}`;
+      if (control.errors['min']) return `Valeur maximale: ${control.errors['max'].min}`;
+    }
+    return '';
+  }
+
+  getListName() {
+    return `Appliques retroactivement sur les produits ${this.taxForm.get('applicable_on').value === 'category' ? ' des categories' : ''} :`
+  }
+
+  async loadApplicableDefaultList(): Promise<void> {
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = this.auth.getUid();
+      const applicableOn = this.taxForm.get('applicable_on').value as string;
+      const appliesDefault = this.taxForm.get('applies_to_elemnents').value as boolean;
+
+      this.taxForm.get('default_retro_applicable_on').setValue([]);
+
+      if (!token || !uid || !applicableOn || !appliesDefault) return;
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      const endPoint = `pharmacy-management/${applicableOn === 'category' ? 'categories/list' : 'products/list'}`;
+      this.isLoading = true;
+      this.loadingService.setLoading(true);
+
+      this.apiService.post(endPoint, { uid, dataList:true }, headers)
+        .pipe(take(1))
+        .subscribe({
+          next: (response: any) => {
+            if (response && response.dataList && response.dataList.length > 0) {
+              this.defaultApplicableOnList = response.dataList;
+            }
+            this.isLoading = false;
+            this.loadingService.setLoading(false);
+          },
+          error: (error) => {
+            console.error('Erreur lors du chargement des ressources', error);
+            this.isLoading = false;
+            this.loadingService.setLoading(false);
+          }
+        });
+    } catch (error) {
+      console.error('Une erreur s\'est produite lors du chargement des ressources');
+      this.isLoading = false;
+      this.loadingService.setLoading(false);
+
+    }
+  }
+
 }
