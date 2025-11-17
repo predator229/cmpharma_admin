@@ -356,7 +356,8 @@ export class PharmacyTaxesManagementComponent implements OnInit {
       is_active: true,
       applies_to_elemnents: false,
       is_exemptible: false,
-      effective_from: this.formatDateForInput(new Date())
+      effective_from: this.formatDateForInput(new Date()),
+      default_retro_applicable_on: [[]]
     });
 
     this.modalService.open(this.taxModal, {

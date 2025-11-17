@@ -15,7 +15,8 @@ import { ApiService } from "../../../../../../controllers/services/api.service";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { take } from "rxjs/operators";
 import { Category } from 'src/app/models/Category.class';
-import {Product} from "../../../../../../models/Product";
+import { Product } from "../../../../../../models/Product";
+import {Select2} from "ng-select2-component";
 
 interface TaxStatistics {
   totalProducts: number;
@@ -29,25 +30,18 @@ interface TaxStatistics {
 }
 
 interface TaxImpactAnalysis {
+  productId: string;
+  productName: string;
   beforeTax: number;
   taxAmount: number;
   afterTax: number;
   effectiveRate: number;
 }
 
-interface RelatedEntity {
-  id: string;
-  name: string;
-  type: 'product' | 'category';
-  price?: number;
-  status?: string;
-  productCount?: number;
-}
-
 @Component({
   selector: 'app-pharmacy-tax-detail',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, SharedModule, RouterModule, FormsModule, ReactiveFormsModule, Select2],
   templateUrl: './tax-detail.component.html',
   styleUrls: ['./tax-detail.component.scss']
 })
@@ -61,13 +55,14 @@ export class PharmacyTaxDetailComponent implements OnInit {
   // Tabs
   activeTab: 'overview' | 'products' | 'categories' | 'statistics' | 'history' | 'settings' = 'overview';
 
-  // Related entities
+  // Related entities (viennent du backend)
   affectedProducts: Product[] = [];
   affectedCategories: Category[] = [];
   filteredProducts: Product[] = [];
   filteredCategories: Category[] = [];
+  defaultApplicableOnList: Array<{value: string, label: string}> = [];
 
-  // Statistics
+  // Statistics (viennent du backend)
   statistics: TaxStatistics = {
     totalProducts: 0,
     totalCategories: 0,
@@ -78,6 +73,9 @@ export class PharmacyTaxDetailComponent implements OnInit {
     averageProductPrice: 0,
     productsWithMultipleTaxes: 0
   };
+
+  // Impact analysis (vient du backend)
+  impactAnalysis: TaxImpactAnalysis[] = [];
 
   // Search and filters
   productSearchTerm = '';
@@ -93,6 +91,7 @@ export class PharmacyTaxDetailComponent implements OnInit {
   // Forms
   rateForm: FormGroup;
   taxEditForm: FormGroup;
+  taxProductForm: FormGroup;
 
   // Permissions
   permissions = {
@@ -128,16 +127,13 @@ export class PharmacyTaxDetailComponent implements OnInit {
   @ViewChild('editTaxModal') editTaxModal!: TemplateRef<any>;
   @ViewChild('deleteConfirmModal') deleteConfirmModal!: TemplateRef<any>;
   @ViewChild('impactAnalysisModal') impactAnalysisModal!: TemplateRef<any>;
+  @ViewChild('addProductModal') addProductModal!: TemplateRef<any>;
 
   userDetail!: UserDetails;
   baseUrl = environment.baseUrl;
 
   private destroy$ = inject(DestroyRef);
   private modalService: NgbModal;
-
-  // Sample data for impact analysis
-  samplePrices = [1000, 2500, 5000, 10000, 25000, 50000];
-  impactAnalysis: TaxImpactAnalysis[] = [];
 
   constructor(
     modalService: NgbModal,
@@ -151,6 +147,7 @@ export class PharmacyTaxDetailComponent implements OnInit {
     this.modalService = modalService;
     this.rateForm = this.fb.group({});
     this.taxEditForm = this.fb.group({});
+    this.taxProductForm = this.fb.group({});
     this.initializeForms();
   }
 
@@ -169,7 +166,6 @@ export class PharmacyTaxDetailComponent implements OnInit {
 
         if (loaded && this.userDetail && this.taxId) {
           await this.loadTaxDetails();
-          await this.loadRelatedData();
         }
       });
   }
@@ -201,6 +197,10 @@ export class PharmacyTaxDetailComponent implements OnInit {
       effective_from: [this.formatDateForInput(new Date()), [Validators.required]],
       effective_to: [null],
       initial_rate: ['', [Validators.required, Validators.min(0)]]
+    });
+
+    this.taxProductForm = this.fb.group({
+      default_retro_applicable_on: [[], [Validators.required]],
     });
 
     // Validation conditionnelle pour le taux
@@ -265,23 +265,26 @@ export class PharmacyTaxDetailComponent implements OnInit {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacy-management/taxes/list', { uid, populateAll:true }, headers)
+      this.apiService.post('pharmacy-management/taxes/list', { uid, populateAll: true, taxId: this.taxId }, headers)
         .pipe(take(1))
         .subscribe({
           next: (response: any) => {
             if (response && !response.error && response.data) {
-              const taxes = response.data.map((t: any) => new TaxeModel(t));
-              this.tax = taxes.find((t: TaxeModel) => t._id === this.taxId) || null;
+              const taxData = response.data.find((t: any) => t._id === this.taxId);
 
-              if (!this.tax) {
+              if (!taxData) {
                 this.handleError('Taxe non trouvée');
                 this.goBack();
               } else {
-                this.affectedProducts = taxes.find((t: TaxeModel) => t._id === this.taxId)?.products.map((p: any) => new Product(p));
-                this.affectedCategories = taxes.find((t: TaxeModel) => t._id === this.taxId)?.categories.map((c: any) => new Category(c));
-                this.statistics = taxes.find((t: TaxeModel) => t._id === this.taxId)?.statistics || null;
+                // Les données viennent déjà calculées du backend
+                this.tax = new TaxeModel(taxData);
+                this.affectedProducts = taxData.products?.map((p: any) => new Product(p)) || [];
+                this.affectedCategories = taxData.categories?.map((c: any) => new Category(c)) || [];
+                this.statistics = taxData.statistics || this.statistics;
+                this.impactAnalysis = taxData.impactAnalysis || [];
+                this.defaultApplicableOnList = taxData.defaultApplicableOnList || [];
+
                 this.populateEditForm();
-                this.calculateImpactAnalysis();
                 this.applyProductFilters();
                 this.applyCategoryFilters();
               }
@@ -320,83 +323,6 @@ export class PharmacyTaxDetailComponent implements OnInit {
       effective_from: this.formatDateForInput(new Date(this.tax.effective_from)),
       effective_to: this.tax.effective_to ? this.formatDateForInput(new Date(this.tax.effective_to)) : null,
       initial_rate: currentRate
-    });
-  }
-
-  private async loadRelatedData(): Promise<void> {
-    await this.loadAffectedProducts();
-    await this.loadAffectedCategories();
-    this.calculateStatistics();
-  }
-
-  private async loadAffectedProducts(): Promise<void> {
-    this.affectedProducts = [];
-    this.applyProductFilters();
-  }
-
-  private async loadAffectedCategories(): Promise<void> {
-    this.affectedCategories = [];
-    this.applyCategoryFilters();
-  }
-
-  private calculateStatistics(): void {
-    if (!this.tax) return;
-
-    this.statistics = {
-      totalProducts: this.affectedProducts.length,
-      totalCategories: this.affectedCategories.length,
-      activeProducts: this.affectedProducts.filter(p => p.status === 'active').length,
-      inactiveProducts: this.affectedProducts.filter(p => p.status !== 'active').length,
-      estimatedMonthlyRevenue: this.calculateEstimatedRevenue(),
-      estimatedMonthlyTaxAmount: this.calculateEstimatedTaxAmount(),
-      averageProductPrice: this.calculateAveragePrice(),
-      productsWithMultipleTaxes: this.affectedProducts.filter(p => p.taxes?.length > 1).length
-    };
-  }
-
-  private calculateEstimatedRevenue(): number {
-    return this.affectedProducts.reduce((sum, p) => sum + (p.price * 10), 0);
-  }
-
-  private calculateEstimatedTaxAmount(): number {
-    if (!this.tax) return 0;
-
-    const currentRate = this.tax.getCurrentRateFees() || 0;
-    const revenue = this.calculateEstimatedRevenue();
-
-    if (this.tax.type === 'percentage') {
-      return (revenue * currentRate) / 100;
-    } else {
-      return currentRate * this.affectedProducts.length * 10; // * 10 pour simuler les ventes mensuelles
-    }
-  }
-
-  private calculateAveragePrice(): number {
-    if (this.affectedProducts.length === 0) return 0;
-    const total = this.affectedProducts.reduce((sum, p) => sum + p.price, 0);
-    return total / this.affectedProducts.length;
-  }
-
-  private calculateImpactAnalysis(): void {
-    if (!this.tax) return;
-
-    const currentRate = this.tax.getCurrentRateFees() || 0;
-
-    this.impactAnalysis = this.affectedProducts.map(product => {
-      let taxAmount = 0;
-
-      if (this.tax!.type === 'percentage') {
-        taxAmount = (product.price * currentRate) / 100;
-      } else {
-        taxAmount = currentRate;
-      }
-
-      return {
-        beforeTax: product.price,
-        taxAmount: taxAmount,
-        afterTax: product.price + taxAmount,
-        effectiveRate: (taxAmount / product.price) * 100
-      };
     });
   }
 
@@ -485,6 +411,56 @@ export class PharmacyTaxDetailComponent implements OnInit {
       backdrop: 'static',
       centered: true
     });
+  }
+
+  async saveProductTaxAdd(): Promise<void> {
+    if (!this.taxProductForm.valid || !this.tax) {
+      this.markFormGroupTouched(this.taxProductForm);
+      this.handleError('Veuillez remplir tous les champs obligatoires correctement');
+      return;
+    }
+
+    this.isSubmitting = true;
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = await this.auth.getUid();
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      const formData = {
+        applies_to_elemnents: true,
+        ...this.tax,
+        taxId: this.tax._id,
+        ...this.taxProductForm.value,
+        uid,
+      };
+
+      this.apiService.post('pharmacy-management/taxes/update', formData, headers)
+        .pipe(take(1))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error) {
+              this.showSuccess('Produit ajoute avec succès');
+              this.closeModal();
+              this.loadTaxDetails();
+            } else {
+              this.handleError(response.errorMessage ?? 'Erreur lors de la mise à jour');
+            }
+            this.isSubmitting = false;
+          },
+          error: (error) => {
+            this.handleError('Erreur lors de la communication avec le serveur');
+            this.isSubmitting = false;
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.isSubmitting = false;
+    }
   }
 
   async saveTaxEdit(): Promise<void> {
@@ -589,7 +565,6 @@ export class PharmacyTaxDetailComponent implements OnInit {
               this.showSuccess('Taux ajouté avec succès');
               this.closeModal();
               this.loadTaxDetails();
-              this.calculateImpactAnalysis();
             } else {
               this.handleError(response.errorMessage ?? 'Erreur lors de l\'ajout du taux');
             }
@@ -900,9 +875,25 @@ export class PharmacyTaxDetailComponent implements OnInit {
   }
 
   get taxEfficiency(): number {
-    // Pourcentage de produits actifs sur total
     if (this.statistics.totalProducts === 0) return 0;
     return (this.statistics.activeProducts / this.statistics.totalProducts) * 100;
+  }
+
+  openAddProductModal(): void {
+    if (!this.permissions.editTax) {
+      this.handleError('Vous n\'avez pas la permission de modifier cette taxe');
+      return;
+    }
+
+    this.taxProductForm.reset({
+      default_retro_applicable_on: [[], [Validators.required]]
+    });
+
+    this.modalService.open(this.addProductModal, {
+      size: 'lg',
+      backdrop: 'static',
+      centered: true
+    });
   }
 
   protected readonly Math = Math;

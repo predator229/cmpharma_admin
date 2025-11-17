@@ -512,6 +512,15 @@
                 <option value="active">Actifs</option>
                 <option value="inactive">Inactifs</option>
               </select>
+
+              <button
+                *ngIf="permissions.editTax"
+                class="btn btn-outline-success btn-sm"
+                (click)="openAddProductModal()"
+                [disabled]="isLoading">
+                <i class="fas fa-plus-circle me-2"></i>
+                Produit
+              </button>
             </div>
           </div>
         </div>
@@ -652,6 +661,15 @@
                 placeholder="Rechercher une catégorie..."
                 [(ngModel)]="categorySearchTerm"
                 (ngModelChange)="onCategoryFilterChange()">
+
+<!--              <button-->
+<!--                *ngIf="permissions.editTax"-->
+<!--                class="btn btn-outline-success btn-sm"-->
+<!--                (click)="openAddCategorieModal()"-->
+<!--                [disabled]="isLoading">-->
+<!--                <i class="fas fa-plus-circle me-2"></i>-->
+<!--                Categorie-->
+<!--              </button>-->
             </div>
           </div>
         </div>
@@ -1536,6 +1554,54 @@
       class="btn btn-primary"
       [disabled]="taxEditForm.invalid || isSubmitting"
       (click)="saveTaxEdit()">
+      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+      <i *ngIf="!isSubmitting" class="fas fa-save me-2"></i>
+      Enregistrer les modifications
+    </button>
+  </div>
+</ng-template>
+
+<!-- Add Product Modal -->
+<ng-template #addProductModal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-edit me-2"></i>
+      Affecter la taxe a un produit
+    </h4>
+    <button type="button" class="btn-close" (click)="closeModal()" [disabled]="isSubmitting"></button>
+  </div>
+
+  <div class="modal-body">
+    <form [formGroup]="taxProductForm">
+      <div class="mb-3">
+        <label for="default_retro_applicable_on" class="form-label">Selectionner les produits auquels affecter la taxe
+          <span class="text-danger">*</span></label>
+        <select2
+          multiple="multiple"
+          class="form-control"
+          id="default_retro_applicable_on"
+          formControlName="default_retro_applicable_on"
+          [data]="defaultApplicableOnList"
+        >
+        </select2>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer">
+    <button
+      type="button"
+      class="btn btn-secondary"
+      (click)="closeModal()"
+      [disabled]="isSubmitting">
+      <i class="fas fa-times me-2"></i>
+      Annuler
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="taxProductForm.invalid || isSubmitting"
+      (click)="saveProductTaxAdd()">
       <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
       <i *ngIf="!isSubmitting" class="fas fa-save me-2"></i>
       Enregistrer les modifications
