@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import {Component, OnInit, OnDestroy, ViewChild, ElementRef, TemplateRef} from '@angular/core';
 import {CommonModule, Location} from "@angular/common";
 import { SharedModule } from "../../../../../theme/shared/shared.module";
 import { AuthService } from "../../../../../../controllers/services/auth.service";
@@ -18,6 +18,7 @@ import { Category } from "../../../../../../models/Category.class";
 import {ActivityTimelineComponent} from "../../../../sharedComponents/activity-timeline/activity-timeline.component";
 import {ActivityLoged} from "../../../../../../models/Activity.class";
 import {PharmacyClass} from "../../../../../../models/Pharmacy.class";
+import {TaxeModel} from "../../../../../../models/Taxe.class";
 
 @Component({
   selector: 'app-pharmacy-product-detail',
@@ -41,6 +42,7 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
   safetysForm: FormGroup;
   additionalForm: FormGroup;
   pharmaciesForm: FormGroup;
+  taxesForm: FormGroup;
 
   permissions = {
     editProduct: false,
@@ -53,6 +55,7 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
   pharmaciesListArray: Array<{value: string, label: string}> = [];
   productsActivities: ActivityLoged[] = [];
   usersInfo: { [key: string]:{  name: string;  img: string;  } } | null = null;
+  availableTaxesList: Array<{value: string, label: string}> = [];
 
   prescriptionTypes = [
     { value: 'none', label: 'Aucune' },
@@ -89,7 +92,6 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
   internatPathUrl = environment.internalPathUrl;
 
   @ViewChild('editModal') editModal: ElementRef | undefined;
-  // pharmacyGroup: FormArray;
 
   constructor(
     private modalService: NgbModal,
@@ -205,6 +207,12 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
     this.pharmaciesForm = this.fb.group({
       pharmacies: [[], [Validators.required]]
     });
+
+    // Formulaire pour les taxes
+    this.taxesForm = this.fb.group({
+      taxes: [[], [Validators.required]]
+    });
+
   }
 
   createPharmacyFormGroup(pharmacyData: {
@@ -229,7 +237,7 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
     this.loadingService.setLoading(true);
     try {
       const token = await this.auth.getRealToken();
-      const uid = await this.auth.getUid();
+      const uid = this.auth.getUid();
       if (!token) {
         this.handleError('Vous n\'êtes pas autorisé à accéder à cette ressource');
         return;
@@ -244,15 +252,17 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
       this.apiService.post('pharmacy-management/products/detail', { id: this.productId, uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
-          next: (response: any) => {
+          next: async (response: any) => {
             if (response && response.data && !response.error) {
               this.product = new Product(response.data);
               this.pharmaciesListArray = response.pharmaciesList ?? [];
-              this.loadProductActivities(this.product._id);
+              await this.loadProductActivities(this.product._id);
+              await this.loadAvailableTaxes();
+
               this.populateForms();
             } else {
               this.handleError('Produit non trouvé');
-              this.router.navigate(['/pharmacy/products']);
+              await this.router.navigate(['/pharmacy/products']);
             }
             this.loadingService.setLoading(false);
           },
@@ -265,6 +275,44 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
     } catch (error) {
       this.handleError('Une erreur s\'est produite');
       this.loadingService.setLoading(false);
+    }
+  }
+
+  async loadAvailableTaxes(): Promise<void> {
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = this.auth.getUid();
+      if (!token) return;
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('pharmacy-management/taxes/list', { uid }, headers)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response: any) => {
+            if (response && response.data) {
+              this.availableTaxesList = response.data
+                .filter((tax: any) => tax.is_active)
+                .map((tax) => {
+                  const taxeModel = new TaxeModel(tax);
+                  return {
+                    value: taxeModel._id,
+                    label: `${taxeModel.name} (${taxeModel.type === 'percentage' ? taxeModel?.getCurrentRateFees() + '%' : taxeModel?.getCurrentRateFees() + ' XOF'})`
+                  };
+                });
+              console.log(this.availableTaxesList);
+            }
+          },
+          error: (error) => {
+            console.error('Erreur lors du chargement des taxes', error);
+          }
+        });
+    } catch (error) {
+      console.error('Une erreur s\'est produite lors du chargement des taxes');
     }
   }
 
@@ -335,7 +383,6 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
       originalPrice: this.product.originalPrice,
       cost: this.product.cost,
 
-      //damien
       pharmacyPricing: this.fb.array(
         this.product.pharmacies.map(pharmacy => this.createPharmacyFormGroup(pharmacy))
       )
@@ -371,6 +418,11 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
       origin: this.product.origin,
       isFragile: this.product.deliveryInfo?.isFragile,
       requiresColdChain: this.product.deliveryInfo?.requiresColdChain
+    });
+
+    // Remplir le formulaire des taxes
+    this.taxesForm.patchValue({
+      taxes: this.product.taxes?.map(tax => tax._id) || []
     });
 
     // Remplir le formulaire pharmacies
@@ -439,6 +491,10 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
         break;
       case 7: // Pharmacies
         form = this.pharmaciesForm;
+        formData = { ...form.value, type_: type, _id: this.productId };
+        break;
+      case 8:
+        form = this.taxesForm;
         formData = { ...form.value, type_: type, _id: this.productId };
         break;
       default:
@@ -830,14 +886,23 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
   }
 
   get pharmacyPricingArray(): FormArray {
-    return this.pricingForm.get('pharmacyPricing') as FormArray;
+    const array = this.pricingForm?.get('pharmacyPricing') as FormArray;
+    return array || new FormArray([]);
   }
 
   /**
    * Récupère les FormGroups des pharmacies pour *ngFor
    */
   getPharmacyFormGroups(): FormGroup[] {
-    return this.pharmacyPricingArray.controls as FormGroup[];
+    const array = this.pharmacyPricingArray;
+    return array ? (array.controls as FormGroup[]) : [];
+  }
+
+  /**
+   * Vérifie s'il y a des pharmacies
+   */
+  hasPharmacyPricing(): boolean {
+    return this.getPharmacyFormGroups().length > 0;
   }
 
   /**
@@ -947,5 +1012,159 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
     const cost = pharmacyGroup.get('cost')?.value;
     const hasCustomPricing = pharmacyGroup.get('hasCustomPricing')?.value;
     return !!(price || originalPrice || cost || hasCustomPricing);
+  }
+
+  /**
+   * Calcule la marge bénéficiaire en pourcentage
+   */
+  calculateProfitMargin(): string {
+    if (!this.product.cost || !this.product.price) {
+      return 'N/A';
+    }
+    const margin = ((this.product.price - this.product.cost) / this.product.cost) * 100;
+    return margin.toFixed(2);
+  }
+
+  /**
+   * Calcule la marge bénéficiaire pour une pharmacie
+   */
+  calculatePharmacyProfitMargin(pharmacyData: any): string {
+    if (!pharmacyData.cost || !pharmacyData.price) {
+      return 'N/A';
+    }
+    const margin = ((pharmacyData.price - pharmacyData.cost) / pharmacyData.cost) * 100;
+    return margin.toFixed(2);
+  }
+
+  /**
+   * Calcule le montant total des taxes pour un produit
+   */
+  calculateProductTax(product: Product): number {
+    if (!product || !product.taxes || product.taxes.length === 0) {
+      return 0;
+    }
+
+    let totalTax = 0;
+
+    for (const tax of product.taxes) {
+      const rate = tax?.getCurrentRateFees();
+      if (rate !== undefined) {
+        if (tax.type === 'percentage') {
+          totalTax += (product.price * rate) / 100;
+        } else if (tax.type === 'fixed') {
+          totalTax += rate;
+        }
+      }
+    }
+
+    return totalTax;
+  }
+
+  /**
+   * Calcule le prix TTC (prix HT + taxes)
+   */
+  calculateProductPriceWithTax(product: Product): number {
+    return product.price + this.calculateProductTax(product);
+  }
+
+  /**
+   * Calcule les taxes pour un prix spécifique de pharmacie
+   */
+  calculatePharmacyTax(price: number): number {
+    const taxesToUse = this.product?.taxes || [];
+
+    if (!taxesToUse || taxesToUse.length === 0) {
+      return 0;
+    }
+
+    let totalTax = 0;
+
+    for (const tax of taxesToUse) {
+      const rate = tax?.getCurrentRateFees();
+      if (rate !== undefined) {
+        if (tax.type === 'percentage') {
+          totalTax += (price * rate) / 100;
+        } else if (tax.type === 'fixed') {
+          totalTax += rate;
+        }
+      }
+    }
+
+    return totalTax;
+  }
+
+  /**
+   * Formate tous les taux de taxes du produit
+   */
+  formatAllTaxRates(product: Product): string {
+    if (!product || !product.taxes || product.taxes.length === 0) {
+      return 'Aucune taxe';
+    }
+
+    return product.taxes
+      .map(tax => {
+        const rate = tax?.getCurrentRateFees();
+        if (rate === undefined) return `${tax.name}: N/A`;
+
+        if (tax.type === 'percentage') {
+          return `${tax.name}: ${rate}%`;
+        } else {
+          return `${tax.name}: ${rate}€`;
+        }
+      })
+      .join(', ');
+  }
+
+  /**
+   * Formate un taux de taxe
+   */
+  formatRate(tax: TaxeModel): string {
+    const rate = tax?.getCurrentRateFees();
+    if (rate === undefined) return 'N/A';
+
+    if (tax.type === 'percentage') {
+      return `${rate}%`;
+    } else {
+      return `${rate}€`;
+    }
+  }
+
+  /**
+   * Calcule le montant d'une seule taxe
+   */
+  calculateSingleTax(price: number, tax: TaxeModel): number {
+    const rate = tax?.getCurrentRateFees();
+    if (rate === undefined) return 0;
+
+    if (tax.type === 'percentage') {
+      return (price * rate) / 100;
+    } else {
+      return rate;
+    }
+  }
+
+  /**
+   * Labels pour les juridictions
+   */
+  getJurisdictionLabel(jurisdiction: string): string {
+    const labels: { [key: string]: string } = {
+      'national': 'National',
+      'regional': 'Régional',
+      'municipal': 'Municipal'
+    };
+    return labels[jurisdiction] || jurisdiction;
+  }
+
+  /**
+   * Labels pour applicable_on
+   */
+  getApplicableOnLabel(applicableOn: string): string {
+    const labels: { [key: string]: string } = {
+      'all': 'Tous les produits',
+      'category': 'Par catégorie',
+      'product': 'Produit spécifique',
+      'pharmacy': 'Par pharmacie'
+    };
+    return labels[applicableOn] || applicableOn;
   }
 }

@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, TemplateRef, inject, DestroyRef } from '@angular/core';
 import { CommonModule, Location } from "@angular/common";
-import { ActivatedRoute, RouterModule } from "@angular/router";
+import {ActivatedRoute, Router} from "@angular/router";
 import { HttpHeaders } from '@angular/common/http';
 import Swal from 'sweetalert2';
 import { FormBuilder, FormGroup, FormsModule, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -41,7 +41,7 @@ interface TaxImpactAnalysis {
 @Component({
   selector: 'app-pharmacy-tax-detail',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterModule, FormsModule, ReactiveFormsModule, Select2],
+  imports: [CommonModule, SharedModule, FormsModule, ReactiveFormsModule, Select2],
   templateUrl: './tax-detail.component.html',
   styleUrls: ['./tax-detail.component.scss']
 })
@@ -51,6 +51,9 @@ export class PharmacyTaxDetailComponent implements OnInit {
 
   isLoading = false;
   isSubmitting = false;
+
+  protected readonly Math = Math;
+  internatPathUrl = environment.internalPathUrl;
 
   // Tabs
   activeTab: 'overview' | 'products' | 'categories' | 'statistics' | 'history' | 'settings' = 'overview';
@@ -116,11 +119,16 @@ export class PharmacyTaxDetailComponent implements OnInit {
   ];
 
   APPLICABLE_ON: { value: ApplicableOn; label: string }[] = [
-    { value: 'all', label: 'Tous les produits' },
+    // { value: 'all', label: 'Tous les produits' },
     { value: 'category', label: 'Par catégorie' },
     { value: 'product', label: 'Par produit' },
-    { value: 'pharmacy', label: 'Par pharmacie' }
+    // { value: 'pharmacy', label: 'Par pharmacie' }
   ];
+
+  // Propriétés
+  selectedProduct: Product | null = null;
+  productModalTab: 'general' | 'pricing' | 'medical' | 'images' = 'general';
+  @ViewChild('productDetailModal') productDetailModal!: TemplateRef<any>;
 
   // Modal references
   @ViewChild('rateModal') rateModal!: TemplateRef<any>;
@@ -134,6 +142,7 @@ export class PharmacyTaxDetailComponent implements OnInit {
 
   private destroy$ = inject(DestroyRef);
   private modalService: NgbModal;
+  private router = inject(Router);
 
   constructor(
     modalService: NgbModal,
@@ -896,5 +905,320 @@ export class PharmacyTaxDetailComponent implements OnInit {
     });
   }
 
-  protected readonly Math = Math;
+// Méthodes
+
+  /**
+   * Ouvre le modal de détail du produit
+   */
+  openProductModal(product: Product): void {
+    this.selectedProduct = product;
+    this.productModalTab = 'general';
+
+    const modalRef = this.modalService.open(this.productDetailModal, {
+      size: 'xl',
+      backdrop: 'static',
+      keyboard: true,
+      scrollable: true,
+      centered: true
+    });
+  }
+
+  /**
+   * Calcule le montant de la taxe pour un produit
+   */
+  calculateProductTax(product: Product): number {
+    if (!this.tax || !product) return 0;
+
+    if (this.tax.type === 'percentage') {
+      return (product.price * this.currentRate) / 100;
+    } else {
+      return this.currentRate;
+    }
+  }
+
+  /**
+   * Calcule le prix TTC d'un produit
+   */
+  calculateProductPriceWithTax(product: Product): number {
+    if (!product) return 0;
+    return product.price + this.calculateProductTax(product);
+  }
+
+  /**
+   * Calcule le montant de la taxe pour un prix de pharmacie
+   */
+  calculatePharmacyTax(price: number): number {
+    if (!this.tax || !price) return 0;
+
+    if (this.tax.type === 'percentage') {
+      return (price * this.currentRate) / 100;
+    } else {
+      return this.currentRate;
+    }
+  }
+
+  /**
+   * Calcule la marge bénéficiaire d'un produit
+   */
+  calculateProfitMargin(product: Product): string {
+    if (!product.cost || product.cost === 0) return 'N/A';
+
+    const profit = product.price - product.cost;
+    const margin = (profit / product.cost) * 100;
+
+    return margin.toFixed(2);
+  }
+
+  /**
+   * Obtient le label du statut du produit
+   */
+  getStatusLabel(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'active': 'Actif',
+      'inactive': 'Inactif',
+      'out_of_stock': 'Épuisé',
+      'discontinued': 'Discontinué'
+    };
+    return statusMap[status] || status;
+  }
+
+  /**
+   * Obtient le label du type d'ordonnance
+   */
+  getPrescriptionTypeLabel(type: string): string {
+    const typeMap: { [key: string]: string } = {
+      'simple': 'Ordonnance simple',
+      'renewable': 'Ordonnance renouvelable',
+      'secure': 'Ordonnance sécurisée',
+      'restricted': 'Ordonnance restreinte'
+    };
+    return typeMap[type] || type;
+  }
+
+  /**
+   * Obtient le label de la forme galénique
+   */
+  getDrugFormLabel(form: string): string {
+    const formMap: { [key: string]: string } = {
+      'tablet': 'Comprimé',
+      'capsule': 'Gélule',
+      'syrup': 'Sirop',
+      'injection': 'Injectable',
+      'cream': 'Crème',
+      'ointment': 'Pommade',
+      'drops': 'Gouttes',
+      'spray': 'Spray',
+      'powder': 'Poudre',
+      'solution': 'Solution',
+      'suppository': 'Suppositoire',
+      'patch': 'Patch'
+    };
+    return formMap[form] || form;
+  }
+
+  /**
+   * Imprime les détails du produit
+   */
+  printProductDetails(): void {
+    if (!this.selectedProduct) return;
+
+    const printContent = this.generateProductPrintContent(this.selectedProduct);
+    const printWindow = window.open('', '_blank');
+
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+  }
+
+  /**
+   * Génère le contenu HTML pour l'impression
+   */
+  private generateProductPrintContent(product: Product): string {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Détails du produit - ${product.name}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          padding: 20px;
+          color: #333;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #007bff;
+          padding-bottom: 20px;
+        }
+        .header h1 {
+          margin: 0;
+          color: #007bff;
+        }
+        .section {
+          margin-bottom: 25px;
+        }
+        .section-title {
+          background-color: #f8f9fa;
+          padding: 10px;
+          border-left: 4px solid #007bff;
+          font-weight: bold;
+          margin-bottom: 15px;
+        }
+        .info-row {
+          display: flex;
+          padding: 8px 0;
+          border-bottom: 1px solid #eee;
+        }
+        .info-label {
+          font-weight: bold;
+          width: 200px;
+          color: #666;
+        }
+        .info-value {
+          flex: 1;
+        }
+        .badge {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          margin-right: 5px;
+        }
+        .badge-success { background-color: #28a745; color: white; }
+        .badge-danger { background-color: #dc3545; color: white; }
+        .badge-warning { background-color: #ffc107; color: black; }
+        .badge-info { background-color: #17a2b8; color: white; }
+        .price-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+        .price-table th,
+        .price-table td {
+          padding: 10px;
+          text-align: left;
+          border: 1px solid #ddd;
+        }
+        .price-table th {
+          background-color: #f8f9fa;
+          font-weight: bold;
+        }
+        .total-row {
+          background-color: #e7f3ff;
+          font-weight: bold;
+        }
+        @media print {
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>${product.name}</h1>
+        <p>SKU: ${product.sku} | Date: ${new Date().toLocaleDateString('fr-FR')}</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Informations générales</div>
+        <div class="info-row">
+          <div class="info-label">Nom:</div>
+          <div class="info-value">${product.name}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">SKU:</div>
+          <div class="info-value">${product.sku}</div>
+        </div>
+        ${product.barcode ? `
+        <div class="info-row">
+          <div class="info-label">Code-barres:</div>
+          <div class="info-value">${product.barcode}</div>
+        </div>
+        ` : ''}
+        ${product.marque ? `
+        <div class="info-row">
+          <div class="info-label">Marque:</div>
+          <div class="info-value">${product.marque}</div>
+        </div>
+        ` : ''}
+        <div class="info-row">
+          <div class="info-label">Statut:</div>
+          <div class="info-value">
+            <span class="badge badge-${product.status === 'active' ? 'success' : 'danger'}">
+              ${this.getStatusLabel(product.status)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Prix et taxes</div>
+        <table class="price-table">
+          <tr>
+            <th>Description</th>
+            <th>Montant</th>
+          </tr>
+          <tr>
+            <td>Prix de vente (HT)</td>
+            <td>${this.formatCurrency(product.price)}</td>
+          </tr>
+          <tr>
+            <td>Taxe ${this.tax?.name} (${this.formatRate(this.tax!)})</td>
+            <td>${this.formatCurrency(this.calculateProductTax(product))}</td>
+          </tr>
+          <tr class="total-row">
+            <td>Prix de vente (TTC)</td>
+            <td>${this.formatCurrency(this.calculateProductPriceWithTax(product))}</td>
+          </tr>
+        </table>
+      </div>
+
+      ${product.requiresPrescription ? `
+      <div class="section">
+        <div class="section-title">Informations médicales</div>
+        <div class="info-row">
+          <div class="info-label">Ordonnance:</div>
+          <div class="info-value">
+            <span class="badge badge-danger">Requise</span>
+          </div>
+        </div>
+        ${product.drugForm ? `
+        <div class="info-row">
+          <div class="info-label">Forme:</div>
+          <div class="info-value">${this.getDrugFormLabel(product.drugForm)}</div>
+        </div>
+        ` : ''}
+        ${product.dosage ? `
+        <div class="info-row">
+          <div class="info-label">Dosage:</div>
+          <div class="info-value">${product.dosage}</div>
+        </div>
+        ` : ''}
+      </div>
+      ` : ''}
+
+      <div style="margin-top: 50px; text-align: center; color: #999; font-size: 12px;">
+        Document généré le ${new Date().toLocaleString('fr-FR')} - ${this.tax?.name || 'Système de gestion'}
+      </div>
+    </body>
+    </html>
+  `;
+  }
+
+  /**
+   * Navigation vers la page de détail complet du produit
+   */
+  navigateToProductDetail(): void {
+    if (this.selectedProduct) {
+      this.closeModal();
+      this.router.navigate(['/pharmacy/products/', this.selectedProduct._id]);
+    }
+  }
 }
