@@ -15,7 +15,6 @@ import {ApiService} from "../../../../../../controllers/services/api.service";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {take} from "rxjs/operators";
 import {Select2} from "ng-select2-component";
-import {Subject} from "rxjs";
 
 interface TaxFilter {
   search: string;
@@ -148,7 +147,7 @@ export class PharmacyTaxesManagementComponent implements OnInit {
       description: ['', [Validators.maxLength(500)]],
       type: ['percentage', [Validators.required]],
       jurisdiction: ['national', [Validators.required]],
-      applicable_on: ['all', [Validators.required]],
+      applicable_on: ['product', [Validators.required]],
       is_active: [true],
       applies_to_elemnents: [false],
       is_exemptible: [false],
@@ -352,7 +351,7 @@ export class PharmacyTaxesManagementComponent implements OnInit {
     this.taxForm.reset({
       type: 'percentage',
       jurisdiction: 'national',
-      applicable_on: 'all',
+      applicable_on: 'product',
       is_active: true,
       applies_to_elemnents: false,
       is_exemptible: false,

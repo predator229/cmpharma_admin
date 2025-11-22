@@ -514,7 +514,7 @@
               </select>
 
               <button
-                *ngIf="permissions.editTax"
+                *ngIf="permissions.editTax && tax?.is_active && tax.applicable_on === 'product'"
                 class="btn btn-outline-success btn-sm"
                 (click)="openAddProductModal()"
                 [disabled]="isLoading">
@@ -535,7 +535,7 @@
                 <th>SKU</th>
                 <th>Prix HT</th>
                 <th>Taxe</th>
-                <th>Prix TTC</th>
+                <th>Prix TTC (Uniquement Taxe actuel)</th>
                 <th>Statut</th>
                 <th>Actions</th>
               </tr>
@@ -592,10 +592,17 @@
                 </td>
                 <td>
                   <button
+                    style="margin-right: 5px;"
                     (click)="openProductModal(product)"
-                    class="btn btn-sm btn-outline-primary"
+                    class="btn btn-sm btn-outline-primary mr-5"
                     title="Voir le produit">
                     <i class="fas fa-eye"></i>
+                  </button>
+                  <button
+                    (click)="deleteTaxeProductOrCategory(product)"
+                    class="btn btn-sm btn-outline-danger"
+                    title="Retirer la taxe au produit">
+                    <i class="fas fa-trash"></i>
                   </button>
                 </td>
               </tr>
@@ -661,25 +668,27 @@
               <span class="badge bg-primary ms-2">{{ filteredCategories.length }}</span>
             </h5>
 
-            <div class="input-group" style="width: 300px;">
-              <span class="input-group-text">
-                <i class="fas fa-search"></i>
-              </span>
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Rechercher une catégorie..."
-                [(ngModel)]="categorySearchTerm"
-                (ngModelChange)="onCategoryFilterChange()">
+            <div class="d-flex gap-2">
+              <div class="input-group" style="width: 300px;">
+                <span class="input-group-text">
+                  <i class="fas fa-search"></i>
+                </span>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Rechercher une catégorie..."
+                  [(ngModel)]="categorySearchTerm"
+                  (ngModelChange)="onCategoryFilterChange()">
+              </div>
 
-<!--              <button-->
-<!--                *ngIf="permissions.editTax"-->
-<!--                class="btn btn-outline-success btn-sm"-->
-<!--                (click)="openAddCategorieModal()"-->
-<!--                [disabled]="isLoading">-->
-<!--                <i class="fas fa-plus-circle me-2"></i>-->
-<!--                Categorie-->
-<!--              </button>-->
+              <button
+                *ngIf="permissions.editTax && tax?.is_active && tax.applicable_on === 'category'"
+                class="btn btn-outline-success btn-sm"
+                (click)="openAddProductModal()"
+                [disabled]="isLoading">
+                <i class="fas fa-plus-circle me-2"></i>
+                Categorie
+              </button>
             </div>
           </div>
         </div>
@@ -729,9 +738,17 @@
                 </td>
                 <td>
                   <button
+                    style="margin-right: 5px;"
                     class="btn btn-sm btn-outline-primary"
+                    (click)="openCategoryModal(category)"
                     title="Voir la catégorie">
                     <i class="fas fa-eye"></i>
+                  </button>
+                  <button
+                    (click)="deleteTaxeProductOrCategory(category)"
+                    class="btn btn-sm btn-outline-danger"
+                    title="Retirer la taxe au produit">
+                    <i class="fas fa-trash"></i>
                   </button>
                 </td>
               </tr>
@@ -1576,7 +1593,7 @@
   <div class="modal-header">
     <h4 class="modal-title">
       <i class="fas fa-edit me-2"></i>
-      Affecter la taxe a un produit
+      Affecter la taxe a {{ tax.applicable_on === 'product' ? 'un produit' : 'une categorie' }}
     </h4>
     <button type="button" class="btn-close" (click)="closeModal()" [disabled]="isSubmitting"></button>
   </div>
@@ -1584,7 +1601,7 @@
   <div class="modal-body">
     <form [formGroup]="taxProductForm">
       <div class="mb-3">
-        <label for="default_retro_applicable_on" class="form-label">Selectionner les produits auquels affecter la taxe
+        <label for="default_retro_applicable_on" class="form-label">Selectionner les {{ tax.applicable_on === 'product' ? 'produits auquels' : 'categories auquelles' }} affecter la taxe
           <span class="text-danger">*</span></label>
         <select2
           multiple="multiple"
@@ -1642,7 +1659,7 @@
         <tr>
           <th>Prix HT</th>
           <th>Montant de la taxe</th>
-          <th>Prix TTC</th>
+          <th>Prix TTC (Uniquement Taxe actuel)</th>
           <th>Taux effectif</th>
         </tr>
         </thead>
@@ -2394,6 +2411,338 @@
       Imprimer
     </button>
     <button type="button" class="btn btn-primary" (click)="navigateToProductDetail()">
+      <i class="fas fa-external-link-alt me-2"></i>
+      Voir détails complets
+    </button>
+  </div>
+</ng-template>
+
+<!-- Category Detail Modal -->
+<ng-template #categoryDetailModal>
+  <div class="modal-header">
+    <div class="d-flex align-items-center">
+      <img *ngIf="selectedCategory?.iconUrl"
+           [src]="internatPathUrl + selectedCategory.iconUrl.url"
+           alt="Icon"
+           class="modal-category-icon me-3">
+      <div *ngIf="!selectedCategory?.iconUrl" class="modal-no-icon me-3">
+        <i class="fas fa-folder"></i>
+      </div>
+      <div>
+        <h4 class="modal-title mb-1">{{ selectedCategory?.name }}</h4>
+        <div class="category-badges">
+          <span class="badge" [ngClass]="'bg-' + (selectedCategory?.status === 'active' ? 'success' : 'secondary')">
+            {{ getStatusLabel(selectedCategory?.status!) }}
+          </span>
+          <span class="badge" [ngClass]="selectedCategory?.specialCategory">
+            {{ getSpecialCategoryLabel(selectedCategory?.specialCategory!) }}
+          </span>
+          <span class="badge bg-info" *ngIf="selectedCategory?.requiresPrescription">
+            Ordonnance requise
+          </span>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+
+  <div class="modal-body" *ngIf="selectedCategory">
+    <!-- Quick Info Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-4 col-sm-6">
+        <div class="info-card">
+          <div class="info-icon bg-primary">
+            <i class="fas fa-layer-group"></i>
+          </div>
+          <div class="info-content">
+            <small class="text-muted">Niveau</small>
+            <strong>{{ selectedCategory.level }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4 col-sm-6">
+        <div class="info-card">
+          <div class="info-icon bg-success">
+            <i class="fas fa-box"></i>
+          </div>
+          <div class="info-content">
+            <small class="text-muted">Produits</small>
+            <strong>{{ selectedCategory.productCount }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4 col-sm-6">
+        <div class="info-card">
+          <div class="info-icon bg-info">
+            <i class="fas fa-eye"></i>
+          </div>
+          <div class="info-content">
+            <small class="text-muted">Vues</small>
+            <strong>{{ selectedCategory.viewCount }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [class.active]="categoryModalTab === 'general'"
+                (click)="categoryModalTab = 'general'"
+                type="button">
+          <i class="fas fa-info-circle me-2"></i>
+          Général
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [class.active]="categoryModalTab === 'hierarchy'"
+                (click)="categoryModalTab = 'hierarchy'"
+                type="button">
+          <i class="fas fa-sitemap me-2"></i>
+          Hiérarchie
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [class.active]="categoryModalTab === 'seo'"
+                (click)="categoryModalTab = 'seo'"
+                type="button">
+          <i class="fas fa-search me-2"></i>
+          SEO
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [class.active]="categoryModalTab === 'images'"
+                (click)="categoryModalTab = 'images'"
+                type="button">
+          <i class="fas fa-images me-2"></i>
+          Images
+        </button>
+      </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- General Tab -->
+      <div *ngIf="categoryModalTab === 'general'" class="tab-pane fade show active">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="info-group">
+              <label><i class="fas fa-tag me-2 text-primary"></i>Nom</label>
+              <p class="fw-bold">{{ selectedCategory.name }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedCategory.slug">
+              <label><i class="fas fa-link me-2 text-primary"></i>Slug</label>
+              <p><code>{{ selectedCategory.slug }}</code></p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedCategory.description">
+              <label><i class="fas fa-align-left me-2 text-primary"></i>Description</label>
+              <p class="text-muted">{{ selectedCategory.description }}</p>
+            </div>
+
+            <div class="info-group">
+              <label><i class="fas fa-cog me-2 text-primary"></i>Configuration</label>
+              <div class="d-flex gap-2 flex-wrap">
+                <span class="badge" [ngClass]="selectedCategory.isVisible ? 'bg-success' : 'bg-secondary'">
+                  <i class="fas" [ngClass]="selectedCategory.isVisible ? 'fa-eye' : 'fa-eye-slash'"></i>
+                  {{ selectedCategory.isVisible ? 'Visible' : 'Masqué' }}
+                </span>
+                <span class="badge bg-info">
+                  Ordre: {{ selectedCategory.displayOrder }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="info-group">
+              <label><i class="fas fa-calendar me-2 text-info"></i>Créé le</label>
+              <p>{{ selectedCategory.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+            </div>
+
+            <div class="info-group">
+              <label><i class="fas fa-calendar-check me-2 text-info"></i>Modifié le</label>
+              <p>{{ selectedCategory.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedCategory.restrictions?.length">
+              <label><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Restrictions</label>
+              <div class="d-flex flex-wrap gap-1">
+                <span *ngFor="let restriction of selectedCategory.restrictions"
+                      class="badge bg-warning text-dark">
+                  {{ getRestrictionByValue(restriction)?.label || restriction }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hierarchy Tab -->
+      <div *ngIf="categoryModalTab === 'hierarchy'" class="tab-pane fade show active">
+        <div class="card border-primary mb-3" *ngIf="selectedCategory.parentCategory">
+          <div class="card-header bg-primary text-white">
+            <h6 class="mb-0">
+              <i class="fas fa-level-up-alt me-2"></i>
+              Catégorie parent
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <img *ngIf="selectedCategory.parentCategory.iconUrl"
+                   [src]="internatPathUrl + selectedCategory.parentCategory.iconUrl.url"
+                   alt="Icon"
+                   class="me-2"
+                   style="width: 32px; height: 32px;">
+              <div class="flex-grow-1">
+                <h6 class="mb-0">{{ selectedCategory.parentCategory.name }}</h6>
+                <small class="text-muted">Niveau {{ selectedCategory.parentCategory.level }}</small>
+              </div>
+              <button class="btn btn-sm btn-outline-primary"
+                      (click)="navigateToCategoryDetail(selectedCategory.parentCategory._id)">
+                <i class="fas fa-external-link-alt"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-success" *ngIf="selectedCategory.subcategories?.length">
+          <div class="card-header bg-success text-white">
+            <h6 class="mb-0">
+              <i class="fas fa-level-down-alt me-2"></i>
+              Sous-catégories ({{ selectedCategory.subcategories.length }})
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="list-group">
+              <div *ngFor="let subcat of selectedCategory.subcategories"
+                   class="list-group-item d-flex align-items-center">
+                <img *ngIf="subcat.iconUrl"
+                     [src]="internatPathUrl + subcat.iconUrl.url"
+                     alt="Icon"
+                     class="me-2"
+                     style="width: 24px; height: 24px;">
+                <div class="flex-grow-1">
+                  <div class="fw-bold">{{ subcat.name }}</div>
+                  <small class="text-muted">{{ subcat.productCount }} produits</small>
+                </div>
+                <button class="btn btn-sm btn-outline-primary"
+                        (click)="navigateToCategoryDetail(subcat._id)">
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-info mt-3" *ngIf="!selectedCategory.parentCategory && !selectedCategory.subcategories?.length">
+          <i class="fas fa-info-circle me-2"></i>
+          Cette catégorie est autonome (pas de parent ni d'enfants).
+        </div>
+      </div>
+
+      <!-- SEO Tab -->
+      <div *ngIf="categoryModalTab === 'seo'" class="tab-pane fade show active">
+        <div class="card mb-3" *ngIf="selectedCategory.metaTitle">
+          <div class="card-header">
+            <h6 class="mb-0">
+              <i class="fas fa-heading me-2"></i>
+              Meta Title
+            </h6>
+          </div>
+          <div class="card-body">
+            <p class="mb-0">{{ selectedCategory.metaTitle }}</p>
+          </div>
+        </div>
+
+        <div class="card mb-3" *ngIf="selectedCategory.metaDescription">
+          <div class="card-header">
+            <h6 class="mb-0">
+              <i class="fas fa-file-alt me-2"></i>
+              Meta Description
+            </h6>
+          </div>
+          <div class="card-body">
+            <p class="mb-0">{{ selectedCategory.metaDescription }}</p>
+          </div>
+        </div>
+
+        <div class="card" *ngIf="selectedCategory.keywords?.length">
+          <div class="card-header">
+            <h6 class="mb-0">
+              <i class="fas fa-tags me-2"></i>
+              Mots-clés
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="d-flex flex-wrap gap-2">
+              <span *ngFor="let keyword of selectedCategory.keywords"
+                    class="badge bg-secondary">
+                {{ keyword }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning mt-3" *ngIf="!selectedCategory.metaTitle && !selectedCategory.metaDescription && !selectedCategory.keywords?.length">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Aucune information SEO configurée pour cette catégorie.
+        </div>
+      </div>
+
+      <!-- Images Tab -->
+      <div *ngIf="categoryModalTab === 'images'" class="tab-pane fade show active">
+        <div class="row g-3">
+          <div class="col-md-6" *ngIf="selectedCategory.iconUrl">
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">Icône</h6>
+              </div>
+              <div class="card-body text-center">
+                <img [src]="internatPathUrl + selectedCategory.iconUrl.url"
+                     alt="Icône"
+                     class="img-fluid rounded"
+                     style="max-height: 200px;">
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6" *ngIf="selectedCategory.imageUrl">
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">Image</h6>
+              </div>
+              <div class="card-body text-center">
+                <img [src]="internatPathUrl + selectedCategory.imageUrl.url"
+                     alt="Image"
+                     class="img-fluid rounded"
+                     style="max-height: 200px;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-info mt-3" *ngIf="!selectedCategory.iconUrl && !selectedCategory.imageUrl">
+          <i class="fas fa-info-circle me-2"></i>
+          Aucune image associée à cette catégorie.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">
+      <i class="fas fa-times me-2"></i>
+      Fermer
+    </button>
+    <button type="button" class="btn btn-primary" (click)="navigateToCategoryDetail(selectedCategory._id)">
       <i class="fas fa-external-link-alt me-2"></i>
       Voir détails complets
     </button>

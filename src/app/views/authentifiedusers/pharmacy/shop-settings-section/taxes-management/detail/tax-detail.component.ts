@@ -14,7 +14,7 @@ import { AuthService } from "../../../../../../controllers/services/auth.service
 import { ApiService } from "../../../../../../controllers/services/api.service";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { take } from "rxjs/operators";
-import { Category } from 'src/app/models/Category.class';
+import {Category, getRestrictionByValue} from 'src/app/models/Category.class';
 import { Product } from "../../../../../../models/Product";
 import {Select2} from "ng-select2-component";
 
@@ -129,6 +129,10 @@ export class PharmacyTaxDetailComponent implements OnInit {
   selectedProduct: Product | null = null;
   productModalTab: 'general' | 'pricing' | 'medical' | 'images' = 'general';
   @ViewChild('productDetailModal') productDetailModal!: TemplateRef<any>;
+
+  selectedCategory: Category | null = null;
+  categoryModalTab: 'general' | 'hierarchy' | 'seo' | 'images' = 'general';
+  @ViewChild('categoryDetailModal') categoryDetailModal!: TemplateRef<any>;
 
   // Modal references
   @ViewChild('rateModal') rateModal!: TemplateRef<any>;
@@ -442,7 +446,7 @@ export class PharmacyTaxDetailComponent implements OnInit {
 
       const formData = {
         applies_to_elemnents: true,
-        ...this.tax,
+        applicable_on: this.tax.applicable_on,
         taxId: this.tax._id,
         ...this.taxProductForm.value,
         uid,
@@ -453,7 +457,7 @@ export class PharmacyTaxDetailComponent implements OnInit {
         .subscribe({
           next: (response: any) => {
             if (response && !response.error) {
-              this.showSuccess('Produit ajoute avec succès');
+              this.showSuccess(`${this.tax.applicable_on === 'product' ? 'Produit ajoute' : 'Categorie ajoutew'} avec succès`);
               this.closeModal();
               this.loadTaxDetails();
             } else {
@@ -1221,4 +1225,101 @@ export class PharmacyTaxDetailComponent implements OnInit {
       this.router.navigate(['/pharmacy/products/', this.selectedProduct._id]);
     }
   }
+
+  /**
+   * Ouvre le modal de détail de la catégorie
+   */
+  openCategoryModal(category: Category): void {
+    this.selectedCategory = category;
+    this.categoryModalTab = 'general';
+
+    const modalRef = this.modalService.open(this.categoryDetailModal, {
+      size: 'xl',
+      backdrop: 'static',
+      keyboard: true,
+      scrollable: true,
+      centered: true
+    });
+  }
+
+  /**
+   * Navigation vers la page de détail complet de la catégorie
+   */
+  navigateToCategoryDetail(categoryId: string): void {
+    if (categoryId) {
+      this.closeModal();
+      this.router.navigate(['/pharmacy/categories', categoryId]);
+    }
+  }
+
+  getSpecialCategoryLabel(specialCategory: string): string {
+    switch (specialCategory) {
+      case 'otc': return 'Vente libre';
+      case 'prescription': return 'Sur ordonnance';
+      case 'homeopathy': return 'Homéopathie';
+      case 'medical_device': return 'Dispositif médical';
+      case 'supplement': return 'Complément alimentaire';
+      case 'cosmetic': return 'Cosmétique';
+      default: return 'Inconnu';
+    }
+  }
+
+  /**
+   * Suppression de la taxe du produit ou de categorie
+   */
+  async deleteTaxeProductOrCategory(element: Product | Category): Promise<void> {
+    if (!element) return;
+
+    if (!this.permissions.deleteTax || !this.tax) {
+      this.handleError('Vous n\'avez pas la permission de desaffecter cette taxe au produit');
+      return;
+    }
+
+    const confirmed = await this.showConfirmation(
+      `Supprimer la taxe ${this.tax.applicable_on === 'product' ? 'du produit' : 'de la categorie'}`,
+      `Voulez-vous vraiment supprimer la taxe a ${this.tax.applicable_on === 'product' ? 'ce produit' : 'cette categorie'} "${element.name}" ?
+        ${this.tax.applicable_on === 'product' ? '' : 'cela supprimera la taxe de tous les produits de cette categorie ou des categories enfants.'}
+       Cette action est irréversible.`,
+      'Supprimer',
+      true
+    );
+
+    if (!confirmed) return;
+
+    this.isSubmitting = true;
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = this.auth.getUid();
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post(`pharmacy-management/taxes/${this.tax.applicable_on}-remove`, { uid, elementId: element._id, taxId: this.taxId, recursiveProduct: true }, headers)
+        .pipe(take(1))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error) {
+              this.showSuccess(` ${this.tax.applicable_on === 'product' ? 'Produit supprime' : 'Categorie supprimee'} de la taxe avec succès`);
+              this.closeModal();
+              this.loadTaxDetails();
+            } else {
+              this.handleError(response.errorMessage ?? 'Erreur lors de la mise à jour');
+            }
+            this.isSubmitting = false;
+          },
+          error: (error) => {
+            this.handleError('Erreur lors de la communication avec le serveur');
+            this.isSubmitting = false;
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.isSubmitting = false;
+    }
+  }
+
+  protected readonly getRestrictionByValue = getRestrictionByValue;
 }
