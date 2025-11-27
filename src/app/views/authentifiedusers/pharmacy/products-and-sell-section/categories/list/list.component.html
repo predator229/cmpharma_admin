@@ -375,6 +375,7 @@
               id="parentCategory"
               formControlName="parentCategory"
               [data]="categoriesArraySelect2"
+              (update)="onParentCategoryChange($event)"
               [class.is-invalid]="isFieldInvalid('parentCategory')"
             >
             </select2>
@@ -552,6 +553,20 @@
           </div>
         </div>
       </div>
+      <!-- Liste des taxes -->
+      <div class="mb-3">
+        <label for="taxesApplicable" class="form-label">Liste des taxes de la Categorie</label>
+        <select2
+          #categorieTaxes
+          multiple="multiple"
+          class="form-control"
+          id="taxes"
+          formControlName="taxesApplicable"
+          [data]="taxesArray"
+          [class.is-invalid]="isFieldInvalid('taxesApplicable')">
+        </select2>
+      </div>
+      <!-- Liste des pharmacies de la categorie -->
       <div class="row mb-3">
         <label for="pharmaciesList" class="form-label">Liste des pharmacies de la Categorie</label>
         <select2

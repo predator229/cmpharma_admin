@@ -170,7 +170,7 @@ export class Category {
     this.specialCategory = data.specialCategory || 'otc';
 
     this.pharmaciesList = data.pharmaciesList.map((item: any) => CommonFunctions.mapToPharmacy(item));
-    this.taxesApplicable = this.taxesApplicable?.map((taxe: any) => new TaxeModel(taxe)) ?? [];
+    this.taxesApplicable = data.taxesApplicable?.map((taxe: any) => new TaxeModel(taxe)) ?? [];
 
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;

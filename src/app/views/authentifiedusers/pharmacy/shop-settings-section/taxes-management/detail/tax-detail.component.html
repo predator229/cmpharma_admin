@@ -711,7 +711,7 @@
                   <div class="d-flex align-items-center">
                     <img
                       *ngIf="category.imageUrl"
-                      [src]="category.imageUrl.url"
+                      [src]="internatPathUrl + category.imageUrl.url"
                       alt="{{ category.name }}"
                       class="category-thumb me-2">
                     <div>

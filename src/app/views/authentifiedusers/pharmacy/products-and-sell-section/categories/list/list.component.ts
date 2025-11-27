@@ -4,7 +4,6 @@ import { SharedModule } from "../../../../../theme/shared/shared.module";
 import { AuthService } from "../../../../../../controllers/services/auth.service";
 import {
   PHARMACY_RESTRICTIONS,
-  getRestrictionsByCategory,
   Category,
   getRestrictionByValue
 } from "../../../../../../models/Category.class";
@@ -16,12 +15,11 @@ import Swal from 'sweetalert2';
 import {FormBuilder, FormGroup, FormsModule, Validators} from '@angular/forms';
 import { LoadingService } from 'src/app/controllers/services/loading.service';
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
-import {CommonFunctions} from "../../../../../../controllers/comonsfunctions";
 import {UserDetails} from "../../../../../../models/UserDatails";
-// import {Select2AjaxComponent} from "../../../sharedComponents/select2-ajax/select2-ajax.component";
 import {environment} from "../../../../../../../environments/environment";
-import {Select2} from "ng-select2-component";
-import {FileClass} from "../../../../../../models/File.class";
+import {Select2, Select2UpdateEvent, Select2UpdateValue} from "ng-select2-component";
+import {take} from "rxjs/operators";
+import {TaxeModel} from "../../../../../../models/Taxe.class";
 
 @Component({
   selector: 'app-pharmacy-category-list',
@@ -33,6 +31,7 @@ import {FileClass} from "../../../../../../models/File.class";
 
 export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
   categories: Category[] = [];
+  taxes: TaxeModel[] = [];
   filteredCategories: Category[] = [];
   selectedCategory: Category | null = null;
 
@@ -78,12 +77,12 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
   categoriesListArray: { [p: string]: Category };
   categoriesArraySelect2: Array<{value: string, label: string}> = [];
   pharmaciesListArray: Array<{value: string, label: string}> = [];
+  taxesArray: Array<{value: string, label: string}> = [];
 
   importFile: File | null = null;
   importPreview: Array<{data: any, errors: string[]}> = [];
   importStats = { total: 0, valid: 0, errors: 0 };
   isImporting: boolean = false;
-
 
   selectedFiles: { iconUrl?: File; imageUrl?: File; } = {};
   previewUrls: { iconUrl?: string; imageUrl?: string; } = {};
@@ -106,6 +105,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
         this.permissions.deleteCategorie = this.userDetail.hasPermission('categories.delete');
         this.permissions.exportCategories = this.userDetail.hasPermission('categories.export');
         if (loaded && this.userDetail) {
+          await this.loadTaxes();
           await this.loadCategories();
         }
       });
@@ -129,6 +129,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       requiresPrescription: [false],
       restrictions: [[]],
       specialCategory: ['otc', [Validators.required]],
+      taxesApplicable: [[]],
       pharmaciesList: [this.pharmaciesListArray.map(pharm => pharm.value), [Validators.required]]
     });
   }
@@ -141,11 +142,58 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
     return this.importFile !== null && this.importStats.valid > 0;
   }
 
+  async loadTaxes(): Promise<void> {
+    this.loadingService.setLoading(true);
+    try {
+      const token = await this.auth.getRealToken();
+      const uid = this.auth.getUid();
+      if (!token) {
+        this.handleError('Vous n\'êtes pas autorisé à accéder à cette ressource');
+        return;
+      }
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      });
+
+      this.apiService.post('pharmacy-management/taxes/list', { uid }, headers)
+        .pipe(take(1))
+        .subscribe({
+          next: (response: any) => {
+            if (response && !response.error && response.data) {
+              this.taxes = response.data.map((t: any) => new TaxeModel(t));
+              this.buildTaxesArray();
+            } else {
+              this.handleError(response?.errorMessage || 'Erreur lors du chargement des taxes');
+            }
+            this.isLoading = false;
+            this.loadingService.setLoading(false);
+          },
+          error: (error) => {
+            this.handleError('Erreur lors du chargement des catégories');
+            this.loadingService.setLoading(false);
+          }
+        });
+    } catch (error) {
+      this.handleError('Une erreur s\'est produite');
+      this.loadingService.setLoading(false);
+    }
+  }
+
+  private buildTaxesArray() {
+    this.taxesArray = this.taxes.map((taxe) => ({
+      value: taxe._id,
+      label: taxe.name
+    }));
+  }
+
   async loadCategories(): Promise<void> {
     this.loadingService.setLoading(true);
     try {
       const token = await this.auth.getRealToken();
-      const uid = await this.auth.getUid();
+      const uid = this.auth.getUid();
       if (!token) {
         this.handleError('Vous n\'êtes pas autorisé à accéder à cette ressource');
         return;
@@ -1139,4 +1187,15 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
   }
   protected readonly parseFloat = parseFloat;
   protected readonly getRestrictionByValue = getRestrictionByValue;
+
+  onParentCategoryChange(updatedParent: Select2UpdateEvent<Select2UpdateValue>) {
+    const categoryParent = this.categories.find(cat => cat._id === updatedParent.value);
+    const taxesApplicable = Array.from(new Set([
+      ...this.categoryForm.controls['taxesApplicable'].value,
+      ...(categoryParent?.taxesApplicable.map((taxe) => taxe._id) || [])
+    ]));
+    this.categoryForm.patchValue({
+      taxesApplicable: taxesApplicable
+    });
+  }
 }
