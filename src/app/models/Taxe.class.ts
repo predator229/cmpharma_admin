@@ -1,4 +1,5 @@
 export interface RateHistory {
+  _id: string;
   value: number;
   effective_from: Date;
   effective_to?: Date | null;
@@ -84,4 +85,23 @@ export class TaxeModel implements Taxe {
     const suffix = this.type === 'percentage' ? '%' : 'XOF';
     return `${this.name} (${rate}${suffix})`;
   }
+
+  formatRate(): string {
+    const rate = this.getCurrentRateFees();
+    if (rate === null || rate === undefined) return 'N/A';
+
+    const suffix = this.type === 'percentage' ? '%' : ' XOF';
+    return `${rate}${suffix}`;
+  }
+
+  calculatePharmacyTax(price: number): number {
+    if (!price) return 0;
+
+    if (this.type === 'percentage') {
+      return (price * this.getCurrentRateFees()) / 100;
+    } else {
+      return this.getCurrentRateFees();
+    }
+  }
+
 }

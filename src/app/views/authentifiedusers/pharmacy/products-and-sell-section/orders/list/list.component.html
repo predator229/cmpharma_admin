@@ -304,207 +304,273 @@
     </nav>
   </div>
   <ng-template #orderDetailsModal>
-    <div class="modal-header">
-      <h4 class="modal-title">Détails de la commande {{ selectedOrder?.orderNumber }}</h4>
-      <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
-    </div>
-    <div class="modal-body" *ngIf="selectedOrder">
-      <div class="order-details">
-        <div class="row">
-          <!-- Informations générales -->
-          <div class="col-md-6">
-            <div class="card mb-3">
-              <div class="card-header">
-                <h6><i class="fas fa-info-circle"></i> Informations générales</h6>
+    <div class="modal-custom-order-info" *ngIf="selectedOrder">
+      <div class="modal-header">
+        <div class="d-flex align-items-center">
+          <div class="order-header-icon me-3">
+            <i class="fas fa-shopping-bag fa-2x text-primary"></i>
+          </div>
+          <div>
+            <h4 class="modal-title mb-1">Commande #{{ selectedOrder?.orderNumber }}</h4>
+            <div class="order-badges">
+            <span class="badge" [ngClass]="(selectedOrder?.getStatusBadgeClass())">
+              <i class="fas" [ngClass]="selectedOrder?.isDelivered() ? 'fa-check-circle' : 'fa-clock'"></i>
+                {{ getStatusLabel(selectedOrder?.status!) }}
+            </span>
+              <span class="badge bg-info" *ngIf="selectedOrder?.requiresPrescription()">
+              <i class="fas fa-prescription-bottle me-1"></i>Ordonnance requise
+            </span>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body" *ngIf="selectedOrder">
+        <!-- Quick Info Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-3 col-sm-6">
+            <div class="info-card">
+              <div class="info-icon bg-primary">
+                <i class="fas fa-calendar"></i>
               </div>
-              <div class="card-body">
-                <div class="detail-group">
-                  <label>Numéro de commande:</label>
-                  <p><strong>{{ selectedOrder.orderNumber }}</strong></p>
-                </div>
-                <div class="detail-group">
-                  <label>Date de commande:</label>
-                  <p>{{ selectedOrder.orderDate | date: 'dd/MM/yyyy HH:mm' }}</p>
-                </div>
-                <div class="detail-group">
-                  <label>Statut:</label>
-                  <p><span class="status-badge" [ngClass]="selectedOrder.getStatusBadgeClass()">{{ selectedOrder.getStatusLabel() }}</span></p>
-                </div>
-                <div class="detail-group" *ngIf="selectedOrder.clientNotes.length > 0">
-                  <label>Notes du client:</label>
-                  <p *ngFor="let clientNote of selectedOrder.clientNotes">
-                    {{ clientNote.note }}
-                    <span *ngIf="clientNote.updatedAt" class="text-muted">
-                    (a {{ clientNote.updatedAt | date: 'dd/MM/yyyy HH:mm' }})
-                  </span>
-                  </p>
-                </div>
-                <div class="detail-group" *ngIf="selectedOrder.pharmacyNotes.length > 0">
-                  <label>Vos notes aux client:</label>
-                  <p *ngFor="let pharmacyNote of selectedOrder.pharmacyNotes">
-                    {{ pharmacyNote.note }}
-                    <span *ngIf="pharmacyNote.updatedAt" class="text-muted">
-                    (a {{ pharmacyNote.updatedAt | date: 'dd/MM/yyyy HH:mm' }})
-                  </span>
-                  </p>
-                </div>
-                <div class="detail-group" *ngIf="selectedOrder.internalNotes.length > 0">
-                  <label>Note internes:</label>
-                  <p *ngFor="let internalNote of selectedOrder.internalNotes;">
-                    @if(isVisibleInternalNote(internalNote)){
-                      {{internalNote.note }}
-                      <span *ngIf="internalNote.updatedAt" class = "text-muted" >
-                    (a {{internalNote.updatedAt | date: 'dd/MM/yyyy HH:mm' }})
-                    </span >
-                      <span class="text-muted {{ getClassForInternalNote(internalNote) }}" [ngbTooltip]="getInternalNoteLabel(internalNote)">
-                      <i class="fa fa-eye"></i>
-                    </span >
-                    }
-                  </p>
-                </div>
+              <div class="info-content">
+                <small class="text-muted">Date de commande</small>
+                <strong>{{ selectedOrder.orderDate | date: 'dd/MM/yyyy' }}</strong>
+                <small class="text-muted d-block">{{ selectedOrder.orderDate | date: 'HH:mm' }}</small>
               </div>
             </div>
           </div>
 
-          <!-- Informations client -->
-          <div class="col-md-6">
-            <div class="card mb-3">
-              <div class="card-header">
-                <h6><i class="fas fa-user"></i> Client</h6>
+          <div class="col-md-3 col-sm-6">
+            <div class="info-card">
+              <div class="info-icon bg-success">
+                <i class="fas fa-shopping-cart"></i>
               </div>
-              <div class="card-body">
-                <div class="detail-group">
-                  <label>Nom:</label>
-                  <p>{{ selectedOrder.customer?.getFullName() }}</p>
-                </div>
-                <div class="detail-group">
-                  <label>Email:</label>
-                  <p>{{ selectedOrder.customer?.email }}</p>
-                </div>
-                <div class="detail-group" *ngIf="selectedOrder.customer?.defaultPhone">
-                  <label>Téléphone:</label>
-                  <p>{{ selectedOrder.customer.defaultPhone.digits }}</p>
-                </div>
-                <div class="detail-group" *ngIf="selectedOrder.customer?.hasAllergies()">
-                  <label>Allergies:</label>
-                  <p class="text-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    {{ selectedOrder.customer.medicalInfo.allergies.join(', ') }}
-                  </p>
-                </div>
+              <div class="info-content">
+                <small class="text-muted">Articles</small>
+                <strong>{{ selectedOrder.getTotalItems() }}</strong>
+                <small class="text-muted d-block">{{ selectedOrder.items.length }} produit(s)</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3 col-sm-6">
+            <div class="info-card">
+              <div class="info-icon bg-warning">
+                <i class="fas fa-euro-sign"></i>
+              </div>
+              <div class="info-content">
+                <small class="text-muted">Montant total</small>
+                <strong>{{ selectedOrder.totalAmount | currency:'EUR':'symbol':'1.2-2' }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3 col-sm-6">
+            <div class="info-card">
+              <div class="info-icon bg-info">
+                <i class="fas fa-truck"></i>
+              </div>
+              <div class="info-content">
+                <small class="text-muted">Livraison</small>
+                <strong>{{ selectedOrder.getDeliveryMethodLabel() }}</strong>
               </div>
             </div>
           </div>
         </div>
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    [class.active]="orderModalTab === 'general'"
+                    (click)="orderModalTab = 'general'"
+                    type="button">
+              <i class="fas fa-info-circle me-2"></i>
+              Général
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    [class.active]="orderModalTab === 'items'"
+                    (click)="orderModalTab = 'items'"
+                    type="button">
+              <i class="fas fa-box me-2"></i>
+              Articles ({{ selectedOrder.items.length }})
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    [class.active]="orderModalTab === 'taxes'"
+                    (click)="orderModalTab = 'taxes'"
+                    type="button">
+              <i class="fas fa-percentage me-2"></i>
+              Taxes ({{ getTaxesNumber(selectedOrder) }})
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    [class.active]="orderModalTab === 'payment'"
+                    (click)="orderModalTab = 'payment'"
+                    type="button">
+              <i class="fas fa-credit-card me-2"></i>
+              Paiement & Facturation
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    [class.active]="orderModalTab === 'delivery'"
+                    (click)="orderModalTab = 'delivery'"
+                    type="button">
+              <i class="fas fa-truck me-2"></i>
+              Livraison
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    [class.active]="orderModalTab === 'notes'"
+                    (click)="orderModalTab = 'notes'"
+                    type="button">
+              <i class="fas fa-sticky-note me-2"></i>
+              Notes
+            </button>
+          </li>
+        </ul>
+        <!-- Tab Content -->
+        <div class="tab-content">
+          <!-- General Tab -->
+          <div *ngIf="orderModalTab === 'general'" class="tab-pane fade show active">
+            <div class="row">
+              <!-- Informations Commande -->
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                      <i class="fas fa-receipt me-2 text-primary"></i>
+                      Informations de commande
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="info-group">
+                      <label><i class="fas fa-hashtag me-2 text-primary"></i>Numéro de commande</label>
+                      <p><code class="fs-6">{{ selectedOrder.orderNumber }}</code></p>
+                    </div>
 
-        <div class="row">
-          <!-- Informations de paiement -->
-          <div class="col-md-6">
-            <div class="card mb-3">
-              <div class="card-header">
-                <h6><i class="fas fa-credit-card"></i> Paiement</h6>
-              </div>
-              <div class="card-body">
-                <div class="detail-group">
-                  <label>Méthode:</label>
-                  <p>{{ selectedOrder.getPaymentMethodLabel() }}</p>
-                </div>
-                <div class="detail-group">
-                  <label>Statut:</label>
-                  <p>
-                  <span [ngClass]="{'text-success': selectedOrder.payment.status === 'paid',
-                                  'text-warning': selectedOrder.payment.status === 'pending',
-                                  'text-danger': selectedOrder.payment.status === 'failed'}">
-                    {{ getPaymentStatusLabel(selectedOrder.payment.status) }}
-                  </span>
-                  </p>
-                </div>
-                <div class="detail-group" *ngIf="selectedOrder.payment.transactionId">
-                  <label>ID Transaction:</label>
-                  <p><code>{{ selectedOrder.payment.transactionId }}</code></p>
-                </div>
-                <div class="detail-group" *ngIf="selectedOrder.payment.paidAt">
-                  <label>Payé le:</label>
-                  <p>{{ selectedOrder.payment.paidAt | date: 'dd/MM/yyyy HH:mm' }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+                    <div class="info-group">
+                      <label><i class="fas fa-calendar me-2 text-primary"></i>Date de commande</label>
+                      <p>{{ selectedOrder.orderDate | date: 'dd/MM/yyyy HH:mm' }}</p>
+                    </div>
 
-          <!-- Informations de livraison -->
-          <div class="col-md-6">
-            <div class="card mb-3">
-              <div class="card-header">
-                <h6><i class="fas fa-truck"></i> Livraison</h6>
+                    <div class="info-group">
+                      <label><i class="fas fa-toggle-on me-2 text-success"></i>Statut</label>
+                      <p>
+                      <span [ngClass]="'badge bg-' + selectedOrder.getStatusBadgeClass()">
+                        {{ selectedOrder.getStatusLabel() }}
+                      </span>
+                      </p>
+                    </div>
+
+                    <div class="info-group" *ngIf="selectedOrder.confirmedAt">
+                      <label><i class="fas fa-check me-2 text-success"></i>Confirmée le</label>
+                      <p>{{ selectedOrder.confirmedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+                    </div>
+
+                    <div class="info-group" *ngIf="selectedOrder.completedAt">
+                      <label><i class="fas fa-flag-checkered me-2 text-success"></i>Complétée le</label>
+                      <p>{{ selectedOrder.completedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="card-body">
-                <div class="detail-group">
-                  <label>Méthode:</label>
-                  <p>{{ selectedOrder.getDeliveryMethodLabel() }}</p>
-                </div>
-                <div class="detail-group" *ngIf="selectedOrder.deliveryInfo.trackingNumber">
-                  <label>Numéro de suivi:</label>
-                  <p><code>{{ selectedOrder.deliveryInfo.trackingNumber }}</code></p>
-                </div>
-                <div class="detail-group" *ngIf="selectedOrder.deliveryInfo.estimatedDeliveryDate">
-                  <label>Livraison prévue:</label>
-                  <p>{{ selectedOrder.deliveryInfo.estimatedDeliveryDate | date: 'dd/MM/yyyy' }}</p>
-                </div>
-                <div class="detail-group">
-                  <label>Adresse de livraison:</label>
-                  <div class="address-info">
-                    <p class="mb-1">{{ selectedOrder.deliveryInfo.address.firstName }} {{ selectedOrder.deliveryInfo.address.lastName }}</p>
-                    <p class="mb-1">{{ selectedOrder.deliveryInfo.address.street }}</p>
-                    <p class="mb-1">{{ selectedOrder.deliveryInfo.address.postalCode }} {{ selectedOrder.deliveryInfo.address.city }}</p>
-                    <p class="mb-0" *ngIf="selectedOrder.deliveryInfo.address.country">{{ selectedOrder.deliveryInfo.address.country.name }}</p>
-                    <p class="text-muted mt-1" *ngIf="selectedOrder.deliveryInfo.address.instructions">
-                      <small><i class="fas fa-info-circle"></i> {{ selectedOrder.deliveryInfo.address.instructions }}</small>
-                    </p>
+
+              <!-- Informations Client & Pharmacie -->
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                      <i class="fas fa-users me-2 text-info"></i>
+                      Client & Pharmacie
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="info-group">
+                      <label><i class="fas fa-user me-2 text-info"></i>Client</label>
+                      <p class="fw-bold">{{ selectedOrder.customer?.getFullName() }}</p>
+                      <small class="text-muted d-block">{{ selectedOrder.customer?.email }}</small>
+                      <small class="text-muted d-block" *ngIf="selectedOrder.customer?.defaultPhone">
+                        {{ selectedOrder.customer.defaultPhone.digits }}
+                      </small>
+                    </div>
+
+                    <div class="info-group" *ngIf="selectedOrder.pharmacy">
+                      <label><i class="fas fa-store me-2 text-info"></i>Pharmacie</label>
+                      <p class="fw-bold">{{ selectedOrder.pharmacy.name }}</p>
+                      <small class="text-muted d-block" *ngIf="selectedOrder.pharmacy.email">
+                        {{ selectedOrder.pharmacy.email }}
+                      </small>
+                    </div>
+
+                    <div class="info-group" *ngIf="selectedOrder.customer?.hasAllergies()">
+                      <label><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Allergies</label>
+                      <p class="text-warning mb-0">
+                        {{ selectedOrder.customer.medicalInfo.allergies.join(', ') }}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Articles commandés -->
-        <div class="row">
-          <div class="col-12">
-            <div class="card mb-3">
-              <div class="card-header">
-                <h6><i class="fas fa-shopping-cart"></i> Articles commandés ({{ selectedOrder.items.length }})</h6>
+          <!-- Items Tab -->
+          <div *ngIf="orderModalTab === 'items'" class="tab-pane fade show active">
+            <div class="card">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">
+                  <i class="fas fa-shopping-cart me-2"></i>
+                  Articles commandés
+                </h6>
               </div>
               <div class="card-body p-0">
                 <div class="table-responsive">
-                  <table class="table table-sm mb-0">
+                  <table class="table table-hover mb-0">
                     <thead class="table-light">
                     <tr>
                       <th>Produit</th>
                       <th>Quantité</th>
                       <th>Prix unitaire</th>
+                      <th>Taxes</th>
                       <th>Total</th>
                       <th>Ordonnance</th>
                     </tr>
                     </thead>
                     <tbody>
-                    <tr *ngFor="let item of selectedOrder.items">
+                    <tr *ngFor="let item of selectedOrder.items; let last = last">
                       <td>
                         <div class="product-info">
-                          <span class="product-name">{{ item.product.name }}</span>
-                          <small class="product-ref text-muted d-block" *ngIf="item.product.sku">
-                            Réf: {{ item.product.sku }}
+                          <span class="product-name fw-bold d-block">{{ item.product.name }}</span>
+                          <small class="text-muted" *ngIf="item.product.sku">
+                            SKU: {{ item.product.sku }}
                           </small>
                         </div>
                       </td>
-                      <td>{{ item.quantity }}</td>
-                      <td>{{ item.unitPrice | currency:'EUR':'symbol':'1.2-2' }}</td>
-                      <td>{{ item.totalPrice | currency:'EUR':'symbol':'1.2-2' }}</td>
-                      <td>
-                        <span *ngIf="item.prescriptionRequired"
-                              [ngClass]="{'text-success': item.prescriptionProvided, 'text-warning': !item.prescriptionProvided}">
-                          <i class="fas" [ngClass]="{'fa-check': item.prescriptionProvided, 'fa-clock': !item.prescriptionProvided}"></i>
-                          {{ item.prescriptionProvided ? 'Fournie' : 'Requise' }}
-                        </span>
+                      <td class="align-middle">
+                        <span class="badge bg-secondary">{{ item.quantity }}</span>
+                      </td>
+                      <td class="align-middle">{{ item.unitPrice | currency:'EUR':'symbol':'1.2-2' }}</td>
+                      <td class="align-middle">
+                        <small class="text-muted" *ngIf="item.applicableTaxes?.length">
+                          {{ item.applicableTaxes.length }} taxe(s)
+                        </small>
+                        <small class="text-muted" *ngIf="!item.applicableTaxes?.length">—</small>
+                      </td>
+                      <td class="align-middle">
+                        <strong>{{ item.totalPrice | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                      </td>
+                      <td class="align-middle">
+                      <span *ngIf="item.prescriptionRequired"
+                            [ngClass]="{'text-success': item.prescriptionProvided, 'text-warning': !item.prescriptionProvided}">
+                        <i class="fas" [ngClass]="{'fa-check-circle': item.prescriptionProvided, 'fa-exclamation-circle': !item.prescriptionProvided}"></i>
+                        {{ item.prescriptionProvided ? 'Fournie' : 'Requise' }}
+                      </span>
                         <span *ngIf="!item.prescriptionRequired" class="text-muted">—</span>
                       </td>
                     </tr>
@@ -513,72 +579,434 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Totaux -->
-        <div class="row">
-          <div class="col-md-6 offset-md-6">
-            <div class="card">
-              <div class="card-header">
-                <h6><i class="fas fa-calculator"></i> Récapitulatif</h6>
+            <!-- Price Breakdown Card -->
+            <div class="card mt-3">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">
+                  <i class="fas fa-calculator me-2"></i>
+                  Récapitulatif des montants
+                </h6>
               </div>
               <div class="card-body">
-                <div class="d-flex justify-content-between mb-2">
-                  <span>Sous-total:</span>
-                  <span>{{ selectedOrder.subtotal | currency:'EUR':'symbol':'1.2-2' }}</span>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="price-breakdown-item mb-3">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Sous-total:</span>
+                        <strong>{{ selectedOrder.subtotal | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                      </div>
+                    </div>
+
+                    <div class="price-breakdown-item mb-3" *ngIf="selectedOrder.discountAmount > 0">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Remise:</span>
+                        <span class="text-success">-{{ selectedOrder.discountAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
+                      </div>
+                    </div>
+
+                    <div class="price-breakdown-item mb-3" *ngIf="selectedOrder.coupon.appliedDiscount > 0">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Coupon ({{ selectedOrder.coupon.code }}):</span>
+                        <span class="text-success">-{{ selectedOrder.coupon.appliedDiscount | currency:'EUR':'symbol':'1.2-2' }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="price-breakdown-item mb-3" *ngIf="selectedOrder.taxAmount > 0">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Taxes:</span>
+                        <strong class="text-primary">{{ selectedOrder.taxAmount | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                      </div>
+                    </div>
+
+                    <div class="price-breakdown-item mb-3" *ngIf="selectedOrder.shippingCost > 0">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Frais de livraison:</span>
+                        <strong>{{ selectedOrder.shippingCost | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="d-flex justify-content-between mb-2" *ngIf="selectedOrder.shippingCost > 0">
-                  <span>Frais de livraison:</span>
-                  <span>{{ selectedOrder.shippingCost | currency:'EUR':'symbol':'1.2-2' }}</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2" *ngIf="selectedOrder.taxAmount > 0">
-                  <span>Taxes:</span>
-                  <span>{{ selectedOrder.taxAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2 text-success" *ngIf="selectedOrder.discountAmount > 0">
-                  <span>Remise:</span>
-                  <span>-{{ selectedOrder.discountAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2" *ngIf="selectedOrder.coupon.appliedDiscount > 0">
-                  <span>Coupon ({{ selectedOrder.coupon.code }}):</span>
-                  <span class="text-success">-{{ selectedOrder.coupon.appliedDiscount | currency:'EUR':'symbol':'1.2-2' }}</span>
-                </div>
+
                 <hr>
-                <div class="d-flex justify-content-between">
-                  <strong>Total:</strong>
-                  <strong>{{ selectedOrder.totalAmount | currency:'EUR':'symbol':'1.2-2' }}</strong>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  <strong class="fs-5">Total à payer:</strong>
+                  <strong class="fs-4 text-success">{{ selectedOrder.totalAmount | currency:'EUR':'symbol':'1.2-2' }}</strong>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Historique des statuts -->
-        <div class="row mt-3" *ngIf="selectedOrder.statusHistory.length > 0">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-header">
-                <h6><i class="fas fa-history"></i> Historique des statuts</h6>
+          <!-- Taxes Tab -->
+          <div *ngIf="orderModalTab === 'taxes'" class="tab-pane fade show active">
+            <div class="row">
+              <!-- Recap Taxe et produit -->
+              <div class="col-md-12">
+                <div class="alert alert-info mt-3" *ngIf="getSelectedOderProduct().length > 0">
+                  <i class="fas fa-info-circle me-2"></i>
+                  <small>{{ getSelectedOderProduct().length }} produit(s) avec taxe(s) appliquée(s)</small>
+                </div>
               </div>
-              <div class="card-body">
-                <div class="timeline">
-                  <div *ngFor="let history of selectedOrder.statusHistory" class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                      <h6 class="timeline-title">{{ getStatusLabel(history.status) }}</h6>
-                      <p class="timeline-date">{{ history.timestamp | date: 'dd/MM/yyyy HH:mm' }}</p>
-                      <p class="timeline-note" *ngIf="history.note">{{ history.note }}</p>
+              <div class="col-md-12" *ngFor="let item of selectedOrder.items">
+                <div class="card mb-3 border-warning">
+                  <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                      <i class="fas fa-percentage me-2"></i>
+                      Taxe ({{ item.product.name }})
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="row-div" *ngFor="let taxe of item.applicableTaxes">
+                      <label class="fw-bold"><i class="fas fa-coins me-2 text-success"></i>{{ taxe.taxe.name }}</label>
+                      <p class="fw-bold">{{ getProductTaxValue(item, taxe) | currency:'EUR':'symbol':'1.2-2' }}</p>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Factures & Bons Fiscaux -->
+            <div class="row" *ngIf="selectedOrder.invoice || selectedOrder.bonfiscal">
+              <div class="col-md-6" *ngIf="selectedOrder.invoice">
+                <div class="card">
+                  <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                      <i class="fas fa-file-invoice me-2 text-primary"></i>
+                      Facture
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="info-group">
+                      <label>Numéro de facture</label>
+                      <p><code>{{ selectedOrder.invoice?.invoiceNumber }}</code></p>
+                    </div>
+                    <div class="info-group">
+                      <label>Date d'émission</label>
+                      <p>{{ selectedOrder.invoice?.createdAt | date: 'dd/MM/yyyy' }}</p>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary w-100">
+                      <i class="fas fa-download me-2"></i>
+                      Télécharger
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6" *ngIf="selectedOrder.bonfiscal">
+                <div class="card">
+                  <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                      <i class="fas fa-receipt me-2 text-success"></i>
+                      Bon Fiscal
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="info-group">
+                      <label>Numéro du bon</label>
+                      <p><code>{{ selectedOrder.bonfiscal?.bonfiscalNumber }}</code></p>
+                    </div>
+                    <div class="info-group">
+                      <label>Date d'émission</label>
+                      <p>{{ selectedOrder.bonfiscal?.createdAt | date: 'dd/MM/yyyy' }}</p>
+                    </div>
+                    <button class="btn btn-sm btn-outline-success w-100">
+                      <i class="fas fa-download me-2"></i>
+                      Télécharger
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Payment Tab -->
+          <div *ngIf="orderModalTab === 'payment'" class="tab-pane fade show active">
+            <div class="row">
+              <!-- Information de Paiement -->
+              <div class="col-md-12">
+                <div class="alert alert-info mt-3" *ngIf="getSelectedOderProduct().length > 0">
+                  <i class="fas fa-info-circle me-2"></i>
+                  <small>{{ getSelectedOderProduct().length }} produit(s) avec taxe(s) appliquée(s)</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card mb-3 border-primary">
+                  <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                      <i class="fas fa-credit-card me-2"></i>
+                      Informations de paiement
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="row-div">
+                      <label class="fw-bold"><i class="fas fa-wallet me-2 text-primary"></i>Méthode de paiement</label>
+                      <p class="fw-bold">{{ getPaymentMethodLabel(selectedOrder.payment.method) }}</p>
+                    </div>
+
+                    <div class="row-div">
+                      <label class="fw-bold"><i class="fas fa-check-circle me-2 text-primary"></i>Statut du paiement</label>
+                      <p>
+                      <span [ngClass]="{
+                        'text-success': selectedOrder.payment.status === 'paid',
+                        'text-warning': selectedOrder.payment.status === 'pending',
+                        'text-danger': selectedOrder.payment.status === 'failed'
+                      }">
+                        <i class="fas" [ngClass]="{
+                          'fa-check-circle': selectedOrder.payment.status === 'paid',
+                          'fa-clock': selectedOrder.payment.status === 'pending',
+                          'fa-times-circle': selectedOrder.payment.status === 'failed'
+                        }"></i>
+                        {{ getPaymentStatusLabel(selectedOrder.payment.status) }}
+                      </span>
+                      </p>
+                    </div>
+
+                    <div class="row-div" *ngIf="selectedOrder.payment.transactionId">
+                      <label class="fw-bold"><i class="fas fa-key me-2 text-primary"></i>ID Transaction</label>
+                      <p><code>{{ selectedOrder.payment.transactionId }}</code></p>
+                    </div>
+
+                    <div class="row-div" *ngIf="selectedOrder.payment.paidAt">
+                      <label class="fw-bold"><i class="fas fa-calendar-check me-2 text-success"></i>Payé le</label>
+                      <p>{{ selectedOrder.payment.paidAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Détails des taxes -->
+              <div class="col-md-6">
+                <div class="card mb-3 border-success">
+                  <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                      <i class="fas fa-receipt me-2"></i>
+                      Récapitulatif fiscal
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="row-div">
+                      <label class="fw-bold"><i class="fas fa-coins me-2 text-success"></i>Montant HT</label>
+                      <p class="fw-bold">{{ selectedOrder.subtotal | currency:'EUR':'symbol':'1.2-2' }}</p>
+                    </div>
+
+                    <div class="row-div">
+                      <label class="fw-bold"><i class="fas fa-percentage me-2 text-success"></i>Montant des taxes</label>
+                      <p class="fw-bold text-primary">{{ selectedOrder.taxAmount | currency:'EUR':'symbol':'1.2-2' }}</p>
+                    </div>
+
+                    <div class="row-div">
+                      <label class="fw-bold"><i class="fas fa-euro-sign me-2 text-success"></i>Montant TTC</label>
+                      <p class="fw-bold text-success fs-5">{{ (selectedOrder.subtotal + selectedOrder.taxAmount) | currency:'EUR':'symbol':'1.2-2' }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Factures & Bons Fiscaux -->
+            <div class="row" *ngIf="selectedOrder.invoice || selectedOrder.bonfiscal">
+              <div class="col-md-6" *ngIf="selectedOrder.invoice">
+                <div class="card">
+                  <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                      <i class="fas fa-file-invoice me-2 text-primary"></i>
+                      Facture
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="info-group">
+                      <label>Numéro de facture</label>
+                      <p><code>{{ selectedOrder.invoice?.invoiceNumber }}</code></p>
+                    </div>
+                    <div class="info-group">
+                      <label>Date d'émission</label>
+                      <p>{{ selectedOrder.invoice?.createdAt | date: 'dd/MM/yyyy' }}</p>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary w-100">
+                      <i class="fas fa-download me-2"></i>
+                      Télécharger
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6" *ngIf="selectedOrder.bonfiscal">
+                <div class="card">
+                  <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                      <i class="fas fa-receipt me-2 text-success"></i>
+                      Bon Fiscal
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="info-group">
+                      <label>Numéro du bon</label>
+                      <p><code>{{ selectedOrder.bonfiscal?.bonfiscalNumber }}</code></p>
+                    </div>
+                    <div class="info-group">
+                      <label>Date d'émission</label>
+                      <p>{{ selectedOrder.bonfiscal?.createdAt | date: 'dd/MM/yyyy' }}</p>
+                    </div>
+                    <button class="btn btn-sm btn-outline-success w-100">
+                      <i class="fas fa-download me-2"></i>
+                      Télécharger
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Delivery Tab -->
+          <div *ngIf="orderModalTab === 'delivery'" class="tab-pane fade show active">
+            <div class="card mb-3 border-info">
+              <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                  <i class="fas fa-map-marker-alt me-2"></i>
+                  Adresse de livraison
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="address-box p-3 bg-light rounded mb-3">
+                  <p class="mb-1 fw-bold">
+                    {{ selectedOrder.deliveryInfo.address.firstName }}
+                    {{ selectedOrder.deliveryInfo.address.lastName }}
+                  </p>
+                  <p class="mb-1">{{ selectedOrder.deliveryInfo.address.street }}</p>
+                  <p class="mb-1">
+                    {{ selectedOrder.deliveryInfo.address.postalCode }}
+                    {{ selectedOrder.deliveryInfo.address.city }}
+                  </p>
+                  <p class="mb-0" *ngIf="selectedOrder.deliveryInfo.address.country">
+                    {{ selectedOrder.deliveryInfo.address.country.name }}
+                  </p>
+                  <p class="text-muted mt-2 mb-0" *ngIf="selectedOrder.deliveryInfo.address.instructions">
+                    <small><i class="fas fa-comment me-2"></i>{{ selectedOrder.deliveryInfo.address.instructions }}</small>
+                  </p>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="info-group">
+                      <label><i class="fas fa-car me-2 text-info"></i>Mode de livraison</label>
+                      <p class="fw-bold">{{ selectedOrder.getDeliveryMethodLabel() }}</p>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="info-group">
+                      <label><i class="fas fa-calendar me-2 text-info"></i>Date prévue</label>
+                      <p>
+                        {{ selectedOrder.deliveryInfo.estimatedDeliveryDate ? (selectedOrder.deliveryInfo.estimatedDeliveryDate | date: 'dd/MM/yyyy') : '—' }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6" *ngIf="selectedOrder.deliveryInfo.trackingNumber">
+                    <div class="info-group">
+                      <label><i class="fas fa-barcode me-2 text-info"></i>Numéro de suivi</label>
+                      <p><code>{{ selectedOrder.deliveryInfo.trackingNumber }}</code></p>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6" *ngIf="selectedOrder.deliveryInfo.deliveryProvider">
+                    <div class="info-group">
+                      <label><i class="fas fa-building me-2 text-info"></i>Prestataire</label>
+                      <p>{{ selectedOrder.deliveryInfo.deliveryProvider }}</p>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6" *ngIf="selectedOrder.deliveryInfo.actualDeliveryDate">
+                    <div class="info-group">
+                      <label><i class="fas fa-check-circle me-2 text-success"></i>Livré le</label>
+                      <p>{{ selectedOrder.deliveryInfo.actualDeliveryDate | date: 'dd/MM/yyyy HH:mm' }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Return Info -->
+            <div class="card" *ngIf="selectedOrder.returnInfo">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">
+                  <i class="fas fa-undo me-2"></i>
+                  Informations de retour
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="info-group">
+                  <label><i class="fas fa-check me-2"></i>Retour possible</label>
+                  <p>
+                  <span [ngClass]="selectedOrder.returnInfo.isReturnable ? 'text-success' : 'text-danger'">
+                    {{ selectedOrder.returnInfo.isReturnable ? 'Oui' : 'Non' }}
+                  </span>
+                  </p>
+                </div>
+
+                <div class="info-group" *ngIf="selectedOrder.returnInfo.isReturnable && selectedOrder.isDelivered()">
+                  <label><i class="fas fa-calendar me-2"></i>Délai de rétractation</label>
+                  <p>Jusqu'au {{ selectedOrder.getReturnDeadline() | date: 'dd/MM/yyyy' }}</p>
+                </div>
+
+                <div class="info-group" *ngIf="selectedOrder.returnInfo.refundStatus !== 'none'">
+                  <label><i class="fas fa-money-bill-wave me-2"></i>Statut du remboursement</label>
+                  <p>
+                  <span [ngClass]="{
+                    'badge bg-warning': selectedOrder.returnInfo.refundStatus === 'requested',
+                    'badge bg-info': selectedOrder.returnInfo.refundStatus === 'approved',
+                    'badge bg-success': selectedOrder.returnInfo.refundStatus === 'processed'
+                  }">
+                    {{ selectedOrder.returnInfo.refundStatus }}
+                  </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Notes Tab -->
+          <div *ngIf="orderModalTab === 'notes'" class="tab-pane fade show active">
+            <!-- Client Notes -->
+            <div class="card mb-3" *ngIf="selectedOrder.clientNotes?.length">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">
+                  <i class="fas fa-user-comment me-2 text-primary"></i>
+                  Notes du client
+                </h6>
+              </div>
+              <div class="card-body">
+                <div *ngFor="let note of selectedOrder.clientNotes" class="note-item p-2 bg-light rounded mb-2">
+                  <div class="d-flex justify-content-between mb-1">
+                    <strong>{{ note.from.getFullName }}</strong>
+                    <small class="text-muted">{{ note.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+                  </div>
+                  <p class="mb-0">{{ note.note }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pharmacy Notes -->
+            <div class="card mb-3" *ngIf="selectedOrder.pharmacyNotes?.length">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">
+                  <i class="fas fa-store me-2 text-success"></i>
+                  Notes de la pharmacie
+                </h6>
+              </div>
+              <div class="card-body">
+                <div *ngFor="let note of selectedOrder.pharmacyNotes" class="note-item p-2 bg-light rounded mb-2">
+                  <div class="d-flex justify-content-between mb-1">
+                    <strong>{{ note.from.getFullName ? note.from.getFullName() : note.from }}</strong>
+                    <small class="text-muted">{{ note.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+                  </div>
+                  <p class="mb-0">{{ note.note }}</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="modal-footer">
+      <div class="modal-footer">
       <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
       <button type="button" class="btn btn-warning"
               *ngIf="permissions.manageOrderStatus"
@@ -586,62 +1014,6 @@
         <i class="fas fa-edit"></i> Modifier le statut
       </button>
     </div>
+    </div>
   </ng-template>
 </div>
-
-<!--<ng-template #updateStatusModal>-->
-<!--  <div class="modal-header">-->
-<!--    <h4 class="modal-title">Modifier le statut - {{ selectedOrder?.orderNumber }}</h4>-->
-<!--    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>-->
-<!--  </div>-->
-<!--  <form [formGroup]="updateStatusForm" (ngSubmit)="updateOrderStatus()">-->
-<!--    <div class="modal-body">-->
-<!--      <div class="alert alert-info">-->
-<!--        <i class="fas fa-info-circle"></i>-->
-<!--        <strong>Statut actuel:</strong> {{ selectedOrder?.getStatusLabel() }}-->
-<!--      </div>-->
-
-<!--      <div class="mb-3">-->
-<!--        <label for="status" class="form-label">Nouveau statut <span class="text-danger">*</span></label>-->
-<!--        <select class="form-select" id="status" formControlName="status" required>-->
-<!--          <option value="pending">En attente</option>-->
-<!--          <option value="confirmed">Confirmée</option>-->
-<!--          <option value="prescription_pending">En attente de prescription</option>-->
-<!--          <option value="preparing">En préparation</option>-->
-<!--          <option value="ready_for_pickup">Prête pour retrait</option>-->
-<!--          <option value="out_for_delivery">En cours de livraison</option>-->
-<!--          <option value="delivered">Livrée</option>-->
-<!--          <option value="completed">Terminée</option>-->
-<!--          <option value="cancelled">Annulée</option>-->
-<!--          <option value="returned">Retournée</option>-->
-<!--          <option value="refunded">Remboursée</option>-->
-<!--        </select>-->
-<!--      </div>-->
-
-<!--      <div class="mb-3">-->
-<!--        <label for="note" class="form-label">Note (optionnelle)</label>-->
-<!--        <textarea class="form-control" id="note" rows="3" formControlName="note"-->
-<!--                  placeholder="Ajouter une note sur ce changement de statut..."></textarea>-->
-<!--      </div>-->
-
-<!--      <div class="mb-3" *ngIf="updateStatusForm.get('status')?.value === 'out_for_delivery'">-->
-<!--        <label for="trackingNumber" class="form-label">Numéro de suivi</label>-->
-<!--        <input type="text" class="form-control" id="trackingNumber" formControlName="trackingNumber"-->
-<!--               placeholder="Entrez le numéro de suivi">-->
-<!--      </div>-->
-
-<!--      <div class="mb-3" *ngIf="['out_for_delivery', 'delivered'].includes(updateStatusForm.get('status')?.value)">-->
-<!--        <label for="estimatedDeliveryDate" class="form-label">Date de livraison prévue</label>-->
-<!--        <input type="datetime-local" class="form-control" id="estimatedDeliveryDate"-->
-<!--               formControlName="estimatedDeliveryDate">-->
-<!--      </div>-->
-<!--    </div>-->
-<!--    <div class="modal-footer">-->
-<!--      <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>-->
-<!--      <button type="submit" class="btn btn-primary" [disabled]="!updateStatusForm.valid || isSubmitting">-->
-<!--        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>-->
-<!--        Mettre à jour-->
-<!--      </button>-->
-<!--    </div>-->
-<!--  </form>-->
-<!--</ng-template>-->

@@ -14,7 +14,7 @@ import { CommonFunctions } from "../../../../../../controllers/comonsfunctions";
 import { UserDetails } from "../../../../../../models/UserDatails";
 import { environment } from "../../../../../../../environments/environment";
 import { Select2 } from "ng-select2-component";
-import {InternalNotes, OrderClass} from "../../../../../../models/Order.class";
+import {ApplicableTaxe, InternalNotes, OrderClass, OrderItem} from "../../../../../../models/Order.class";
 import { CustomerClass } from "../../../../../../models/Customer.class";
 import { PharmacyClass } from "../../../../../../models/Pharmacy.class";
 import {MiniChatService} from "../../../../../../controllers/services/minichat.service";
@@ -130,6 +130,8 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
   customersListArray: Array<{value: string, label: string}> = [];
   private namespace = 'internal_messaging';
   selectedPeriod: string = '30d';
+
+  orderModalTab = 'general';
 
   constructor(
     modalService: NgbModal,
@@ -439,6 +441,7 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
     this.modalService.dismissAll('ok');
     if (order) {
       this.selectedOrder = order;
+      this.orderModalTab = 'general';
       setTimeout(() => {
         this.modalService.open(this.orderDetailsModal, {
           size: 'xl',
@@ -753,5 +756,18 @@ export class PharmacyOrderListComponent implements OnInit, OnDestroy {
 
   async refreshDashboard(): Promise<void> {
     await this.loadOrders();
+  }
+
+  getSelectedOderProduct () {
+    return this.selectedOrder?.items.filter(i => i.applicableTaxes?.length) ?? [];
+  }
+
+  getProductTaxValue (item: OrderItem, applicableTaxe: ApplicableTaxe) {
+    const relativeRate = applicableTaxe.taxe.rates.find((rate) => rate._id === applicableTaxe.rateId);
+    return relativeRate ? item.quantity * ( applicableTaxe.taxe.type === 'percentage' ? item.unitPrice * relativeRate.value/100 : relativeRate.value ) : 0;
+  }
+
+  getTaxesNumber(selectedOrder: OrderClass) {
+    return selectedOrder.items.flatMap((item) => item.applicableTaxes.map((taxe) => taxe.taxe)).length;
   }
 }

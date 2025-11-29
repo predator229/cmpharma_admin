@@ -137,7 +137,7 @@
           </div>
           <div class="stat-content">
             <small class="text-muted">Taux actuel</small>
-            <h4 class="mb-0">{{ formatRate(tax!) }}</h4>
+            <h4 class="mb-0">{{ tax.formatRate() }}</h4>
           </div>
         </div>
       </div>
@@ -160,8 +160,8 @@
             <i class="fas fa-coins"></i>
           </div>
           <div class="stat-content">
-            <small class="text-muted">Taxe mensuelle estimée</small>
-            <h4 class="mb-0">{{ formatCurrency(statistics.estimatedMonthlyTaxAmount) }}</h4>
+            <small class="text-muted">Taxe mensuelle collectée / Taxe mensuelle estimée</small>
+            <h4 class="mb-0">{{ formatCurrency(realAnnualTax()) +' / '+formatCurrency(estimatedAnnualTax()) }}</h4>
           </div>
         </div>
       </div>
@@ -296,7 +296,7 @@
 
                 <div class="info-item">
                   <label>Taux actuel</label>
-                  <div class="text-primary fw-bold">{{ formatRate(tax!) }}</div>
+                  <div class="text-primary fw-bold">{{ tax.formatRate() }}</div>
                 </div>
 
                 <div class="info-item">
@@ -389,17 +389,17 @@
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <span class="text-muted">Taxe mensuelle collectée</span>
                   <span class="badge bg-success">
-                    {{ ((statistics.estimatedMonthlyTaxAmount / statistics.estimatedMonthlyRevenue) * 100).toFixed(2) }}%
+                    {{ effectiveRate() }}%
                   </span>
                 </div>
-                <h3 class="text-success mb-3">{{ formatCurrency(statistics.estimatedMonthlyTaxAmount) }}</h3>
+                <h3 class="text-success mb-3">{{ formatCurrency(realAnnualTax()) }}</h3>
 
                 <div class="progress mb-3" style="height: 8px;">
                   <div
                     class="progress-bar bg-success"
                     role="progressbar"
-                    [style.width.%]="(statistics.estimatedMonthlyTaxAmount / statistics.estimatedMonthlyRevenue) * 100"
-                    [attr.aria-valuenow]="(statistics.estimatedMonthlyTaxAmount / statistics.estimatedMonthlyRevenue) * 100"
+                    [style.width.%]="((effectiveRate()).toFixed(2))"
+                    [attr.aria-valuenow]="((effectiveRate()).toFixed(2))"
                     aria-valuemin="0"
                     aria-valuemax="100"></div>
                 </div>
@@ -895,7 +895,13 @@
                 <div class="stat-value text-info">{{ formatCurrency(estimatedAnnualTax()) }}</div>
               </div>
 
-              <hr>
+              <div class="stat-row">
+                <div class="stat-label">
+                  <i class="fas fa-calendar-alt text-info me-2"></i>
+                  Taxe annuelle reel
+                </div>
+                <div class="stat-value text-info">{{ formatCurrency(realAnnualTax()) }}</div>
+              </div>
 
               <div class="stat-row">
                 <div class="stat-label">
@@ -903,7 +909,7 @@
                   Taux de taxation effectif
                 </div>
                 <div class="stat-value text-warning">
-                  {{ ((statistics.estimatedMonthlyTaxAmount / statistics.estimatedMonthlyRevenue) * 100).toFixed(2) }}%
+                  {{ (effectiveRate()).toFixed(2) }}%
                 </div>
               </div>
 
@@ -912,7 +918,7 @@
                   <i class="fas fa-chart-bar text-purple me-2"></i>
                   Efficacité de la taxe
                 </div>
-                <div class="stat-value text-purple">{{ taxEfficiency.toFixed(1) }}%</div>
+                <div class="stat-value text-purple">{{ taxEfficiency.toFixed(2) }}%</div>
               </div>
             </div>
           </div>
@@ -983,7 +989,7 @@
                 <div class="col-md-4">
                   <div class="stat-box">
                     <i class="fas fa-percent fa-2x text-info mb-2"></i>
-                    <h3>{{ formatRate(tax!) }}</h3>
+                    <h3>{{ tax.formatRate() }}</h3>
                     <small class="text-muted">Taux appliqué</small>
                   </div>
                 </div>
@@ -1093,7 +1099,7 @@
             </div>
             <div class="col-md-4">
               <div class="summary-box">
-                <h3 class="text-success">{{ formatRate(tax!) }}</h3>
+                <h3 class="text-success">{{ tax.formatRate() }}</h3>
                 <small class="text-muted">Taux actuel</small>
               </div>
             </div>
@@ -1649,7 +1655,7 @@
   <div class="modal-body">
     <div class="alert alert-info mb-4">
       <i class="fas fa-info-circle me-2"></i>
-      <strong>Analyse basée sur le taux actuel:</strong> {{ formatRate(tax!) }}
+      <strong>Analyse basée sur le taux actuel:</strong> {{ tax.formatRate() }}
     </div>
 
     <!-- Impact Table -->
@@ -1731,7 +1737,7 @@
           <div class="col-md-4">
             <div class="impact-stat">
               <i class="fas fa-coins fa-2x text-primary mb-2"></i>
-              <h5>{{ formatRate(tax!) }}</h5>
+              <h5>{{ tax.formatRate() }}</h5>
               <small class="text-muted">Taux appliqué</small>
             </div>
           </div>
@@ -1798,7 +1804,7 @@
         <h4 class="modal-title mb-1">{{ selectedProduct?.name }}</h4>
         <div class="product-badges">
           <span class="badge" [ngClass]="'bg-' + (selectedProduct?.status === 'active' ? 'success' : 'secondary')">
-            {{ getStatusLabel(selectedProduct?.status!) }}
+            {{ selectedProduct.getStatusLabel() }}
           </span>
           <span class="badge bg-primary" *ngIf="selectedProduct?.isFeatured">En vedette</span>
           <span class="badge bg-warning" *ngIf="selectedProduct?.isOnSale">En promotion</span>
@@ -1843,7 +1849,7 @@
           </div>
           <div class="info-content">
             <small class="text-muted">Taxe</small>
-            <strong>{{ formatCurrency(calculateProductTax(selectedProduct)) }}</strong>
+            <strong>{{ formatCurrency(selectedProduct.calculateProductTax(tax)) }}</strong>
           </div>
         </div>
       </div>
@@ -1855,7 +1861,7 @@
           </div>
           <div class="info-content">
             <small class="text-muted">Prix TTC</small>
-            <strong>{{ formatCurrency(calculateProductPriceWithTax(selectedProduct)) }}</strong>
+            <strong>{{ formatCurrency(selectedProduct.calculateProductPriceWithTax(tax)) }}</strong>
           </div>
         </div>
       </div>
@@ -1968,7 +1974,7 @@
               <div class="d-flex gap-2 flex-wrap">
                 <span class="badge" [ngClass]="'bg-' + (selectedProduct.status === 'active' ? 'success' : 'secondary')">
                   <i class="fas" [ngClass]="selectedProduct.status === 'active' ? 'fa-check-circle' : 'fa-times-circle'"></i>
-                  {{ getStatusLabel(selectedProduct.status) }}
+                  {{ selectedProduct.getStatusLabel() }}
                 </span>
                 <span class="badge" [ngClass]="selectedProduct.isVisible ? 'bg-success' : 'bg-secondary'">
                   <i class="fas" [ngClass]="selectedProduct.isVisible ? 'fa-eye' : 'fa-eye-slash'"></i>
@@ -1994,16 +2000,16 @@
               <div class="row mt-2">
                 <div class="col-md-4">
                   <small class="text-muted d-block">Taux appliqué</small>
-                  <strong>{{ formatRate(tax!) }}</strong>
+                  <strong>{{ tax.formatRate() }}</strong>
                 </div>
                 <div class="col-md-4">
                   <small class="text-muted d-block">Montant de la taxe</small>
-                  <strong class="text-primary">{{ formatCurrency(calculateProductTax(selectedProduct)) }}</strong>
+                  <strong class="text-primary">{{ formatCurrency(selectedProduct.calculateProductTax(tax)) }}</strong>
                 </div>
                 <div class="col-md-4">
                   <small class="text-muted d-block">Augmentation</small>
                   <strong class="text-success">
-                    {{ ((calculateProductTax(selectedProduct) / selectedProduct.price) * 100).toFixed(2) }}%
+                    {{ ((selectedProduct.calculateProductTax(tax) / selectedProduct.price) * 100).toFixed(2) }}%
                   </strong>
                 </div>
               </div>
@@ -2045,13 +2051,13 @@
 
                   <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="text-muted">Taxe ({{ tax?.name }})</span>
-                    <strong class="text-info">{{ formatCurrency(calculateProductTax(selectedProduct)) }}</strong>
+                    <strong class="text-info">{{ formatCurrency(selectedProduct.calculateProductTax(tax)) }}</strong>
                   </div>
 
                   <div class="d-flex justify-content-between align-items-center">
                     <span class="fw-bold">Prix de vente (TTC)</span>
                     <strong class="text-success fs-4">
-                      {{ formatCurrency(calculateProductPriceWithTax(selectedProduct)) }}
+                      {{ formatCurrency(selectedProduct.calculateProductPriceWithTax(tax)) }}
                     </strong>
                   </div>
 
@@ -2059,7 +2065,7 @@
                   <div class="mt-3 p-2 bg-light rounded" *ngIf="selectedProduct.cost">
                     <small class="text-muted d-block">Marge bénéficiaire</small>
                     <strong class="text-success">
-                      {{ calculateProfitMargin(selectedProduct) }}%
+                      {{ selectedProduct.calculateProfitMargin() }}%
                     </strong>
                   </div>
                 </div>
@@ -2081,12 +2087,12 @@
                   <!-- Visual Bar -->
                   <div class="breakdown-bar mb-3">
                     <div class="bar-segment bg-primary"
-                         [style.width.%]="(selectedProduct.price / calculateProductPriceWithTax(selectedProduct)) * 100"
+                         [style.width.%]="(selectedProduct.price / selectedProduct.calculateProductPriceWithTax(tax)) * 100"
                          [title]="'Prix HT: ' + formatCurrency(selectedProduct.price)">
                     </div>
                     <div class="bar-segment bg-warning"
-                         [style.width.%]="(calculateProductTax(selectedProduct) / calculateProductPriceWithTax(selectedProduct)) * 100"
-                         [title]="'Taxe: ' + formatCurrency(calculateProductTax(selectedProduct))">
+                         [style.width.%]="(selectedProduct.calculateProductTax(tax) / selectedProduct.calculateProductPriceWithTax(tax)) * 100"
+                         [title]="'Taxe: ' + formatCurrency(selectedProduct.calculateProductTax(tax))">
                     </div>
                   </div>
 
@@ -2098,7 +2104,7 @@
                         <small class="text-muted d-block">Prix HT</small>
                         <strong>{{ formatCurrency(selectedProduct.price) }}</strong>
                         <small class="text-muted">
-                          ({{ ((selectedProduct.price / calculateProductPriceWithTax(selectedProduct)) * 100).toFixed(1) }}%)
+                          ({{ ((selectedProduct.price / selectedProduct.calculateProductPriceWithTax(tax)) * 100).toFixed(1) }}%)
                         </small>
                       </div>
                     </div>
@@ -2107,9 +2113,9 @@
                       <span class="legend-dot bg-warning"></span>
                       <div class="flex-grow-1">
                         <small class="text-muted d-block">Taxe {{ tax?.name }}</small>
-                        <strong>{{ formatCurrency(calculateProductTax(selectedProduct)) }}</strong>
+                        <strong>{{ formatCurrency(selectedProduct.calculateProductTax(tax)) }}</strong>
                         <small class="text-muted">
-                          ({{ ((calculateProductTax(selectedProduct) / calculateProductPriceWithTax(selectedProduct)) * 100).toFixed(1) }}%)
+                          ({{ ((selectedProduct.calculateProductTax(tax) / selectedProduct.calculateProductPriceWithTax(tax)) * 100).toFixed(1) }}%)
                         </small>
                       </div>
                     </div>
@@ -2149,12 +2155,12 @@
                   </div>
                   <div class="d-flex justify-content-between mb-2" *ngIf="pharmacyData.price">
                     <span class="text-muted">Taxe</span>
-                    <strong class="text-info">{{ formatCurrency(calculatePharmacyTax(pharmacyData.price)) }}</strong>
+                    <strong class="text-info">{{ formatCurrency(tax.calculatePharmacyTax(pharmacyData.price)) }}</strong>
                   </div>
                   <div class="d-flex justify-content-between">
                     <span class="fw-bold">Prix TTC</span>
                     <strong class="text-success">
-                      {{ pharmacyData.price ? formatCurrency(pharmacyData.price + calculatePharmacyTax(pharmacyData.price)) : 'Prix par défaut' }}
+                      {{ pharmacyData.price ? formatCurrency(pharmacyData.price + tax.calculatePharmacyTax(pharmacyData.price)) : 'Prix par défaut' }}
                     </strong>
                   </div>
                   <div class="mt-2">
@@ -2431,9 +2437,6 @@
       <div>
         <h4 class="modal-title mb-1">{{ selectedCategory?.name }}</h4>
         <div class="category-badges">
-          <span class="badge" [ngClass]="'bg-' + (selectedCategory?.status === 'active' ? 'success' : 'secondary')">
-            {{ getStatusLabel(selectedCategory?.status!) }}
-          </span>
           <span class="badge" [ngClass]="selectedCategory?.specialCategory">
             {{ getSpecialCategoryLabel(selectedCategory?.specialCategory!) }}
           </span>

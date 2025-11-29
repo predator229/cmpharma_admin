@@ -210,7 +210,7 @@ export class PharmacyProductDetailComponent implements OnInit, OnDestroy {
 
     // Formulaire pour les taxes
     this.taxesForm = this.fb.group({
-      taxes: [[], [Validators.required]]
+      taxes: [[], []]
     });
 
   }

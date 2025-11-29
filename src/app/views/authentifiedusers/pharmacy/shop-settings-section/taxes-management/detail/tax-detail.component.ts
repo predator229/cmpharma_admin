@@ -17,6 +17,7 @@ import { take } from "rxjs/operators";
 import {Category, getRestrictionByValue} from 'src/app/models/Category.class';
 import { Product } from "../../../../../../models/Product";
 import {Select2} from "ng-select2-component";
+import {round} from "@popperjs/core/lib/utils/math";
 
 interface TaxStatistics {
   totalProducts: number;
@@ -25,6 +26,7 @@ interface TaxStatistics {
   inactiveProducts: number;
   estimatedMonthlyRevenue: number;
   estimatedMonthlyTaxAmount: number;
+  realMonthlyTaxAmount: number;
   averageProductPrice: number;
   productsWithMultipleTaxes: number;
 }
@@ -65,6 +67,8 @@ export class PharmacyTaxDetailComponent implements OnInit {
   filteredCategories: Category[] = [];
   defaultApplicableOnList: Array<{value: string, label: string}> = [];
 
+  selectedTableProduct: string[];
+
   // Statistics (viennent du backend)
   statistics: TaxStatistics = {
     totalProducts: 0,
@@ -73,6 +77,7 @@ export class PharmacyTaxDetailComponent implements OnInit {
     inactiveProducts: 0,
     estimatedMonthlyRevenue: 0,
     estimatedMonthlyTaxAmount: 0,
+    realMonthlyTaxAmount: 0,
     averageProductPrice: 0,
     productsWithMultipleTaxes: 0
   };
@@ -732,7 +737,7 @@ export class PharmacyTaxDetailComponent implements OnInit {
     const rows = [
       ['Nom de la taxe', this.tax.name],
       ['Type', this.getTaxTypeLabel(this.tax.type)],
-      ['Taux actuel', this.formatRate(this.tax)],
+      ['Taux actuel', this.tax.formatRate()],
       ['Produits affectés', this.statistics.totalProducts.toString()],
       ['Catégories affectées', this.statistics.totalCategories.toString()],
       ['Produits actifs', this.statistics.activeProducts.toString()],
@@ -775,14 +780,6 @@ export class PharmacyTaxDetailComponent implements OnInit {
       month: 'long',
       day: 'numeric'
     });
-  }
-
-  formatRate(tax: TaxeModel): string {
-    const rate = tax.getCurrentRateFees();
-    if (rate === null || rate === undefined) return 'N/A';
-
-    const suffix = tax.type === 'percentage' ? '%' : ' XOF';
-    return `${rate}${suffix}`;
   }
 
   formatCurrency(amount: number): string {
@@ -884,7 +881,15 @@ export class PharmacyTaxDetailComponent implements OnInit {
   }
 
   estimatedAnnualTax(): number {
-    return this.statistics.estimatedMonthlyTaxAmount * 12;
+    return Math.ceil(this.statistics.estimatedMonthlyTaxAmount * 12);
+  }
+
+  realAnnualTax(): number {
+    return Math.ceil(this.statistics.realMonthlyTaxAmount * 12);
+  }
+
+  effectiveRate() {
+    return Math.ceil(this.statistics.estimatedMonthlyTaxAmount === 0 ? 0 : (this.statistics.realMonthlyTaxAmount / this.statistics.estimatedMonthlyTaxAmount) * 100);
   }
 
   get taxEfficiency(): number {
@@ -909,7 +914,25 @@ export class PharmacyTaxDetailComponent implements OnInit {
     });
   }
 
-// Méthodes
+  selectAllPodcuts (productList: Product[]) {
+    this.selectedTableProduct = productList.map(product => product._id);
+  }
+
+  toggleProductSelection(productId: string) {
+    if (this.selectedTableProduct.includes(productId)) {
+      this.selectedTableProduct = this.selectedTableProduct.filter(id => id !== productId);
+    } else {
+      this.selectedTableProduct.push(productId);
+    }
+  }
+
+  allChecked() {
+    return this.selectedTableProduct.length === this.statistics.totalProducts;
+  }
+
+  isSelectedProductRow (productId: string) {
+    return this.selectedTableProduct.includes(productId);
+  }
 
   /**
    * Ouvre le modal de détail du produit
@@ -925,65 +948,6 @@ export class PharmacyTaxDetailComponent implements OnInit {
       scrollable: true,
       centered: true
     });
-  }
-
-  /**
-   * Calcule le montant de la taxe pour un produit
-   */
-  calculateProductTax(product: Product): number {
-    if (!this.tax || !product) return 0;
-
-    if (this.tax.type === 'percentage') {
-      return (product.price * this.currentRate) / 100;
-    } else {
-      return this.currentRate;
-    }
-  }
-
-  /**
-   * Calcule le prix TTC d'un produit
-   */
-  calculateProductPriceWithTax(product: Product): number {
-    if (!product) return 0;
-    return product.price + this.calculateProductTax(product);
-  }
-
-  /**
-   * Calcule le montant de la taxe pour un prix de pharmacie
-   */
-  calculatePharmacyTax(price: number): number {
-    if (!this.tax || !price) return 0;
-
-    if (this.tax.type === 'percentage') {
-      return (price * this.currentRate) / 100;
-    } else {
-      return this.currentRate;
-    }
-  }
-
-  /**
-   * Calcule la marge bénéficiaire d'un produit
-   */
-  calculateProfitMargin(product: Product): string {
-    if (!product.cost || product.cost === 0) return 'N/A';
-
-    const profit = product.price - product.cost;
-    const margin = (profit / product.cost) * 100;
-
-    return margin.toFixed(2);
-  }
-
-  /**
-   * Obtient le label du statut du produit
-   */
-  getStatusLabel(status: string): string {
-    const statusMap: { [key: string]: string } = {
-      'active': 'Actif',
-      'inactive': 'Inactif',
-      'out_of_stock': 'Épuisé',
-      'discontinued': 'Discontinué'
-    };
-    return statusMap[status] || status;
   }
 
   /**
@@ -1156,7 +1120,7 @@ export class PharmacyTaxDetailComponent implements OnInit {
           <div class="info-label">Statut:</div>
           <div class="info-value">
             <span class="badge badge-${product.status === 'active' ? 'success' : 'danger'}">
-              ${this.getStatusLabel(product.status)}
+              ${product.getStatusLabel()}
             </span>
           </div>
         </div>
@@ -1174,12 +1138,12 @@ export class PharmacyTaxDetailComponent implements OnInit {
             <td>${this.formatCurrency(product.price)}</td>
           </tr>
           <tr>
-            <td>Taxe ${this.tax?.name} (${this.formatRate(this.tax!)})</td>
-            <td>${this.formatCurrency(this.calculateProductTax(product))}</td>
+            <td>Taxe ${this.tax?.name} (${this.tax!.formatRate()})</td>
+            <td>${this.formatCurrency(product.calculateProductTax(this.tax))}</td>
           </tr>
           <tr class="total-row">
             <td>Prix de vente (TTC)</td>
-            <td>${this.formatCurrency(this.calculateProductPriceWithTax(product))}</td>
+            <td>${this.formatCurrency(product.calculateProductPriceWithTax(this.tax))}</td>
           </tr>
         </table>
       </div>

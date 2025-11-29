@@ -929,3 +929,399 @@ $transition: all 0.3s ease;
     box-shadow: $box-shadow-sm;
   }
 }
+
+.badge {
+  &.bg-success {
+    background-color: #10b981 !important;
+  }
+
+  &.bg-warning {
+    background-color: #f59e0b !important;
+    color: #000 !important;
+  }
+
+  &.bg-danger {
+    background-color: #ef4444 !important;
+  }
+
+  &.bg-info {
+    background-color: #06b6d4 !important;
+  }
+
+  &.bg-primary {
+    background-color: #4f46e5 !important;
+  }
+
+  &.bg-secondary {
+    background-color: #6b7280 !important;
+  }
+}
+
+.text-dark {
+  color: #2C3E50 !important;
+}
+
+/* Modal */
+.modal-header {
+  background: linear-gradient(135deg, $primary-color 0%, lighten($primary-color, 10%) 100%);
+  color: white;
+  border-bottom: none;
+  padding: 1.5rem;
+  border-radius: $border-radius $border-radius 0 0;
+
+  .modal-title {
+    color: white;
+    font-weight: 600;
+  }
+
+  .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+.modal-body {
+  padding: 2rem;
+
+  .form-label {
+    font-weight: 600;
+    color: $dark-text;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: $border-radius;
+    border: 1px solid $border-color;
+    padding: 0.75rem;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.15);
+    }
+  }
+
+  .input-group-text {
+    background: $light-background;
+    border-color: $border-color;
+    color: $medium-text;
+    font-weight: 600;
+  }
+}
+
+.modal-footer {
+  padding: 1.5rem 2rem;
+  background: $light-background;
+  border-top: 1px solid $border-color;
+}
+
+
+// Modal Product Styles
+.modal-product-image {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+}
+
+.modal-no-image {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+
+  i {
+    font-size: 24px;
+    color: #adb5bd;
+  }
+}
+
+.product-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+// Info Cards
+.info-card {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .info-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    margin-right: 1rem;
+
+    i {
+      font-size: 20px;
+      color: white;
+    }
+  }
+
+  .info-content {
+    flex: 1;
+
+    small {
+      display: block;
+      color: #6c757d;
+      font-size: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    strong {
+      font-size: 1.1rem;
+      color: #212529;
+    }
+  }
+}
+
+// Info Groups
+.info-group {
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+
+    i {
+      font-size: 0.85rem;
+    }
+  }
+
+  p {
+    margin: 0;
+    color: #212529;
+    line-height: 1.6;
+  }
+
+  code {
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    color: #e83e8c;
+    font-size: 0.9rem;
+  }
+}
+
+// Pricing Details
+.pricing-detail {
+  .d-flex {
+    padding: 0.75rem 0;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid #f1f3f5;
+    }
+  }
+
+  hr {
+    margin: 1rem 0;
+    border-top: 2px solid #e9ecef;
+  }
+}
+
+// Price Breakdown
+.price-breakdown {
+  .breakdown-bar {
+    height: 40px;
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    .bar-segment {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.3s ease;
+
+      &:hover {
+        opacity: 0.9;
+        cursor: help;
+      }
+    }
+  }
+
+  .breakdown-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .legend-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+// Image Cards
+.image-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+
+    .image-overlay {
+      opacity: 1;
+    }
+  }
+
+  &.main-image {
+    border: 3px solid #007bff;
+  }
+
+  .image-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+  }
+}
+
+// Tab Content Styling
+.tab-pane {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Modal Responsive
+@media (max-width: 768px) {
+  .modal-product-image,
+  .modal-no-image {
+    width: 50px;
+    height: 50px;
+  }
+
+  .info-card {
+    .info-icon {
+      width: 40px;
+      height: 40px;
+
+      i {
+        font-size: 16px;
+      }
+    }
+  }
+
+  .product-badges {
+    .badge {
+      font-size: 0.7rem;
+    }
+  }
+}
+
+// Print Styles
+@media print {
+  .modal-header,
+  .modal-footer,
+  .nav-tabs {
+    display: none !important;
+  }
+
+  .tab-content {
+    display: block !important;
+  }
+
+  .tab-pane {
+    display: block !important;
+    opacity: 1 !important;
+  }
+}
+
+// Additional Utility Classes
+.text-strikethrough {
+  text-decoration: line-through;
+}
+
+.discount-info {
+  .alert {
+    border-left: 4px solid #ffc107;
+  }
+}
+
+// Hover Effects
+.list-group-item {
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #f8f9fa;
+  }
+}
+
+// Badge Improvements
+.badge {
+  font-weight: 500;
+  padding: 0.35em 0.65em;
+
+  i {
+    margin-right: 0.25rem;
+  }
+}
+
+// Card Improvements
+.card {
+  transition: all 0.3s ease;
+
+  &.border-primary,
+  &.border-success,
+  &.border-danger,
+  &.border-warning,
+  &.border-info {
+    border-width: 2px;
+  }
+}
+/* End of styles */

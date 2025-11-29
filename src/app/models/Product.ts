@@ -2,7 +2,7 @@ import { FileClass } from './File.class';
 import { PharmacyClass } from './Pharmacy.class';
 import { CommonFunctions } from '../controllers/comonsfunctions';
 import {Category} from "./Category.class";
-import {TaxeModel} from "./Taxe.class";
+import {Taxe, TaxeModel} from "./Taxe.class";
 
 export class Product {
   _id?: string;
@@ -227,5 +227,39 @@ export class Product {
 
   clone(updates: Partial<Product> = {}): Product {
     return new Product({ ...this, ...updates });
+  }
+
+  calculateProductPriceWithTax(tax?: TaxeModel): number {
+    return this.price + this.calculateProductTax(tax);
+  }
+
+  calculateProductTax(tax?: TaxeModel, rateId = ''): number {
+    const taxes: TaxeModel[] = tax ? [tax] : this.taxes;
+
+    let totalTaxes: number = 0;
+    taxes.forEach((taxe) => {
+      const selectedRate = taxe.rates.find(rate => rate._id === rateId);
+      totalTaxes += taxe.type === 'percentage'
+        ? (this.price * ((selectedRate?.value ?? taxe.getCurrentRateFees()) || 0)) / 100
+        : (selectedRate?.value ?? taxe.getCurrentRateFees()) || 0;
+    })
+    return totalTaxes;
+  }
+
+  calculateProfitMargin(){
+    const profit = this.price - this.cost;
+    const margin = this.cost ? (profit / this.cost) * 100 : 0;
+
+    return margin.toFixed(2);
+  }
+
+  getStatusLabel(): string {
+    const statusMap: { [key: string]: string } = {
+      'active': 'Actif',
+      'inactive': 'Inactif',
+      'out_of_stock': 'Épuisé',
+      'discontinued': 'Discontinué'
+    };
+    return statusMap[this.status] || this.status;
   }
 }

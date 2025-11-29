@@ -251,8 +251,8 @@
           <tr *ngFor="let tax of filteredTaxes" [class.table-active]="!tax.is_active">
             <!-- Name -->
             <td>
-              <div class="tax-info" >
-                <a (click)="goToTax(tax)"><h6 class="mb-1">{{ tax.name }}</h6></a>
+              <div class="tax-info" style="cursor: pointer" (click)="goToTax(tax)">
+                <h6 class="mb-1">{{ tax.name }}</h6>
                 <small class="text-muted" *ngIf="tax.description">
                   {{ tax.description }}
                 </small>

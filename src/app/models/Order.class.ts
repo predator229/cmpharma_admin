@@ -7,12 +7,20 @@ import {PrescriptionClass} from "./Prescription.class";
 import {Admin} from "./Admin.class";
 import {InvoiceClass} from "./Invoice.class";
 import {BonFiscalClass} from "./BonFiscal.class";
+import {Taxe, TaxeModel} from "./Taxe.class";
+
+export interface ApplicableTaxe {
+  taxe: TaxeModel;
+  rateId: string;
+}
 
 export interface OrderItem {
   product: Product;
+  applicableTaxes: ApplicableTaxe[];
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  taxesPrice: number;
   prescriptionRequired: boolean;
   prescriptionProvided: boolean;
   prescriptionDocument?: PrescriptionClass;

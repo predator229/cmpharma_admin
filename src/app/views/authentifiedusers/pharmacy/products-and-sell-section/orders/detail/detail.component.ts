@@ -113,7 +113,7 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
   @ViewChild('trackingModal') trackingModal: ElementRef | undefined;
   @ViewChild('prescriptionModal') prescriptionModal: ElementRef | undefined;
   @ViewChild('printModal') printModal: ElementRef | undefined;
-  @ViewChild('productModal') productModal: ElementRef | undefined;
+  @ViewChild('productDetailModal') productModal: ElementRef | undefined;
 
   userDetail: UserDetails;
   baseUrl = environment.baseUrl;
@@ -124,6 +124,7 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
   private namespace = 'internal_messaging';
 
   selectedProduct: Product = null;
+  productModalTab = 'general';
 
   // Print options
   printOptions = {
@@ -1050,8 +1051,16 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
   uploadPrescription(item: OrderItem) {
   }
 
-  getItemsTotal() {
+  getItemsTotalHT() {
     return this.order.items.reduce((sum, item) => sum + item.totalPrice, 0);
+  }
+
+  getItemsTotalTaxe() {
+    return this.order.items.reduce((sum, item) => sum + item.taxesPrice, 0);
+  }
+
+  getItemsTotalTTC() {
+    return this.getItemsTotalTaxe() + this.getItemsTotalHT();
   }
 
   getPaymentStatusBadgeClass(status: "pending" | "paid" | "failed" | "refunded" | "partially_refunded") {
@@ -1717,6 +1726,248 @@ export class PharmacyOrderDetailComponent implements OnInit, OnDestroy {
 
   getDateStatus(status: string): Date | null {
     return this.order.statusHistory.find(h => h.status === status)?.timestamp ?? null;
+  }
+
+  /**
+   * Obtient le label du type d'ordonnance
+   */
+  getPrescriptionTypeLabel(type: string): string {
+    const typeMap: { [key: string]: string } = {
+      'simple': 'Ordonnance simple',
+      'renewable': 'Ordonnance renouvelable',
+      'secure': 'Ordonnance sécurisée',
+      'restricted': 'Ordonnance restreinte'
+    };
+    return typeMap[type] || type;
+  }
+
+  /**
+   * Obtient le label de la forme galénique
+   */
+  getDrugFormLabel(form: string): string {
+    const formMap: { [key: string]: string } = {
+      'tablet': 'Comprimé',
+      'capsule': 'Gélule',
+      'syrup': 'Sirop',
+      'injection': 'Injectable',
+      'cream': 'Crème',
+      'ointment': 'Pommade',
+      'drops': 'Gouttes',
+      'spray': 'Spray',
+      'powder': 'Poudre',
+      'solution': 'Solution',
+      'suppository': 'Suppositoire',
+      'patch': 'Patch'
+    };
+    return formMap[form] || form;
+  }
+
+  /**
+   * Imprime les détails du produit
+   */
+  printProductDetails(): void {
+    if (!this.selectedProduct) return;
+
+    const printContent = this.generateProductPrintContent(this.selectedProduct);
+    const printWindow = window.open('', '_blank');
+
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+  }
+
+  /**
+   * Génère le contenu HTML pour l'impression
+   */
+  private generateProductPrintContent(product: Product): string {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Détails du produit - ${product.name}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          padding: 20px;
+          color: #333;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #007bff;
+          padding-bottom: 20px;
+        }
+        .header h1 {
+          margin: 0;
+          color: #007bff;
+        }
+        .section {
+          margin-bottom: 25px;
+        }
+        .section-title {
+          background-color: #f8f9fa;
+          padding: 10px;
+          border-left: 4px solid #007bff;
+          font-weight: bold;
+          margin-bottom: 15px;
+        }
+        .info-row {
+          display: flex;
+          padding: 8px 0;
+          border-bottom: 1px solid #eee;
+        }
+        .info-label {
+          font-weight: bold;
+          width: 200px;
+          color: #666;
+        }
+        .info-value {
+          flex: 1;
+        }
+        .badge {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          margin-right: 5px;
+        }
+        .badge-success { background-color: #28a745; color: white; }
+        .badge-danger { background-color: #dc3545; color: white; }
+        .badge-warning { background-color: #ffc107; color: black; }
+        .badge-info { background-color: #17a2b8; color: white; }
+        .price-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+        .price-table th,
+        .price-table td {
+          padding: 10px;
+          text-align: left;
+          border: 1px solid #ddd;
+        }
+        .price-table th {
+          background-color: #f8f9fa;
+          font-weight: bold;
+        }
+        .total-row {
+          background-color: #e7f3ff;
+          font-weight: bold;
+        }
+        @media print {
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>${product.name}</h1>
+        <p>SKU: ${product.sku} | Date: ${new Date().toLocaleDateString('fr-FR')}</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Informations générales</div>
+        <div class="info-row">
+          <div class="info-label">Nom:</div>
+          <div class="info-value">${product.name}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">SKU:</div>
+          <div class="info-value">${product.sku}</div>
+        </div>
+        ${product.barcode ? `
+        <div class="info-row">
+          <div class="info-label">Code-barres:</div>
+          <div class="info-value">${product.barcode}</div>
+        </div>
+        ` : ''}
+        ${product.marque ? `
+        <div class="info-row">
+          <div class="info-label">Marque:</div>
+          <div class="info-value">${product.marque}</div>
+        </div>
+        ` : ''}
+        <div class="info-row">
+          <div class="info-label">Statut:</div>
+          <div class="info-value">
+            <span class="badge badge-${product.status === 'active' ? 'success' : 'danger'}">
+              ${product.getStatusLabel()}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Prix et taxes</div>
+        <table class="price-table">
+          <tr>
+            <th>Description</th>
+            <th>Montant</th>
+          </tr>
+          <tr>
+            <td>Prix de vente (HT)</td>
+            <td>${this.formatCurrency(product.price)}</td>
+          </tr>
+          ${product.taxes?.length > 0 ? product.taxes.map(tax => `
+            <tr>
+              <td>Taxe ${tax?.name} (${tax?.formatRate()})</td>
+              <td>${this.formatCurrency(product.calculateProductPriceWithTax())}</td>
+            </tr>
+          `) : ''}
+          <tr class="total-row">
+            <td>Prix de vente (TTC)</td>
+            <td>${this.formatCurrency(product.calculateProductPriceWithTax())}</td>
+          </tr>
+        </table>
+      </div>
+
+      ${product.requiresPrescription ? `
+      <div class="section">
+        <div class="section-title">Informations médicales</div>
+        <div class="info-row">
+          <div class="info-label">Ordonnance:</div>
+          <div class="info-value">
+            <span class="badge badge-danger">Requise</span>
+          </div>
+        </div>
+        ${product.drugForm ? `
+        <div class="info-row">
+          <div class="info-label">Forme:</div>
+          <div class="info-value">${this.getDrugFormLabel(product.drugForm)}</div>
+        </div>
+        ` : ''}
+        ${product.dosage ? `
+        <div class="info-row">
+          <div class="info-label">Dosage:</div>
+          <div class="info-value">${product.dosage}</div>
+        </div>
+        ` : ''}
+      </div>
+      ` : ''}
+
+      <div style="margin-top: 50px; text-align: center; color: #999; font-size: 12px;">
+        Document généré le ${new Date().toLocaleString('fr-FR')} - ${product?.name || 'Système de gestion'}
+      </div>
+    </body>
+    </html>
+  `;
+  }
+
+  /**
+   * Navigation vers la page de détail complet du produit
+   */
+  navigateToProductDetail(): void {
+    if (this.selectedProduct) {
+      this.closeModal();
+      this.router.navigate(['/pharmacy/products/', this.selectedProduct._id]);
+    }
   }
 
 }

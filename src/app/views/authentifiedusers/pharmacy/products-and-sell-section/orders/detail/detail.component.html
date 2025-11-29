@@ -607,8 +607,11 @@
               <tr>
                 <th>Produit</th>
                 <th>Prix unitaire</th>
+                <th>Taxes Unitaire</th>
                 <th>Quantité</th>
-                <th>Total</th>
+                <th>Total HT</th>
+                <th>Total Taxes</th>
+                <th>Total TTC</th>
                 <th>Ordonnance</th>
                 <th>Actions</th>
               </tr>
@@ -617,8 +620,8 @@
               <tr *ngFor="let item of order.items; let i = index">
                 <td>
                   <div class="product-info d-flex">
-                    <div class="product-image me-3" *ngIf="item.product.mainImage || item.product.images?.length > 0">
-                      <img [src]="baseUrl + (item.product.mainImage?.url ?? item.product.images[0]?.url)"
+                    <div class="product-image me-3" *ngIf="item.product.getMainImageUrl()">
+                      <img [src]="internalPathUrl + (item.product.getMainImageUrl() ?? item.product.images[0]?.url)"
                            [alt]="item.product.name"
                            class="product-thumb"
                            style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
@@ -646,10 +649,21 @@
                   </small>
                 </td>
                 <td>
-                  <span class="quantity-badge badge bg-light text-dark">{{ item.quantity }}</span>
+                  <p *ngFor="let taxe of item.applicableTaxes">
+                    {{ taxe.taxe.name }}: {{ formatCurrency(item.product.calculateProductTax(taxe.taxe, taxe.rateId)) }}
+                  </p>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark">{{ item.quantity }}</span>
                 </td>
                 <td>
                   <strong>{{ formatCurrency(item.totalPrice) }}</strong>
+                </td>
+                <td>
+                  <strong>{{ formatCurrency(item.taxesPrice) }}</strong>
+                </td>
+                <td>
+                  <strong>{{ formatCurrency(item.taxesPrice + item.totalPrice) }}</strong>
                 </td>
                 <td>
                   <div *ngIf="item.prescriptionRequired" class="prescription-status">
@@ -683,8 +697,10 @@
               </tbody>
               <tfoot class="table-light">
               <tr>
-                <th colspan="3">Total</th>
-                <th>{{ formatCurrency(getItemsTotal()) }}</th>
+                <th colspan="4">Total</th>
+                <th>{{ formatCurrency(getItemsTotalHT()) }}</th>
+                <th>{{ formatCurrency(getItemsTotalTaxe()) }}</th>
+                <th>{{ formatCurrency(getItemsTotalTTC()) }}</th>
                 <th colspan="2"></th>
               </tr>
               </tfoot>
@@ -1632,63 +1648,628 @@
 <!-- Modals manquants à ajouter à la fin du HTML existant -->
 
 <!-- Product Details Modal -->
-<ng-template #productModal>
+<ng-template #productDetailModal>
   <div class="modal-header">
-    <h4 class="modal-title">{{ selectedProduct?.name }}</h4>
+    <div class="d-flex align-items-center">
+      <img *ngIf="selectedProduct?.getMainImageUrl()"
+           [src]="internalPathUrl + selectedProduct.getMainImageUrl()"
+           alt="Image produit"
+           class="modal-product-image me-3">
+      <div *ngIf="!selectedProduct?.getMainImageUrl()" class="modal-no-image me-3">
+        <i class="fas fa-image"></i>
+      </div>
+      <div>
+        <h4 class="modal-title mb-1">{{ selectedProduct?.name }}</h4>
+        <div class="product-badges">
+          <span class="badge" [ngClass]="'bg-' + (selectedProduct?.status === 'active' ? 'success' : 'secondary')">
+            {{ selectedProduct.getStatusLabel() }}
+          </span>
+          <span class="badge bg-primary" *ngIf="selectedProduct?.isFeatured">En vedette</span>
+          <span class="badge bg-warning" *ngIf="selectedProduct?.isOnSale">En promotion</span>
+          <span class="badge bg-danger" *ngIf="selectedProduct?.requiresPrescription">Ordonnance requise</span>
+        </div>
+      </div>
+    </div>
     <button type="button" class="btn-close" (click)="closeModal()"></button>
   </div>
-  <div class="modal-body" *ngIf="selectedProduct">
-    <div class="row">
-      <div class="col-md-4" *ngIf="selectedProduct.mainImage || selectedProduct.images?.length > 0">
-        <img [src]="baseUrl + (selectedProduct.mainImage?.url ?? selectedProduct.images[0]?.url)"
-             [alt]="selectedProduct.name" class="img-fluid rounded">
-      </div>
-      <div class="col-md-8">
-        <h5>{{ selectedProduct.name }}</h5>
-        <p class="text-muted" *ngIf="selectedProduct.description">{{ selectedProduct.description }}</p>
 
-        <div class="product-details">
-          <div class="mb-2" *ngIf="selectedProduct.sku">
-            <strong>Référence:</strong> {{ selectedProduct.sku }}
+  <div class="modal-body" *ngIf="selectedProduct">
+    <!-- Quick Info Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3 col-sm-6">
+        <div class="info-card">
+          <div class="info-icon bg-primary">
+            <i class="fas fa-barcode"></i>
           </div>
-          <div class="mb-2" *ngIf="selectedProduct.categories?.length > 0">
-            <strong>Catégories:</strong>
-            <span *ngFor="let cat of selectedProduct.categories; let last = last" class="badge bg-secondary me-1">
-              {{ cat.name }}
-            </span>
+          <div class="info-content">
+            <small class="text-muted">SKU</small>
+            <strong>{{ selectedProduct.sku }}</strong>
           </div>
-          <div class="mb-2">
-            <strong>Prix:</strong>
-            <span class="h5 text-primary">{{ formatCurrency(selectedProduct.price || 0) }}</span>
-            <del class="text-muted ms-2" *ngIf="selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price">
-              {{ formatCurrency(selectedProduct.originalPrice) }}
-            </del>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="info-card">
+          <div class="info-icon bg-success">
+            <i class="fas fa-euro-sign"></i>
           </div>
-          <div class="mb-2" *ngIf="selectedProduct.requiresPrescription">
-            <span class="badge bg-warning">
-              <i class="fas fa-prescription me-1"></i>
-              Ordonnance requise
-            </span>
+          <div class="info-content">
+            <small class="text-muted">Prix HT</small>
+            <strong>{{ formatCurrency(selectedProduct.price) }}</strong>
           </div>
-          <div class="mb-2" *ngIf="selectedProduct.laboratoire">
-            <strong>Fabricant:</strong> {{ selectedProduct.laboratoire }}
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="info-card">
+          <div class="info-icon bg-info">
+            <i class="fas fa-receipt"></i>
           </div>
-          <div class="mb-2" *ngIf="selectedProduct.expiryDate">
-            <strong>Date d'expiration:</strong> {{ formatDate(selectedProduct.expiryDate) }}
+          <div class="info-content">
+            <small class="text-muted">Taxes</small>
+            <strong>{{ formatCurrency(selectedProduct.calculateProductTax()) }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="info-card">
+          <div class="info-icon bg-warning">
+            <i class="fas fa-tag"></i>
+          </div>
+          <div class="info-content">
+            <small class="text-muted">Prix TTC</small>
+            <strong>{{ formatCurrency(selectedProduct.calculateProductPriceWithTax()) }}</strong>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [class.active]="productModalTab === 'general'"
+                (click)="productModalTab = 'general'"
+                type="button">
+          <i class="fas fa-info-circle me-2"></i>
+          Général
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [class.active]="productModalTab === 'pricing'"
+                (click)="productModalTab = 'pricing'"
+                type="button">
+          <i class="fas fa-euro-sign me-2"></i>
+          Prix & Taxes
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [class.active]="productModalTab === 'medical'"
+                (click)="productModalTab = 'medical'"
+                type="button">
+          <i class="fas fa-prescription-bottle me-2"></i>
+          Médical
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                [class.active]="productModalTab === 'images'"
+                (click)="productModalTab = 'images'"
+                type="button">
+          <i class="fas fa-images me-2"></i>
+          Images
+        </button>
+      </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- General Tab -->
+      <div *ngIf="productModalTab === 'general'" class="tab-pane fade show active">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="info-group">
+              <label><i class="fas fa-tag me-2 text-primary"></i>Nom</label>
+              <p class="fw-bold">{{ selectedProduct.name }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.slug">
+              <label><i class="fas fa-link me-2 text-primary"></i>Slug</label>
+              <p><code>{{ selectedProduct.slug }}</code></p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.description">
+              <label><i class="fas fa-align-left me-2 text-primary"></i>Description</label>
+              <p class="text-muted">{{ selectedProduct.description }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.shortDescription">
+              <label><i class="fas fa-file-alt me-2 text-primary"></i>Description courte</label>
+              <p class="text-muted">{{ selectedProduct.shortDescription }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.categories?.length">
+              <label><i class="fas fa-folder me-2 text-primary"></i>Catégories</label>
+              <div class="d-flex flex-wrap gap-2">
+                <span *ngFor="let category of selectedProduct.categories" class="badge bg-secondary">
+                  {{ category.name }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="info-group">
+              <label><i class="fas fa-barcode me-2 text-info"></i>SKU</label>
+              <p><code class="fs-6">{{ selectedProduct.sku }}</code></p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.barcode">
+              <label><i class="fas fa-qrcode me-2 text-info"></i>Code-barres</label>
+              <p><code>{{ selectedProduct.barcode }}</code></p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.cipCode">
+              <label><i class="fas fa-prescription me-2 text-info"></i>Code CIP</label>
+              <p><code>{{ selectedProduct.cipCode }}</code></p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.laboratoire">
+              <label><i class="fas fa-flask me-2 text-info"></i>Laboratoire</label>
+              <p>{{ selectedProduct.laboratoire }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.marque">
+              <label><i class="fas fa-copyright me-2 text-info"></i>Marque</label>
+              <p>{{ selectedProduct.marque }}</p>
+            </div>
+
+            <div class="info-group">
+              <label><i class="fas fa-toggle-on me-2 text-success"></i>Statut & Visibilité</label>
+              <div class="d-flex gap-2 flex-wrap">
+                <span class="badge" [ngClass]="'bg-' + (selectedProduct.status === 'active' ? 'success' : 'secondary')">
+                  <i class="fas" [ngClass]="selectedProduct.status === 'active' ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                  {{ selectedProduct.getStatusLabel() }}
+                </span>
+                <span class="badge" [ngClass]="selectedProduct.isVisible ? 'bg-success' : 'bg-secondary'">
+                  <i class="fas" [ngClass]="selectedProduct.isVisible ? 'fa-eye' : 'fa-eye-slash'"></i>
+                  {{ selectedProduct.isVisible ? 'Visible' : 'Masqué' }}
+                </span>
+                <span class="badge bg-warning" *ngIf="selectedProduct.isFeatured">
+                  <i class="fas fa-star"></i> En vedette
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing Tab -->
+      <div *ngIf="productModalTab === 'pricing'" class="tab-pane fade show active">
+        <!-- Tax Impact Summary -->
+        <div class="alert alert-info mb-4">
+          <small class="text-muted d-block">Augmentation du prix en comparaison des taxes</small>
+          <div class="col-md-4">
+            <strong class="text-success">
+              {{ ((selectedProduct.calculateProductTax() / selectedProduct.price) * 100).toFixed(2) }}%
+            </strong>
+          </div>
+        </div>
+
+        <!-- Pricing Details -->
+        <div class="row g-3">
+          <!-- Default Pricing -->
+          <div class="col-md-6">
+            <div class="card border-primary">
+              <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                  <i class="fas fa-tags me-2"></i>
+                  Prix par défaut
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="pricing-detail">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted">Prix de vente (HT)</span>
+                    <strong class="text-primary fs-5">{{ formatCurrency(selectedProduct.price) }}</strong>
+                  </div>
+
+                  <div class="d-flex justify-content-between align-items-center mb-2" *ngIf="selectedProduct.originalPrice">
+                    <span class="text-muted">Prix original</span>
+                    <span class="text-muted text-decoration-line-through">
+                      {{ formatCurrency(selectedProduct.originalPrice) }}
+                    </span>
+                  </div>
+
+                  <div class="d-flex justify-content-between align-items-center mb-2" *ngIf="selectedProduct.cost">
+                    <span class="text-muted">Coût d'achat</span>
+                    <span>{{ formatCurrency(selectedProduct.cost) }}</span>
+                  </div>
+
+                  <hr>
+
+                  <div class="d-flex justify-content-between align-items-center mb-2" *ngFor="let taxe of selectedProduct.taxes">
+                    <small class="text-muted d-block">
+                      <span class="badge bg-info">{{ taxe.name }}</span>
+                    </small>
+                    <strong class="text-info">{{ formatCurrency(selectedProduct.calculateProductTax(taxe)) }}</strong>
+                  </div>
+
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">Prix de vente (TTC)</span>
+                    <strong class="text-success fs-4">
+                      {{ formatCurrency(selectedProduct.calculateProductPriceWithTax()) }}
+                    </strong>
+                  </div>
+
+                  <!-- Profit Margin -->
+                  <div class="mt-3 p-2 bg-light rounded" *ngIf="selectedProduct.cost">
+                    <small class="text-muted d-block">Marge bénéficiaire</small>
+                    <strong class="text-success">
+                      {{ selectedProduct.calculateProfitMargin() }}%
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Price Breakdown Chart -->
+          <div class="col-md-6">
+            <div class="card border-success">
+              <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                  <i class="fas fa-chart-pie me-2"></i>
+                  Répartition du prix
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="price-breakdown">
+                  <!-- Visual Bar -->
+                  <div class="breakdown-bar mb-3">
+                    <div class="bar-segment bg-primary"
+                         [style.width.%]="(selectedProduct.price / selectedProduct.calculateProductPriceWithTax()) * 100"
+                         [title]="'Prix HT: ' + formatCurrency(selectedProduct.price)">
+                    </div>
+                    <div class="bar-segment bg-warning"
+                         [style.width.%]="(selectedProduct.calculateProductTax() / selectedProduct.calculateProductPriceWithTax()) * 100"
+                         [title]="'Taxe: ' + formatCurrency(selectedProduct.calculateProductTax())">
+                    </div>
+                  </div>
+
+                  <!-- Legend -->
+                  <div class="breakdown-legend">
+                    <div class="legend-item">
+                      <span class="legend-dot bg-primary"></span>
+                      <div class="flex-grow-1">
+                        <small class="text-muted d-block">Prix HT</small>
+                        <strong>{{ formatCurrency(selectedProduct.price) }}</strong>
+                        <small class="text-muted">
+                          ({{ ((selectedProduct.price / selectedProduct.calculateProductPriceWithTax()) * 100).toFixed(1) }}%)
+                        </small>
+                      </div>
+                    </div>
+
+                    <div class="legend-item">
+                      <span class="legend-dot bg-warning"></span>
+                      <div class="flex-grow-1" *ngFor="let taxe of selectedProduct.taxes">
+                        <small class="text-muted d-block">
+                          <span class="badge bg-info" >{{ taxe.name }}</span>
+                        </small>
+                        <strong>{{ formatCurrency(selectedProduct.calculateProductTax(taxe)) }}</strong>
+                        <small class="text-muted">
+                          {{ ((selectedProduct.calculateProductTax(taxe) / selectedProduct.calculateProductPriceWithTax()) * 100).toFixed(2) }}%
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Discount Badge -->
+                  <div class="discount-info mt-3" *ngIf="selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price">
+                    <div class="alert alert-warning mb-0">
+                      <i class="fas fa-percentage me-2"></i>
+                      <strong>Réduction:</strong>
+                      {{ ((selectedProduct.originalPrice - selectedProduct.price) / selectedProduct.originalPrice * 100).toFixed(0) }}%
+                      ({{ formatCurrency(selectedProduct.originalPrice - selectedProduct.price) }} d'économie)
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pharmacy Specific Pricing -->
+        <div class="mt-4" *ngIf="selectedProduct.pharmacies?.length">
+          <h6 class="mb-3">
+            <i class="fas fa-store me-2"></i>
+            Prix par pharmacie
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-6" *ngFor="let pharmacyData of selectedProduct.pharmacies">
+              <div class="card">
+                <div class="card-header">
+                  <h6 class="mb-0">{{ pharmacyData.pharmacy.name }}</h6>
+                </div>
+                <div class="card-body">
+                  <div class="d-flex justify-content-between mb-2" *ngIf="pharmacyData.price">
+                    <span class="text-muted">Prix HT</span>
+                    <strong>{{ formatCurrency(pharmacyData.price) }}</strong>
+                  </div>
+                  <div class="d-flex justify-content-between mb-2" *ngIf="pharmacyData.price">
+                    <div *ngFor="let taxe of selectedProduct.taxes">
+                      <span class="text-muted">Taxes {{ taxe.name }}</span>
+                      <strong class="text-info">{{ formatCurrency(taxe.calculatePharmacyTax(pharmacyData.price)) }}</strong>
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <span class="fw-bold">Prix TTC</span>
+                    <strong class="text-success">
+                      {{ pharmacyData.price ? formatCurrency(pharmacyData.price + selectedProduct.calculateProductPriceWithTax()) : 'Prix par défaut' }}
+                    </strong>
+                  </div>
+                  <div class="mt-2">
+                    <span class="badge" [ngClass]="pharmacyData.isAvailable ? 'bg-success' : 'bg-danger'">
+                      {{ pharmacyData.isAvailable ? 'Disponible' : 'Indisponible' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Medical Tab -->
+      <div *ngIf="productModalTab === 'medical'" class="tab-pane fade show active">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="info-group">
+              <label><i class="fas fa-prescription-bottle me-2 text-danger"></i>Ordonnance</label>
+              <p>
+                <span class="badge" [ngClass]="selectedProduct.requiresPrescription ? 'bg-danger' : 'bg-success'">
+                  <i class="fas" [ngClass]="selectedProduct.requiresPrescription ? 'fa-prescription-bottle' : 'fa-shopping-cart'"></i>
+                  {{ selectedProduct.requiresPrescription ? 'Requise' : 'Non requise' }}
+                </span>
+              </p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.requiresPrescription && selectedProduct.prescriptionType">
+              <label><i class="fas fa-file-prescription me-2 text-warning"></i>Type d'ordonnance</label>
+              <p>{{ getPrescriptionTypeLabel(selectedProduct.prescriptionType) }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.drugForm">
+              <label><i class="fas fa-pills me-2 text-info"></i>Forme galénique</label>
+              <p>{{ getDrugFormLabel(selectedProduct.drugForm) }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.dosage">
+              <label><i class="fas fa-syringe me-2 text-primary"></i>Dosage</label>
+              <p>{{ selectedProduct.dosage }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.packaging">
+              <label><i class="fas fa-box me-2 text-secondary"></i>Conditionnement</label>
+              <p>{{ selectedProduct.packaging }}</p>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="info-group" *ngIf="selectedProduct.therapeuticClass">
+              <label><i class="fas fa-medkit me-2 text-success"></i>Classe thérapeutique</label>
+              <p>{{ selectedProduct.therapeuticClass }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.pharmacologicalClass">
+              <label><i class="fas fa-flask me-2 text-info"></i>Classe pharmacologique</label>
+              <p>{{ selectedProduct.pharmacologicalClass }}</p>
+            </div>
+
+            <div class="info-group" *ngIf="selectedProduct.ageRestriction?.minAge || selectedProduct.ageRestriction?.maxAge">
+              <label><i class="fas fa-user-clock me-2 text-warning"></i>Restrictions d'âge</label>
+              <p>
+                <span *ngIf="selectedProduct.ageRestriction.minAge">
+                  À partir de {{ selectedProduct.ageRestriction.minAge }} ans
+                </span>
+                <span *ngIf="selectedProduct.ageRestriction.minAge && selectedProduct.ageRestriction.maxAge"> - </span>
+                <span *ngIf="selectedProduct.ageRestriction.maxAge">
+                  Jusqu'à {{ selectedProduct.ageRestriction.maxAge }} ans
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Ingredients -->
+        <div class="mt-3" *ngIf="selectedProduct.activeIngredients?.length">
+          <h6 class="mb-2">
+            <i class="fas fa-atom me-2 text-primary"></i>
+            Principes actifs
+          </h6>
+          <div class="d-flex flex-wrap gap-2">
+            <span *ngFor="let ingredient of selectedProduct.activeIngredients" class="badge bg-info">
+              {{ ingredient.name }}
+              <span *ngIf="ingredient.dosage"> - {{ ingredient.dosage }}</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Therapeutic Indications -->
+        <div class="mt-3" *ngIf="selectedProduct.indicationsTherapeutiques?.length">
+          <h6 class="mb-2">
+            <i class="fas fa-stethoscope me-2 text-success"></i>
+            Indications thérapeutiques
+          </h6>
+          <ul class="list-group">
+            <li *ngFor="let indication of selectedProduct.indicationsTherapeutiques" class="list-group-item">
+              <i class="fas fa-check-circle text-success me-2"></i>
+              {{ indication }}
+            </li>
+          </ul>
+        </div>
+
+        <!-- Safety Information -->
+        <div class="row mt-4">
+          <div class="col-md-4" *ngIf="selectedProduct.contraindications?.length">
+            <div class="card border-danger">
+              <div class="card-header bg-danger text-white">
+                <h6 class="mb-0">
+                  <i class="fas fa-ban me-2"></i>
+                  Contre-indications
+                </h6>
+              </div>
+              <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                  <li *ngFor="let contraindication of selectedProduct.contraindications" class="mb-2">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    <small>{{ contraindication }}</small>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-4" *ngIf="selectedProduct.sideEffects?.length">
+            <div class="card border-warning">
+              <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                  <i class="fas fa-exclamation-triangle me-2"></i>
+                  Effets secondaires
+                </h6>
+              </div>
+              <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                  <li *ngFor="let effect of selectedProduct.sideEffects" class="mb-2">
+                    <i class="fas fa-circle text-warning me-2" style="font-size: 0.5rem;"></i>
+                    <small>{{ effect }}</small>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-4" *ngIf="selectedProduct.warnings?.length">
+            <div class="card border-info">
+              <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                  <i class="fas fa-info-circle me-2"></i>
+                  Avertissements
+                </h6>
+              </div>
+              <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                  <li *ngFor="let warning of selectedProduct.warnings" class="mb-2">
+                    <i class="fas fa-info-circle text-info me-2"></i>
+                    <small>{{ warning }}</small>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Info -->
+        <div class="row mt-4">
+          <div class="col-md-6" *ngIf="selectedProduct.instructions">
+            <div class="alert alert-info">
+              <h6 class="alert-heading">
+                <i class="fas fa-book-medical me-2"></i>
+                Instructions d'utilisation
+              </h6>
+              <p class="mb-0">{{ selectedProduct.instructions }}</p>
+            </div>
+          </div>
+
+          <div class="col-md-6" *ngIf="selectedProduct.storage">
+            <div class="alert alert-warning">
+              <h6 class="alert-heading">
+                <i class="fas fa-thermometer-half me-2"></i>
+                Conditions de stockage
+              </h6>
+              <p class="mb-0">{{ selectedProduct.storage }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delivery Info -->
+        <div class="mt-3" *ngIf="selectedProduct.deliveryInfo">
+          <h6 class="mb-2">
+            <i class="fas fa-shipping-fast me-2 text-primary"></i>
+            Informations de livraison
+          </h6>
+          <div class="d-flex gap-3">
+            <span class="badge" [ngClass]="selectedProduct.deliveryInfo.isFragile ? 'bg-warning' : 'bg-secondary'">
+              <i class="fas fa-wine-glass-alt me-1"></i>
+              {{ selectedProduct.deliveryInfo.isFragile ? 'Fragile' : 'Non fragile' }}
+            </span>
+            <span class="badge" [ngClass]="selectedProduct.deliveryInfo.requiresColdChain ? 'bg-info' : 'bg-secondary'">
+              <i class="fas fa-snowflake me-1"></i>
+              {{ selectedProduct.deliveryInfo.requiresColdChain ? 'Chaîne du froid' : 'Température ambiante' }}
+            </span>
+            <span class="badge bg-secondary" *ngIf="selectedProduct.weight">
+              <i class="fas fa-weight me-1"></i>
+              {{ selectedProduct.weight }}g
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Images Tab -->
+      <div *ngIf="productModalTab === 'images'" class="tab-pane fade show active">
+        <div class="row g-3">
+          <!-- Main Image -->
+          <div class="col-md-4" *ngIf="selectedProduct.getMainImageUrl()">
+            <div class="image-card main-image">
+              <img [src]="internalPathUrl + selectedProduct.getMainImageUrl()"
+                   alt="Image principale"
+                   class="img-fluid rounded"
+                   style="width: 100%; height: 250px; object-fit: cover;">
+              <div class="image-overlay">
+                <span class="badge bg-primary">Image principale</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Images -->
+          <div class="col-md-4" *ngFor="let image of selectedProduct.images">
+            <div class="image-card">
+              <img [src]="internalPathUrl + image.url"
+                   alt="Image additionnelle"
+                   class="img-fluid rounded"
+                   style="width: 100%; height: 250px; object-fit: cover;">
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!selectedProduct.getMainImageUrl() && !selectedProduct.images?.length"
+             class="text-center py-5">
+          <i class="fas fa-images fa-4x text-muted mb-3"></i>
+          <h5>Aucune image disponible</h5>
+          <p class="text-muted">Ce produit n'a pas d'images associées.</p>
+        </div>
+      </div>
+    </div>
   </div>
+
   <div class="modal-footer">
-    <button type="button" class="btn btn-secondary" (click)="closeModal()">Fermer</button>
-    <button type="button" class="btn btn-primary" *ngIf="selectedProduct" (click)="openProductView()")>
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">
+      <i class="fas fa-times me-2"></i>
+      Fermer
+    </button>
+    <button type="button" class="btn btn-outline-primary" (click)="printProductDetails()">
+      <i class="fas fa-print me-2"></i>
+      Imprimer
+    </button>
+    <button type="button" class="btn btn-primary" (click)="navigateToProductDetail()">
       <i class="fas fa-external-link-alt me-2"></i>
       Voir détails complets
     </button>
   </div>
 </ng-template>
-
 <!-- Prescription Upload/View Modal -->
 <ng-template #prescriptionModal>
   <div class="modal-header">

@@ -17,11 +17,9 @@ import { LoadingService } from 'src/app/controllers/services/loading.service';
 import { ApiService } from 'src/app/controllers/services/api.service';
 
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { Select2 } from 'ng-select2-component';
 import Swal from 'sweetalert2';
 
 import Toolbar from 'quill/modules/toolbar';
-import {HttpHeaders} from "@angular/common/http";
 import {environment} from "../../../../../../../../environments/environment";
 import {FileClass} from "../../../../../../../models/File.class";
 import {FilesPreviewComponent} from "../../../../../sharedComponents/files-preview/files-preview.component";
