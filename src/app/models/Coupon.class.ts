@@ -2,6 +2,7 @@ import {Product} from "./Product";
 import {Category} from "./Category.class";
 import {PharmacyClass} from "./Pharmacy.class";
 import {CustomerClass} from "./Customer.class";
+import {CommonFunctions} from "../controllers/comonsfunctions";
 
 export class CouponClass {
   _id?: string;
@@ -66,7 +67,7 @@ export class CouponClass {
     this.applicableProducts = (data.applicableProducts || []).map((product: any) => new Product(product));
     this.applicableCategories = (data.applicableCategories || []).map((category: any) => new Category(category));
     this.excludedProducts = (data.excludedProducts || []).map((product: any) => new Product(product));
-    this.applicablePharmacies = (data.applicablePharmacies || []).map((pharmacy: any) => new PharmacyClass(pharmacy));
+    this.applicablePharmacies = (data.applicablePharmacies || []).map((pharmacy: any) => CommonFunctions.mapToPharmacy(pharmacy));
 
     this.status = data.status || 'active';
     this.isPublic = data.isPublic ?? true;

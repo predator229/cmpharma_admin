@@ -44,6 +44,8 @@ export class CommonFunctions {
       phoneNumber: data.phoneNumber,
       email: data.email,
       status: data.status || 'pending',
+      currency: data.currency,
+      currency_settings: data.currency_settings,
       location: data.location ? new Location(data.location) : null,
       suspensionDate: data.suspensionDate ? new Date(data.suspensionDate) : null,
       suspensionReason: data.suspensionReason || null,

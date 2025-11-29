@@ -32,6 +32,7 @@ import {Select2} from "ng-select2-component";
 import {PHARMACY_RESTRICTIONS} from "../../../../../models/Category.class";
 import {start} from "@popperjs/core";
 import {resolve} from "@angular/compiler-cli";
+import {CommonFunctions} from "../../../../../controllers/comonsfunctions";
 
 Chart.register(...registerables);
 
@@ -1190,7 +1191,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
       ).toPromise();
 
       if (response && !response.error) {
-        this.availablePharmacies = response.data.map((p: any) => new PharmacyClass(p));
+        this.availablePharmacies = response.data.map((p: any) => CommonFunctions.mapToPharmacy(p));
       }
     } catch (error) {
       console.error('Erreur chargement pharmacies:', error);

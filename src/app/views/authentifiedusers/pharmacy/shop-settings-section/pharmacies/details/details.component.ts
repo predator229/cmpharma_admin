@@ -253,7 +253,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       data: {
         labels: labels,
         datasets: [{
-          label: 'Revenus mensuels (€)',
+          label: `Revenus mensuels (${this.pharmacy.currency.symbol})`,
           data: data as number[],
           backgroundColor: 'rgba(21, 101, 192, 0.1)',
           borderColor: '#1565c0',
@@ -270,7 +270,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
             beginAtZero: true,
             ticks: {
               callback: function(value) {
-                return value + ' €';
+                return value;
               }
             }
           }
@@ -421,6 +421,8 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       phoneNumber: formValue.phoneNumber ?? this.pharmacy.phoneNumber,
       email: formValue.email ?? this.pharmacy.email,
       status: formValue.status ?? this.pharmacy.status,
+      currency: this.pharmacy.currency, //to adjust when currency will be added to pharmacy model
+      currency_settings: this.pharmacy.currency_settings, //to adjust when currency will be added to pharmacy model
       licenseNumber: formValue.licenseNumber ?? this.pharmacy.licenseNumber,
       country: formValue.country ?? this.pharmacy.country._id,
       city: formValue.city ?? this.pharmacy.city,
@@ -767,7 +769,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
           },
           {
             type: 'bar',
-            label: 'Revenus (€)',
+            label: `Revenus (${this.pharmacy.currency.symbol})`,
             data: this.monthlyStats.map(stat => stat.revenue),
             backgroundColor: 'rgba(34, 197, 94, 0.8)',
             borderColor: '#22c55e',
@@ -828,7 +830,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
             position: 'right',
             title: {
               display: true,
-              text: 'Revenus (€)'
+              text: `Revenus (${this.pharmacy.currency.symbol})`
             },
             grid: {
               drawOnChartArea: false,

@@ -44,7 +44,7 @@
               </div>
             </div>
           </div>
-          <div class="col-md-12">
+          <div class="col-md-6">
             <div class="card mb-4">
               <div class="card-header">
                 <h5><i class="fas fa-file-contract"></i> Informations légales</h5>
@@ -79,6 +79,138 @@
                     </span>
                     </div>
                   </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5><i class="fas fa-money-bill-wave"></i> Paramètres de devise</h5>
+                <div class="actions" *ngIf="pharmacy && pharmacy.status !== 'pending' && canIEdit">
+<!--                  <button class="btn btn-sm btn-outline-primary" (click)="openCurrencySettingsForm()">-->
+<!--                    <i class="fas fa-edit"></i>-->
+<!--                  </button>-->
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <!-- Devise principale -->
+                  <div class="col-md-12 mb-4">
+                    <div class="currency-main-section">
+                      <h6 class="section-title"><i class="fas fa-coins"></i> Devise principale</h6>
+                      <div class="currency-display" *ngIf="pharmacy?.currency">
+                        <div class="currency-flag-icon">
+                          <span class="currency-symbol">{{ pharmacy.currency.symbol }}</span>
+                        </div>
+                        <div class="currency-info">
+                          <div class="currency-name">{{ pharmacy.currency.name }}</div>
+                          <div class="currency-code">{{ pharmacy.currency.code }}</div>
+                        </div>
+                        <div class="currency-sample">
+                          <small class="text-muted">Exemple:</small>
+                          <strong>{{ pharmacy.currency.formatAmount(1234.56) }}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Paramètres de conversion -->
+                  <div class="col-md-12" *ngIf="pharmacy?.currency_settings">
+                    <div class="detail-section">
+                      <h6 class="section-title"><i class="fas fa-exchange-alt"></i> Paramètres de conversion</h6>
+
+                      <!-- Accepter plusieurs devises -->
+                      <div class="detail-item">
+              <span class="detail-label">
+                <i class="fas fa-globe"></i> Devises multiples:
+              </span>
+                        <span class="detail-value">
+                <span class="badge" [ngClass]="pharmacy.currency_settings.accept_multiple_currencies ? 'badge-success' : 'badge-secondary'">
+                  <i class="fas" [ngClass]="pharmacy.currency_settings.accept_multiple_currencies ? 'fa-check' : 'fa-times'"></i>
+                  {{ pharmacy.currency_settings.accept_multiple_currencies ? 'Activé' : 'Désactivé' }}
+                </span>
+              </span>
+                      </div>
+
+                      <!-- Devises acceptées -->
+                      <div class="detail-item" *ngIf="pharmacy.currency_settings.accept_multiple_currencies && pharmacy.currency_settings.accepted_currencies?.length > 0">
+              <span class="detail-label">
+                <i class="fas fa-money-check-alt"></i> Devises acceptées:
+              </span>
+                        <span class="detail-value">
+                <div class="currency-chips">
+                  <span class="currency-chip" *ngFor="let currency of pharmacy.currency_settings.accepted_currencies">
+                    {{ currency.symbol }} {{ currency.code }}
+                  </span>
+                </div>
+              </span>
+              </div>
+
+            <div class="detail-item">
+              <span class="detail-label">
+                <i class="fas fa-percent"></i> Marge de conversion:
+              </span>
+                        <span class="detail-value">
+                <span class="badge" [ngClass]="pharmacy.currency_settings.apply_conversion_markup ? 'badge-warning' : 'badge-secondary'">
+                  <i class="fas" [ngClass]="pharmacy.currency_settings.apply_conversion_markup ? 'fa-check' : 'fa-times'"></i>
+                  {{ pharmacy.currency_settings.apply_conversion_markup ? 'Activée' : 'Désactivée' }}
+                </span>
+                <span *ngIf="pharmacy.currency_settings.apply_conversion_markup" class="ms-2">
+                  <strong>{{ pharmacy.currency_settings.conversion_markup_percentage }}%</strong>
+                </span>
+              </span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">
+                <i class="fas fa-calculator"></i> Arrondi des prix:
+              </span>
+                        <span class="detail-value">
+                <span class="badge" [ngClass]="pharmacy.currency_settings.round_converted_prices ? 'badge-info' : 'badge-secondary'">
+                  <i class="fas" [ngClass]="pharmacy.currency_settings.round_converted_prices ? 'fa-check' : 'fa-times'"></i>
+                  {{ pharmacy.currency_settings.round_converted_prices ? 'Activé' : 'Désactivé' }}
+                </span>
+                <span *ngIf="pharmacy.currency_settings.round_converted_prices" class="ms-2">
+                  <span class="badge badge-light">{{ pharmacy.currency_settings.rounding_method }}</span>
+                </span>
+              </span>
+            </div>
+
+              <!-- Mise à jour automatique -->
+              <div class="detail-item" *ngIf="pharmacy.currency_settings.auto_update_rates">
+              <span class="detail-label">
+                <i class="fas fa-sync-alt"></i> Mise à jour auto:
+              </span>
+                        <span class="detail-value">
+                <span class="badge badge-primary">
+                  <i class="fas fa-clock"></i>
+                  {{ pharmacy.currency_settings.rate_update_frequency }}
+                </span>
+              </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Exemple de conversion -->
+                  <div class="col-md-12 mt-3" *ngIf="pharmacy?.currency_settings?.accept_multiple_currencies && pharmacy?.currency_settings?.accepted_currencies?.length > 0">
+                    <div class="conversion-preview">
+                      <h6 class="section-title"><i class="fas fa-calculator"></i> Aperçu de conversion</h6>
+                      <div class="conversion-example">
+                        <div class="conversion-row" *ngFor="let currency of pharmacy.currency_settings.accepted_currencies">
+                          <div class="conversion-from">
+                            <span class="amount">{{ pharmacy.currency.formatAmount(100) }}</span>
+                          </div>
+                          <div class="conversion-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                          </div>
+                          <div class="conversion-to">
+                            <span class="amount">≈ {{ currency.formatAmount(1000) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -164,8 +296,8 @@
                   </div>
                   <div class="col-md-3">
                     <div class="text-center p-3 bg-success bg-opacity-10 rounded">
-                      <h4 class="text-success mb-1">{{ getMonthlyStatsSummary().totalRevenue | currency:'EUR':'symbol':'1.0-0' }}</h4>
-                      <small class="text-muted">Total Revenus</small>
+                      <h4 class="text-success mb-1">{{ pharmacy.currency.formatAmount(getMonthlyStatsSummary().totalRevenue) }}</h4>
+                      <small class="text-muted">Total Revenus ({{ pharmacy.currency.symbol }} )</small>
                     </div>
                   </div>
                   <div class="col-md-3">
@@ -176,7 +308,7 @@
                   </div>
                   <div class="col-md-3">
                     <div class="text-center p-3 bg-info bg-opacity-10 rounded">
-                      <h4 class="text-info mb-1">{{ countOrders/12 }}</h4>
+                      <h4 class="text-info mb-1">{{ pharmacy.currency.formatAmount(countOrders/12) }}</h4>
                       <small class="text-muted">Moy. Commandes/Mois</small>
                     </div>
                   </div>
@@ -206,7 +338,7 @@
                         <tr>
                           <th>Mois</th>
                           <th>Commandes</th>
-                          <th>Revenus</th>
+                          <th>Revenus ({{ pharmacy.currency.symbol }}) </th>
                           <th>Bénéfices</th>
                           <th>Nouveaux Clients</th>
                           <th>Revenus/Commande</th>
@@ -220,17 +352,17 @@
                             <span class="badge bg-primary">{{ stat.orders }}</span>
                           </td>
                           <td>
-                            <span class="text-success fw-bold">{{ stat.revenue | currency:'EUR':'symbol':'1.0-2' }}</span>
+                            <span class="text-success fw-bold">{{ pharmacy.currency.formatAmount(stat.revenue) }}</span>
                           </td>
                           <td>
-                            <span class="text-info fw-bold">{{ stat.profit | currency:'EUR':'symbol':'1.0-2' }}</span>
+                            <span class="text-info fw-bold">{{ pharmacy.currency.formatAmount(stat.profit) }}</span>
                           </td>
                           <td>
                             <span class="badge bg-warning text-dark">{{ stat.newCustomers }}</span>
                           </td>
                           <td>
                     <span class="text-muted">
-                      {{ stat.orders > 0 ? ((stat.revenue / stat.orders) | currency:'EUR':'symbol':'1.0-2' ): '0 €' }}
+                      {{ pharmacy.currency.formatAmount((stat.orders > 0 ? (stat.revenue / stat.orders): 0)) }}
                     </span>
                           </td>
                           <td>
@@ -278,7 +410,7 @@
                       <td>{{ order.orderNumber }}</td>
                       <td>{{ order.customer?.getFullName() || 'Client inconnu' }}</td>
                       <td>{{ order.orderDate | date: 'dd/MM/yyyy HH:mm' }}</td>
-                      <td>{{ order.totalAmount | currency:'EUR' }}</td>
+                      <td>{{ pharmacy.currency.formatAmount(order.totalAmount) }}</td>
                       <td>
                         <span class="status-badge" [ngClass]="getOrderStatusClass(order.status)">
                           {{ order.status }}
@@ -516,63 +648,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Modal de contact -->
-<!--  <div class="modal fade" id="contactModal" tabindex="-1" aria-hidden="true">-->
-<!--    <div class="modal-dialog">-->
-<!--      <div class="modal-content">-->
-<!--        <div class="modal-header">-->
-<!--          <h5 class="modal-title">Contacter la pharmacie</h5>-->
-<!--          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
-<!--        </div>-->
-<!--        <div class="modal-body">-->
-<!--          <form [formGroup]="contactForm">-->
-<!--            <div class="mb-3">-->
-<!--              <label for="subject" class="form-label">Sujet</label>-->
-<!--              <input type="text" class="form-control" id="subject" formControlName="subject">-->
-<!--              <div class="invalid-feedback" *ngIf="contactForm.get('subject')?.invalid && contactForm.get('subject')?.touched">-->
-<!--                Le sujet est requis-->
-<!--              </div>-->
-<!--            </div>-->
-<!--            <div class="mb-3">-->
-<!--              <label for="message" class="form-label">Message</label>-->
-<!--              <textarea class="form-control" id="message" rows="5" formControlName="message"></textarea>-->
-<!--              <div class="invalid-feedback" *ngIf="contactForm.get('message')?.invalid && contactForm.get('message')?.touched">-->
-<!--                Le message est requis et doit contenir au moins 10 caractères-->
-<!--              </div>-->
-<!--            </div>-->
-<!--          </form>-->
-<!--        </div>-->
-<!--        <div class="modal-footer">-->
-<!--          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>-->
-<!--          &lt;!&ndash;          <button type="button" class="btn btn-primary" [disabled]="contactForm.invalid" (click)="sendMessage()">Envoyer</button>&ndash;&gt;-->
-<!--        </div>-->
-<!--      </div>-->
-<!--    </div>-->
-<!--  </div>-->
-
-  <!-- Modal de visualisation de document -->
-<!--  <div class="modal fade" id="documentViewerModal" tabindex="-1" aria-hidden="true">-->
-<!--    <div class="modal-dialog modal-lg">-->
-<!--      <div class="modal-content">-->
-<!--        <div class="modal-header">-->
-<!--          <h5 class="modal-title">{{ currentDocument.title }}</h5>-->
-<!--          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
-<!--        </div>-->
-<!--        <div class="modal-body">-->
-<!--          <div class="document-viewer">-->
-<!--            <iframe [src]="currentDocument.url" width="100%" height="500px"></iframe>-->
-<!--          </div>-->
-<!--        </div>-->
-<!--        <div class="modal-footer">-->
-<!--          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>-->
-<!--          <button type="button" class="btn btn-primary" (click)="downloadDocument(currentDocument.type)">-->
-<!--            <i class="fas fa-download"></i> Télécharger-->
-<!--          </button>-->
-<!--        </div>-->
-<!--      </div>-->
-<!--    </div>-->
-<!--  </div>-->
 </div>
 <ng-template #showInfo let-modal>
   <div class="modal-content">

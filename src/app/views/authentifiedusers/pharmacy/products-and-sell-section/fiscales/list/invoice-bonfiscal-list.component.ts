@@ -19,6 +19,7 @@ import {environment} from "../../../../../../../environments/environment";
 import {InvoiceNote} from "../../../../../../models/Invoice.class";
 import {BonFiscaleNote} from "../../../../../../models/BonFiscal.class";
 import {Admin} from "../../../../../../models/Admin.class";
+import {CommonFunctions} from "../../../../../../controllers/comonsfunctions";
 
 export enum DocumentType {
   INVOICE = 'invoice',
@@ -237,7 +238,7 @@ export class PharmacyInvoiceBonFiscalListComponent implements OnInit, OnDestroy 
           documentNumber: doc.documentNumber,
           order: doc.orderId ? { _id: doc.orderId, orderNumber: doc.orderNumber } as any : undefined,
           customer: doc.customer ? new CustomerClass(doc.customer) : undefined,
-          pharmacy: doc.pharmacy ? new PharmacyClass(doc.pharmacy) : undefined,
+          pharmacy: doc.pharmacy ? CommonFunctions.mapToPharmacy(doc.pharmacy) : undefined,
           createdAt: new Date(doc.createdAt),
           updatedAt: new Date(doc.updatedAt),
           pdfData: doc.pdfData ?? undefined,

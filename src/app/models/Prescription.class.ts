@@ -3,6 +3,7 @@ import {CustomerClass} from "./Customer.class";
 import {PharmacyClass} from "./Pharmacy.class";
 import {OrderClass} from "./Order.class";
 import {FileClass} from "./File.class";
+import {CommonFunctions} from "../controllers/comonsfunctions";
 
 export interface Doctor {
   name: string;
@@ -69,7 +70,8 @@ export class PrescriptionClass {
     this._id = data._id;
 
     this.customer = data.customer ? new CustomerClass(data.customer) : null;
-    this.pharmacy = data.pharmacy ? new PharmacyClass(data.pharmacy) : null;
+    this.pharmacy = data.pharmacy ? CommonFunctions.mapToPharmacy(data.pharmacy) : null;
+
     this.order = data.order ? new OrderClass(data.order) : null;
     this.document = data.document ? new FileClass(data.document) : null;
 

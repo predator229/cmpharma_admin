@@ -7,6 +7,7 @@ import {Country} from "./Country.class";
 import {DeliveryZoneClass} from "./DeliveryZone.class";
 import {ZoneCoordinates} from "./ZoneCoordinates.class";
 import {TaxeModel} from "./Taxe.class";
+import {CurrencyModel} from "./Currency.class";
 
 export interface FileDocument {
   name: string;
@@ -25,6 +26,30 @@ export interface DeliveryServices {
   pickupInStore: boolean,
   expressDelivery: boolean,
   scheduledDelivery: boolean
+}
+
+export enum RateUpdateFrequency {
+  HOURLY = 'hourly',
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+  MANUAL = 'manual'
+}
+
+export enum RoundingMethod {
+  UP = 'up',
+  DOWN = 'down',
+  NEAREST = 'nearest'
+}
+
+export interface CurrencySettings {
+  accept_multiple_currencies: boolean;
+  accepted_currencies: CurrencyModel[];
+  apply_conversion_markup: boolean;
+  conversion_markup_percentage: number;
+  round_converted_prices: boolean;
+  rounding_method: RoundingMethod;
+  auto_update_rates?: boolean;
+  rate_update_frequency?: RateUpdateFrequency;
 }
 
 export class PharmacyClass {
@@ -62,6 +87,8 @@ export class PharmacyClass {
   deliveryServices?: DeliveryServices | null;
 
   defaultsTaxes?: TaxeModel[];
+  currency: CurrencyModel;
+  currency_settings?: CurrencySettings;
 
   constructor(data: {
     id: string;
@@ -74,6 +101,8 @@ export class PharmacyClass {
     phoneNumber: string;
     email: string;
     status: 'active' | 'inactive' | 'deleted' | 'pending' | 'rejected' | 'suspended';
+    currency: CurrencyModel;
+    currency_settings: CurrencySettings;
     location?: Location | null;
     suspensionDate?: Date | null;
     suspensionReason?: string | null;
@@ -127,5 +156,27 @@ export class PharmacyClass {
     this.deliveryServices = data.deliveryServices ?? null;
 
     this.defaultsTaxes = data.defaultsTaxes?.map(taxe => new TaxeModel(taxe)) ?? [];
+
+    this.currency = new CurrencyModel(data.currency);
+    this.currency_settings = data.currency_settings;
+  }
+
+  roundedPrice(price: number): number {
+    if (!this.currency_settings?.round_converted_prices) {
+      return price;
+    }
+
+    const rounding = this.currency_settings.rounding_method || RoundingMethod.NEAREST;
+    const multiplier = 100;
+
+    switch (rounding) {
+      case RoundingMethod.UP:
+        return Math.ceil(price * multiplier) / multiplier;
+      case RoundingMethod.DOWN:
+        return Math.floor(price * multiplier) / multiplier;
+      case RoundingMethod.NEAREST:
+      default:
+        return Math.round(price * multiplier) / multiplier;
+    }
   }
 }

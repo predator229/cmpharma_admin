@@ -239,9 +239,9 @@
           </div>
         </td>
         <td>
-          <span class="amount">{{ order.totalAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
+          <span class="amount">{{ order.pharmacy.currency.formatAmount(order.totalAmount) }}</span>
           <small class="discount text-muted d-block" *ngIf="order.discountAmount > 0">
-            -{{ order.discountAmount | currency:'EUR':'symbol':'1.2-2' }}
+            -{{ order.pharmacy.currency.formatAmount(order.discountAmount) }}
           </small>
         </td>
         <td>
@@ -361,7 +361,7 @@
               </div>
               <div class="info-content">
                 <small class="text-muted">Montant total</small>
-                <strong>{{ selectedOrder.totalAmount | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                <strong>{{ selectedOrder.pharmacy.currency.formatAmount(selectedOrder.totalAmount)}}</strong>
               </div>
             </div>
           </div>
@@ -594,21 +594,21 @@
                     <div class="price-breakdown-item mb-3">
                       <div class="d-flex justify-content-between align-items-center">
                         <span class="text-muted">Sous-total:</span>
-                        <strong>{{ selectedOrder.subtotal | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                        <strong>{{ selectedOrder.pharmacy.currency.formatAmount(selectedOrder.subtotal)}}</strong>
                       </div>
                     </div>
 
                     <div class="price-breakdown-item mb-3" *ngIf="selectedOrder.discountAmount > 0">
                       <div class="d-flex justify-content-between align-items-center">
                         <span class="text-muted">Remise:</span>
-                        <span class="text-success">-{{ selectedOrder.discountAmount | currency:'EUR':'symbol':'1.2-2' }}</span>
+                        <span class="text-success">-{{ selectedOrder.pharmacy.currency.formatAmount(selectedOrder.discountAmount) }}</span>
                       </div>
                     </div>
 
                     <div class="price-breakdown-item mb-3" *ngIf="selectedOrder.coupon.appliedDiscount > 0">
                       <div class="d-flex justify-content-between align-items-center">
                         <span class="text-muted">Coupon ({{ selectedOrder.coupon.code }}):</span>
-                        <span class="text-success">-{{ selectedOrder.coupon.appliedDiscount | currency:'EUR':'symbol':'1.2-2' }}</span>
+                        <span class="text-success">-{{ selectedOrder.pharmacy.currency.formatAmount(selectedOrder.coupon.appliedDiscount) }}</span>
                       </div>
                     </div>
                   </div>
@@ -617,14 +617,14 @@
                     <div class="price-breakdown-item mb-3" *ngIf="selectedOrder.taxAmount > 0">
                       <div class="d-flex justify-content-between align-items-center">
                         <span class="text-muted">Taxes:</span>
-                        <strong class="text-primary">{{ selectedOrder.taxAmount | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                        <strong class="text-primary">{{ selectedOrder.pharmacy.currency.formatAmount(selectedOrder.taxAmount) }}</strong>
                       </div>
                     </div>
 
                     <div class="price-breakdown-item mb-3" *ngIf="selectedOrder.shippingCost > 0">
                       <div class="d-flex justify-content-between align-items-center">
                         <span class="text-muted">Frais de livraison:</span>
-                        <strong>{{ selectedOrder.shippingCost | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                        <strong>{{ selectedOrder.pharmacy.currency.formatAmount(selectedOrder.shippingCost) }}</strong>
                       </div>
                     </div>
                   </div>
@@ -634,7 +634,7 @@
 
                 <div class="d-flex justify-content-between align-items-center mt-3">
                   <strong class="fs-5">Total à payer:</strong>
-                  <strong class="fs-4 text-success">{{ selectedOrder.totalAmount | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                  <strong class="fs-4 text-success">{{ selectedOrder.pharmacy.currency.formatAmount(selectedOrder.totalAmount) }}</strong>
                 </div>
               </div>
             </div>
@@ -660,7 +660,7 @@
                   <div class="card-body">
                     <div class="row-div" *ngFor="let taxe of item.applicableTaxes">
                       <label class="fw-bold"><i class="fas fa-coins me-2 text-success"></i>{{ taxe.taxe.name }}</label>
-                      <p class="fw-bold">{{ getProductTaxValue(item, taxe) | currency:'EUR':'symbol':'1.2-2' }}</p>
+                      <p class="fw-bold">{{ selectedOrder.pharmacy.currency.formatAmount(getProductTaxValue(item, taxe)) }}</p>
                     </div>
                   </div>
                 </div>
@@ -787,17 +787,17 @@
                   <div class="card-body">
                     <div class="row-div">
                       <label class="fw-bold"><i class="fas fa-coins me-2 text-success"></i>Montant HT</label>
-                      <p class="fw-bold">{{ selectedOrder.subtotal | currency:'EUR':'symbol':'1.2-2' }}</p>
+                      <p class="fw-bold">{{ selectedOrder.pharmacy.currency.formatAmount(selectedOrder.subtotal) }}</p>
                     </div>
 
                     <div class="row-div">
                       <label class="fw-bold"><i class="fas fa-percentage me-2 text-success"></i>Montant des taxes</label>
-                      <p class="fw-bold text-primary">{{ selectedOrder.taxAmount | currency:'EUR':'symbol':'1.2-2' }}</p>
+                      <p class="fw-bold text-primary">{{ selectedOrder.pharmacy.currency.formatAmount(selectedOrder.taxAmount) }}</p>
                     </div>
 
                     <div class="row-div">
                       <label class="fw-bold"><i class="fas fa-euro-sign me-2 text-success"></i>Montant TTC</label>
-                      <p class="fw-bold text-success fs-5">{{ (selectedOrder.subtotal + selectedOrder.taxAmount) | currency:'EUR':'symbol':'1.2-2' }}</p>
+                      <p class="fw-bold text-success fs-5">{{ selectedOrder.pharmacy.currency.formatAmount((selectedOrder.subtotal + selectedOrder.taxAmount)) }}</p>
                     </div>
                   </div>
                 </div>
