@@ -195,7 +195,7 @@ export class ProductReviewDetailsPharmacyComponent implements OnInit, OnDestroy 
         relatedReviewsStartSliceOthers : this.relatedReviewsStartSliceOthers,
       };
 
-      this.apiService.post('pharmacy-management/reviews/'+(endPoint ? endPoint : 'review-details'), payload, headers)
+      this.apiService.post('reviews/'+(endPoint ? endPoint : 'review-details'), payload, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -260,7 +260,7 @@ export class ProductReviewDetailsPharmacyComponent implements OnInit, OnDestroy 
   //       uid
   //     };
   //
-  //     this.apiService.post('pharmacy-management/reviews/update-status', payload, headers)
+  //     this.apiService.post('reviews/update-status', payload, headers)
   //       .pipe(takeUntil(this.destroy$))
   //       .subscribe({
   //         next: (response: any) => {
@@ -307,7 +307,7 @@ export class ProductReviewDetailsPharmacyComponent implements OnInit, OnDestroy 
         uid
       };
 
-      this.apiService.post('pharmacy-management/reviews/pharmacy-response', payload, headers)
+      this.apiService.post('reviews/pharmacy-response', payload, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -365,7 +365,7 @@ export class ProductReviewDetailsPharmacyComponent implements OnInit, OnDestroy 
   //       uid
   //     };
   //
-  //     this.apiService.post('pharmacy-management/reviews/delete', payload, headers)
+  //     this.apiService.post('reviews/delete', payload, headers)
   //       .pipe(takeUntil(this.destroy$))
   //       .subscribe({
   //         next: (response: any) => {

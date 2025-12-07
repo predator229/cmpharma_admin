@@ -202,7 +202,7 @@ export class ProductPharmacyReviewsListComponent implements OnInit, OnDestroy {
         period: this.selectedPeriod
       };
 
-      this.apiService.post('pharmacy-management/reviews/products-list', payload, headers)
+      this.apiService.post('reviews/products-list', payload, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -475,7 +475,7 @@ export class ProductPharmacyReviewsListComponent implements OnInit, OnDestroy {
       const payload = { productId, uid, period: this.selectedPeriod, limit:true };
 
       this.loadingService.setLoading(true);
-      this.apiService.post('pharmacy-management/reviews/product-reviews', payload, headers)
+      this.apiService.post('reviews/product-reviews', payload, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {

@@ -217,7 +217,7 @@ export class ProductReviewsByProductComponent implements OnInit, OnDestroy {
         limit: this.itemsPerPage
       };
 
-      this.apiService.post('pharmacy-management/reviews/product-reviews', payload, headers)
+      this.apiService.post('reviews/product-reviews', payload, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -404,7 +404,7 @@ export class ProductReviewsByProductComponent implements OnInit, OnDestroy {
         uid
       };
 
-      this.apiService.post('pharmacy-management/reviews/pharmacy-response', payload, headers)
+      this.apiService.post('reviews/pharmacy-response', payload, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
