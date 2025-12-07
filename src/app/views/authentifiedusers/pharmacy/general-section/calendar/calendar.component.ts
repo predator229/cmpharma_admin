@@ -218,7 +218,7 @@ export class CalendarPharmacyTrackingComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
       let listUsers = [{key:'',name:"Tous les utilisateurs"}];
-      this.apiService.post('pharmacy-managment/pharmacies/list', { uid, andUsersList:1 }, headers)
+      this.apiService.post('pharmacy-management/pharmacies/list', { uid, andUsersList:1 }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {

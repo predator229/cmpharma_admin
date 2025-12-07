@@ -41,11 +41,11 @@ export class PharmacyLogsComponent implements OnInit {
     },
     category: {
       name: 'Categories',
-      endpoint: 'pharmacy-managment/categories/activities',
+      endpoint: 'pharmacy-management/categories/activities',
     },
     pharmacy: {
       name: 'Pharmacies',
-      endpoint: 'pharmacy-managment/pharmacies/activities',
+      endpoint: 'pharmacy-management/pharmacies/activities',
     },
     product: {
       name: 'Produits',
@@ -121,7 +121,7 @@ export class PharmacyLogsComponent implements OnInit {
         'Content-Type': 'application/json'
       });
       let listUsers = [{key:'',name:"Tous les utilisateurs"}];
-      this.apiService.post('pharmacy-managment/pharmacies/list', { uid, andUsersList:1 }, headers)
+      this.apiService.post('pharmacy-management/pharmacies/list', { uid, andUsersList:1 }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {

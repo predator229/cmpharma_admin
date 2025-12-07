@@ -192,7 +192,7 @@ export class PharmacyCategoryDetailComponent implements OnInit, OnDestroy {
       'Content-Type': 'application/json'
     });
 
-    this.apiService.post('pharmacy-managment/categories/activities', { id: categoryID, uid }, headers)
+    this.apiService.post('pharmacy-management/categories/activities', { id: categoryID, uid }, headers)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
@@ -574,7 +574,7 @@ export class PharmacyCategoryDetailComponent implements OnInit, OnDestroy {
       formData.append('uid', uid || '');
 
       try {
-        const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-images-cat', formData, headers).toPromise();
+        const response: any = await this.apiService.post('pharmacy-management/pharmacies/upload-images-cat', formData, headers).toPromise();
         if (response && response.success) {
           idFile = response.data.fileId;
         }

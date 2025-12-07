@@ -552,7 +552,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
   private async loadPharmaciesStats(headers: HttpHeaders, uid: string, dateStart: Date, dateEnd: Date ): Promise<void> {
     try {
       const response: any = await this.apiService.post(
-        'pharmacy-managment/pharmacies/stats',
+        'pharmacy-management/pharmacies/stats',
         { uid, dateStart, dateEnd },
         headers
       ).toPromise();
@@ -1185,7 +1185,7 @@ export class PharmacyDashboardComponent implements OnInit, OnDestroy {
 
     try {
       const response: any = await this.apiService.post(
-        'pharmacy-managment/pharmacies/list',
+        'pharmacy-management/pharmacies/list',
         { uid, active: true },
         headers
       ).toPromise();

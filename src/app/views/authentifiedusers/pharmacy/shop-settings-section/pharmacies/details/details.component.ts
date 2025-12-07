@@ -531,7 +531,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
         formData.append('uid', uid || '');
 
         try {
-          const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-document', formData, headers).toPromise();
+          const response: any = await this.apiService.post('pharmacy-management/pharmacies/upload-document', formData, headers).toPromise();
           if (response && response.success) {
             uploadedFiles[fileType] = response.data.fileId;
           }
@@ -566,7 +566,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
     };
 
     return new Promise((resolve, reject) => {
-      this.apiService.post('pharmacy-managment/pharmacies/update', updateData, headers)
+      this.apiService.post('pharmacy-management/pharmacies/update', updateData, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -642,7 +642,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       'Content-Type': 'application/json'
     });
 
-    this.apiService.post('pharmacy-managment/pharmacies/workingsHours', { id: pharmacyId, uid }, headers)
+    this.apiService.post('pharmacy-management/pharmacies/workingsHours', { id: pharmacyId, uid }, headers)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
@@ -667,7 +667,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
       'Content-Type': 'application/json'
     });
 
-    this.apiService.post('pharmacy-managment/pharmacies/activities', { id: pharmacyId, uid }, headers)
+    this.apiService.post('pharmacy-management/pharmacies/activities', { id: pharmacyId, uid }, headers)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
@@ -696,7 +696,7 @@ export class PharmacyDetailComponentPharmacie implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacy-managment/pharmacies/details', { id: pharmacyId, uid }, headers)
+      this.apiService.post('pharmacy-management/pharmacies/details', { id: pharmacyId, uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: async (response: any) => {

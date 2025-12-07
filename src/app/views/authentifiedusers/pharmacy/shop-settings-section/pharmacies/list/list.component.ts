@@ -157,7 +157,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacy-managment/pharmacies/list', { uid }, headers)
+      this.apiService.post('pharmacy-management/pharmacies/list', { uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -397,7 +397,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacy-managment/pharmacies/approve', { id: pharmacy.id, uid }, headers)
+      this.apiService.post('pharmacy-management/pharmacies/approve', { id: pharmacy.id, uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -441,7 +441,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacy-managment/pharmacies/suspend', { id: pharmacy.id, uid }, headers)
+      this.apiService.post('pharmacy-management/pharmacies/suspend', { id: pharmacy.id, uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -486,7 +486,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.apiService.post('pharmacy-managment/pharmacies/activate', { id: pharmacy.id, uid }, headers)
+      this.apiService.post('pharmacy-management/pharmacies/activate', { id: pharmacy.id, uid }, headers)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
@@ -532,7 +532,7 @@ export class PharmacyListComponentPharmacie implements OnInit, OnDestroy {
   //       'Content-Type': 'application/json'
   //     });
   //
-  //     this.apiService.post('pharmacy-managment/pharmacies/delete', {id : pharmacy.id, uid}, headers)
+  //     this.apiService.post('pharmacy-management/pharmacies/delete', {id : pharmacy.id, uid}, headers)
   //       .pipe(takeUntil(this.destroy$))
   //       .subscribe({
   //         next: (response: any) => {

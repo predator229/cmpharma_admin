@@ -645,7 +645,7 @@ export class PharmacyInternalMessagingComponent implements OnInit, OnDestroy, Af
         formData.append('uid', uid);
 
         try {
-          const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-document', formData, headers).toPromise();
+          const response: any = await this.apiService.post('pharmacy-management/pharmacies/upload-document', formData, headers).toPromise();
           if (response && response.success) {
             fileId.push(response.fileId);
             console.log('✅ Fichier uploadé avec succès, ID:', fileId);

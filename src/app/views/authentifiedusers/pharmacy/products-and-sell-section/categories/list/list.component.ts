@@ -704,7 +704,7 @@ export class PharmacyCategoryListComponent implements OnInit, OnDestroy {
       formData.append('categoryId', categoryId);
       formData.append('uid', uid || '');
       try {
-        const response: any = await this.apiService.post('pharmacy-managment/pharmacies/upload-images-cat', formData, headers).toPromise();
+        const response: any = await this.apiService.post('pharmacy-management/pharmacies/upload-images-cat', formData, headers).toPromise();
         if (response && response.success) {
           idFile = response.data.fileId;
         }
